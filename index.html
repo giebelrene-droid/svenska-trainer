@@ -45,34 +45,37 @@
         measurementId: "G-WDX870XE6B"
     };
 
-    // Firebase initialisieren
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-
-    // Proxy-Einstellung
-    const proxy = "https://cors-anywhere.herokuapp.com/";
 
     async function startAuto() {
         const de = document.getElementById('inputDe').value;
         if (!de) return;
 
+        // Wir nutzen hier einen Proxy, der die Anfrage "einpackt"
+        const apiBase = "https://api-free.deepl.com/v2/translate";
+        
         try {
-            // Englisch mit Proxy
-            const resEn = await fetch(proxy + `https://api-free.deepl.com/v2/translate?auth_key=${DEEPL_KEY}&text=${encodeURIComponent(de)}&target_lang=EN&source_lang=DE`);
+            // Englisch Übersetzung
+            const urlEn = `${apiBase}?auth_key=${DEEPL_KEY}&text=${encodeURIComponent(de)}&target_lang=EN&source_lang=DE`;
+            const resEn = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(urlEn)}`);
             const dataEn = await resEn.json();
-            const en = dataEn.translations[0].text;
+            const resultEn = JSON.parse(dataEn.contents);
+            const en = resultEn.translations[0].text;
             document.getElementById('inputEn').value = en;
 
-            // Schwedisch mit Proxy
-            const resSv = await fetch(proxy + `https://api-free.deepl.com/v2/translate?auth_key=${DEEPL_KEY}&text=${encodeURIComponent(de)}&target_lang=SV&source_lang=DE`);
+            // Schwedisch Übersetzung
+            const urlSv = `${apiBase}?auth_key=${DEEPL_KEY}&text=${encodeURIComponent(de)}&target_lang=SV&source_lang=DE`;
+            const resSv = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(urlSv)}`);
             const dataSv = await resSv.json();
-            const sv = dataSv.translations[0].text;
+            const resultSv = JSON.parse(dataSv.contents);
+            const sv = resultSv.translations[0].text;
             document.getElementById('inputSv').value = sv;
 
             saveWord(de, en, sv);
         } catch (error) {
-            console.error("Automatik-Fehler:", error);
-            alert("Automatik blockiert. Bitte Felder nutzen.");
+            console.error("Übersetzungsfehler:", error);
+            alert("Fehler bei der Automatik. Bitte Felder manuell nutzen.");
             document.getElementById('manualFields').style.display = 'block';
         }
     }
