@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Svenska Trainer - Hybrid Turbo</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f2f2f7; padding: 15px; text-align: center; }
+        .box { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
+        .btn { background: #007aff; color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        input { width: 100%; padding: 14px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
+        .hidden { display: none !important; }
+        .status-badge { background: #e5e5ea; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; margin-bottom: 15px; display: inline-block; }
+        .list-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.9rem; }
+        .correct { background-color: #d1e7dd !important; border: 2px solid #34c759 !important; }
+        .wrong { background-color: #f8d7da !important; border: 2px solid #ff3b30 !important; }
+        #log { margin-top:10px; font-weight:bold; font-size:0.8rem; color:#ff9500; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <div id="dbCount" class="status-badge">Cloud wird geladen...</div>
+
+    <div id="vFill">
+        <h1>Wörter hinzufügen</h1>
+        <input type="text" id="qDe" placeholder="Deutsch..." onkeypress="if(event.key==='Enter') startAuto()">
+        
+        <div id="manualInput" class="hidden" style="background:#f0f0f5; padding:15px; border-radius:12px; margin-bottom:10px;">
+            <input type="text" id="qEn" placeholder="Englisch">
+            <input type="text" id="qSv" placeholder="Schwedisch" onkeypress="if(event.key==='Enter') saveDirect()">
+            <button class="btn" style="background:#34c759;" onclick="saveDirect()">In Cloud speichern (Enter)</button>
+        </div>
+
+        <button class="btn" style="background:#5856d6;" id="btnAuto" onclick="startAuto()">Automatisch übersetzen</button>
+        <div id="log"></div>
+    </div>
+
+    <div id="vTrain" class="hidden">
+        <h1>Üben</h1>
+        <div id="wDisp" style="font-size: 2.2rem; font-weight: bold; margin: 15px 0; color: #007aff;">---</div>
+        <div id="hDisp" style="color: #8e8e93; font-style: italic; margin-bottom: 10px;"></div>
+        <input type="text" id="iEn" placeholder="Englisch" autocomplete="off">
+        <input type="text" id="iSv" placeholder="Schwedisch" autocomplete="off">
+        <button class="btn" onclick="check()">Prüfen</button>
+        <div id="fback" style="margin-top:10px; font-weight:bold;"></div>
+    </div>
+
+    <div id="vList" class="hidden">
+        <h1>Liste</h1>
+        <div id="fList" style="max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+    <button class="btn" style="background:#8e8e93; width:48%; display:inline-block;" onclick="show('vFill')">Füllen</button>
+    <button class="btn" style="background:#8e8e93; width:48%; display:inline-block;" onclick="show('vTrain')">Üben</button>
+    <button class="btn" style="background:#8e8e93;" onclick="show('vList')">Liste anzeigen</button>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDULNNL718_CBrP7e3tSO89Jr1qLTKK7Ng",
+        authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
+        projectId: "uebersetzer-d-eng-swe",
+        storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app",
+        messagingSenderId: "28644987259",
+        appId: "1:28644987259:android:9b61bc4611bf902199adde"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let words = [], cur = null;
+
+    db.collection("vokabeln").onSnapshot(s => {
+        words = s.docs.map(d => ({ id: d.id, ...d.data() }));
+        document.getElementById('dbCount').innerText = "Bestand: " + words.length + " Wörter";
+        upList();
+    });
+
+    async function startAuto() {
+        const de = document.getElementById('qDe').value.trim();
+        if(!de) return;
+        
+        document.getElementById('log').innerText = "Prüfe Automatik...";
+        
+        try {
+            const resEn = await fetch(`https://api-free.deepl.com/v2/translate?auth_key=07e513ce-d6a2-4cae-ae99-2eb248ad6b2e:fx&text=${encodeURIComponent(de)}&target_lang=EN&source_lang=DE`);
+            const dEn = await resEn.json();
+            const resSv = await fetch(`https://api-free.deepl.com/v2/translate?auth_key=07e513ce-d6a2-4cae-ae99-2eb248ad6b2e:fx&text=${encodeURIComponent(de)}&target_lang=SV&source_lang=DE`);
+            const dSv = await resSv.json();
+            
+            saveFinal(de, dEn.translations[0].text, dSv.translations[0].text);
+        } catch (e) {
+            document.getElementById('log').innerText = "Automatik blockiert. Bitte Felder nutzen.";
+            document.getElementById('manualInput').classList.remove('hidden');
+            document.getElementById('btnAuto').classList.add('hidden');
+            document.getElementById('qEn').focus(); // Fokus auf Englisch
+        }
+    }
+
+    async function saveFinal(de, en, sv) {
+        const clean = (t) => t.replace(/[0-9]/g, '').trim().toLowerCase();
+        await db.collection("vokabeln").add({ de, en: clean(en), sv: clean(sv) });
+        document.getElementById('log').innerText = "✔ '" + de + "' gespeichert!";
+        document.getElementById('qDe').value = "";
+        document.getElementById('manualInput').classList.add('hidden');
+        document.getElementById('btnAuto').classList.remove('hidden');
+        document.getElementById('qDe').focus();
+    }
+
+    function saveDirect() {
+        const de = document.getElementById('qDe').value.trim();
+        const en = document.getElementById('qEn').value.trim();
+        const sv = document.getElementById('qSv').value.trim();
+        if(de && en && sv) {
+            saveFinal(de, en, sv);
+            document.getElementById('qEn').value = "";
+            document.getElementById('qSv').value = "";
+        }
+    }
+
+    function show(id) {
+        ['vFill','vTrain','vList'].forEach(v => document.getElementById(v).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+        if(id === 'vTrain') next();
+    }
+
+    function next() {
+        if(words.length === 0) return;
+        cur = words[Math.floor(Math.random() * words.length)];
+        document.getElementById('wDisp').innerText = cur.de;
+        document.getElementById('hDisp').innerText = `Hinweis: ${cur.en[0]}... | ${cur.sv[0]}...`;
+        document.getElementById('iEn').value = ""; document.getElementById('iSv').value = "";
+        document.getElementById('iEn').className = ""; document.getElementById('iSv').className = "";
+        document.getElementById('fback').innerText = "";
+    }
+
+    function check() {
+        const inEn = document.getElementById('iEn'), inSv = document.getElementById('iSv');
+        const okE = cur.en.split('/').map(x => x.trim().toLowerCase()).includes(inEn.value.trim().toLowerCase());
+        const okS = cur.sv.split('/').map(x => x.trim().toLowerCase()).includes(inSv.value.trim().toLowerCase());
+        inEn.className = okE ? 'correct' : 'wrong';
+        inSv.className = okS ? 'correct' : 'wrong';
+        if(okE && okS) {
+            document.getElementById('fback').innerText = "Richtig! ✅";
+            setTimeout(next, 1000);
+        } else {
+            document.getElementById('fback').innerText = `Lösung: ${cur.en} | ${cur.sv}`;
+        }
+    }
+
+    function upList() {
+        const c = document.getElementById('fList'); c.innerHTML = "";
+        words.forEach(w => {
+            c.innerHTML += `<div class="list-item"><span><b>${w.de}</b>: ${w.sv} (${w.en})</span>
+            <button onclick="db.collection('vokabeln').doc('${w.id}').delete()" style="background:red; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer;">X</button></div>`;
+        });
+    }
+</script>
+</body>
+</html>
