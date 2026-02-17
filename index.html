@@ -7,70 +7,61 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: auto; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 500px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2, h3 { color: #005293; margin-top: 0; }
+        h2 { color: #005293; text-align: center; }
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 5px; }
-        button:hover { background: #003d6e; }
-        .secondary-btn { background: #28a745; margin-top: 10px; }
-        .delete-btn { background: #ff4d4d; width: auto; padding: 5px 10px; font-size: 12px; }
-        .status { font-size: 0.85em; color: #666; margin-bottom: 15px; text-align: right; }
-        .loader { display: none; color: #005293; font-weight: bold; margin: 10px 0; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-        .quiz-area { background: #e7f3ff; border-radius: 8px; padding: 15px; text-align: center; }
-        .nav-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
-        .nav-tabs button { background: #ccc; flex: 1; }
-        .nav-tabs button.active { background: #005293; }
+        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        .nav { display: flex; gap: 5px; margin-bottom: 20px; }
+        .nav button { background: #ccc; flex: 1; font-size: 14px; }
+        .nav button.active { background: #005293; }
+        .status { text-align: center; font-size: 0.9em; color: #666; margin-bottom: 10px; }
+        .word-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .quiz-box { text-align: center; padding: 20px; background: #e7f3ff; border-radius: 8px; }
+        .feedback { margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="wordCount" class="status">Lade Bestand... 📚</div>
+    <div id="wordCount" class="status">Lade...</div>
 
-    <div class="nav-tabs">
-        <button id="tab1" class="active" onclick="showSection('add')">Hinzufügen</button>
-        <button id="tab2" onclick="showSection('quiz')">Üben</button>
-        <button id="tab3" onclick="showSection('list')">Liste</button>
+    <div class="nav">
+        <button id="t1" class="active" onclick="tab('add')">➕ Neu</button>
+        <button id="t2" onclick="tab('quiz')">🧠 Üben</button>
+        <button id="t3" onclick="tab('list')">📖 Liste</button>
     </div>
 
-    <div id="sectionAdd" class="card">
+    <div id="tabAdd" class="card">
         <h2>Neues Wort</h2>
-        <input type="text" id="inputDe" placeholder="Deutsch (z.B. Katze)" onkeypress="if(event.key === 'Enter') startAuto()">
-        <div id="loader" class="loader">Suche Übersetzung... ⏳</div>
-        <button onclick="startAuto()">Automatisch Übersetzen</button>
-        
-        <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
-            <input type="text" id="inputEn" placeholder="Englisch">
-            <input type="text" id="inputSv" placeholder="Schwedisch">
-            <button class="secondary-btn" onclick="manualSave()">Speichern</button>
-        </div>
+        <input type="text" id="inDe" placeholder="Deutsch..." onkeypress="if(event.key==='Enter') auto()">
+        <button onclick="auto()">Übersetzen & Speichern</button>
+        <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
+        <input type="text" id="inEn" placeholder="Englisch">
+        <input type="text" id="inSv" placeholder="Schwedisch">
+        <button style="background:#28a745" onclick="save()">Manuell Speichern</button>
     </div>
 
-    <div id="sectionQuiz" class="card" style="display:none;">
+    <div id="tabQuiz" class="card" style="display:none">
         <h2>Vokabel-Trainer</h2>
-        <div id="quizContainer" class="quiz-area">
-            <p>Klicke auf Start, um zu üben!</p>
-            <button onclick="nextQuiz()">Start / Nächstes Wort</button>
-        </div>
-        <div id="quizQuestion" style="margin-top:15px; font-size: 1.2em; display:none;">
-            Was heißt: <b id="qText">?</b>
-            <input type="text" id="qAnswer" placeholder="Deine Antwort auf Schwedisch">
-            <button onclick="checkAnswer()">Prüfen</button>
-            <p id="qFeedback"></p>
+        <div class="quiz-box">
+            <p>Was heißt auf Schwedisch?</p>
+            <h1 id="qText">---</h1>
+            <input type="text" id="qAns" placeholder="Antwort...">
+            <button onclick="check()">Prüfen</button>
+            <div id="qFeed" class="feedback"></div>
+            <button style="background:#666; margin-top:10px" onclick="next()">Nächstes Wort</button>
         </div>
     </div>
 
-    <div id="sectionList" class="card" style="display:none;">
-        <h2>Dein Vokabelheft</h2>
-        <div id="listContainer">Wird geladen...</div>
+    <div id="tabList" class="card" style="display:none">
+        <h2>Dein Wortschatz</h2>
+        <div id="listCont"></div>
     </div>
 </div>
 
 <script>
-    // Firebase Konfiguration
     const firebaseConfig = {
         apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
         authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
@@ -80,110 +71,85 @@
         appId: "1:28644987259:web:ad9844766de2ced699adde",
         measurementId: "G-WDX870XE6B"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    let allWords = [];
-    let currentQuizWord = null;
+    let words = [];
+    let current = null;
 
-    // Navigation Steuerung
-    function showSection(name) {
-        document.getElementById('sectionAdd').style.display = name === 'add' ? 'block' : 'none';
-        document.getElementById('sectionQuiz').style.display = name === 'quiz' ? 'block' : 'none';
-        document.getElementById('sectionList').style.display = name === 'list' ? 'block' : 'none';
-        
-        document.getElementById('tab1').className = name === 'add' ? 'active' : '';
-        document.getElementById('tab2').className = name === 'quiz' ? 'active' : '';
-        document.getElementById('tab3').className = name === 'list' ? 'active' : '';
-        
-        if(name === 'list') updateListView();
-        if(name === 'quiz') loadWordsForQuiz();
+    function tab(name) {
+        document.getElementById('tabAdd').style.display = name==='add'?'block':'none';
+        document.getElementById('tabQuiz').style.display = name==='quiz'?'block':'none';
+        document.getElementById('tabList').style.display = name==='list'?'block':'none';
+        document.getElementById('t1').className = name==='add'?'active':'';
+        document.getElementById('t2').className = name==='quiz'?'active':'';
+        document.getElementById('t3').className = name==='list'?'active':'';
+        if(name==='list') loadList();
+        if(name==='quiz') loadQuiz();
     }
 
-    // Automatik mit MyMemory
-    async function startAuto() {
-        const de = document.getElementById('inputDe').value;
-        if (!de) return;
-        document.getElementById('loader').style.display = 'block';
-        try {
-            const resEn = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|en`);
-            const dataEn = await resEn.json();
-            const resSv = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|sv`);
-            const dataSv = await resSv.json();
-            
-            document.getElementById('inputEn').value = dataEn.responseData.translatedText;
-            document.getElementById('inputSv').value = dataSv.responseData.translatedText;
-        } catch (e) { alert("Fehler bei der Suche"); }
-        document.getElementById('loader').style.display = 'none';
+    async function auto() {
+        const de = document.getElementById('inDe').value;
+        if(!de) return;
+        const resEn = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|en`);
+        const dEn = await resEn.json();
+        const resSv = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|sv`);
+        const dSv = await resSv.json();
+        document.getElementById('inEn').value = dEn.responseData.translatedText;
+        document.getElementById('inSv').value = dSv.responseData.translatedText;
+        save();
     }
 
-    function manualSave() {
-        const de = document.getElementById('inputDe').value;
-        const en = document.getElementById('inputEn').value;
-        const sv = document.getElementById('inputSv').value;
-        if(!de || !en || !sv) return alert("Alles ausfüllen!");
-
-        db.collection("words").add({ de, en, sv, timestamp: firebase.firestore.FieldValue.serverTimestamp() })
-        .then(() => {
-            alert("Gespeichert! 🎉");
-            document.getElementById('inputDe').value = "";
-            document.getElementById('inputEn').value = "";
-            document.getElementById('inputSv').value = "";
-            updateCount();
+    function save() {
+        const de = document.getElementById('inDe').value;
+        const en = document.getElementById('inEn').value;
+        const sv = document.getElementById('inSv').value;
+        if(!de || !sv) return;
+        db.collection("words").add({de, en, sv, ts: firebase.firestore.FieldValue.serverTimestamp()}).then(() => {
+            document.getElementById('inDe').value = "";
+            document.getElementById('inEn').value = "";
+            document.getElementById('inSv').value = "";
+            count();
         });
     }
 
-    function updateCount() {
-        db.collection("words").get().then(s => document.getElementById('wordCount').innerText = "Bestand: " + s.size + " Wörter 📚");
-    }
-
-    function updateListView() {
-        db.collection("words").orderBy("timestamp", "desc").get().then(snap => {
-            let html = "";
-            snap.forEach(doc => {
-                const w = doc.data();
-                html += `<div class="list-item">
-                    <span><b>${w.de}</b> -> ${w.sv} <small>(${w.en})</small></span>
-                    <button class="delete-btn" onclick="deleteWord('${doc.id}')">Löschen</button>
-                </div>`;
-            });
-            document.getElementById('listContainer').innerHTML = html || "Keine Wörter gefunden.";
-        });
-    }
-
-    function deleteWord(id) {
-        if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(() => updateListView());
-    }
-
-    // Quiz Logik
-    function loadWordsForQuiz() {
+    function count() {
         db.collection("words").get().then(s => {
-            allWords = [];
-            s.forEach(doc => allWords.push(doc.data()));
+            document.getElementById('wordCount').innerText = s.size + " Wörter im Speicher 📚";
+            words = s.docs.map(d => ({id: d.id, ...d.data()}));
         });
     }
 
-    function nextQuiz() {
-        if(allWords.length === 0) return alert("Erst Wörter hinzufügen!");
-        document.getElementById('quizQuestion').style.display = 'block';
-        document.getElementById('qFeedback').innerText = "";
-        document.getElementById('qAnswer').value = "";
-        currentQuizWord = allWords[Math.floor(Math.random() * allWords.length)];
-        document.getElementById('qText').innerText = currentQuizWord.de;
+    function loadList() {
+        db.collection("words").orderBy("ts", "desc").get().then(s => {
+            let h = "";
+            s.forEach(d => {
+                const w = d.data();
+                h += `<div class="word-item"><span><b>${w.de}</b>: ${w.sv}</span><button style="width:auto; padding:2px 8px; background:red" onclick="del('${d.id}')">X</button></div>`;
+            });
+            document.getElementById('listCont').innerHTML = h;
+        });
     }
 
-    function checkAnswer() {
-        const ans = document.getElementById('qAnswer').value.toLowerCase().trim();
-        const correct = currentQuizWord.sv.toLowerCase().trim();
-        if(ans === correct) {
-            document.getElementById('qFeedback').innerHTML = "<b style='color:green'>Richtig! ✨</b>";
-        } else {
-            document.getElementById('qFeedback').innerHTML = `<b style='color:red'>Falsch.</b> Richtig wäre: ${currentQuizWord.sv}`;
-        }
+    function del(id) { if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(()=>loadList()); }
+
+    function loadQuiz() { count(); next(); }
+
+    function next() {
+        if(words.length === 0) return;
+        current = words[Math.floor(Math.random() * words.length)];
+        document.getElementById('qText').innerText = current.de;
+        document.getElementById('qAns').value = "";
+        document.getElementById('qFeed').innerText = "";
     }
 
-    updateCount();
+    function check() {
+        const a = document.getElementById('qAns').value.toLowerCase().trim();
+        const correct = current.sv.toLowerCase().trim();
+        if(a === correct) document.getElementById('qFeed').innerHTML = "<span style='color:green'>Bravo! Correct! ✨</span>";
+        else document.getElementById('qFeed').innerHTML = `<span style='color:red'>Leider nein.</span> Richtig: ${current.sv}`;
+    }
+
+    count();
 </script>
-
 </body>
 </html>
