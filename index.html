@@ -13,7 +13,7 @@
         button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
         #manualFields { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; }
         .status { font-size: 0.9em; color: #666; margin-bottom: 15px; }
-        .loader { display: none; color: #005293; margin: 10px 0; }
+        .loader { display: none; color: #005293; margin: 10px 0; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -26,7 +26,7 @@
     <div id="loader" class="loader">Übersetze... ⏳</div>
     <button id="btnAuto" onclick="startAuto()">Automatisch speichern</button>
 
-    <div id="manualFields" id="manualFields">
+    <div id="manualFields">
         <input type="text" id="inputEn" placeholder="Englisch">
         <input type="text" id="inputSv" placeholder="Schwedisch">
         <button onclick="manualSave()" style="background: #28a745;">Manuell speichern</button>
@@ -34,7 +34,6 @@
 </div>
 
 <script>
-    // --- KONFIGURATION ---
     const firebaseConfig = {
         apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
         authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
@@ -49,9 +48,11 @@
     const db = firebase.firestore();
 
     async function translate(text, target) {
-        // Wir nutzen MyMemory - ein offener API-Dienst
-        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=de|${target}`);
+        // MyMemory mit einer Kontakt-Mail, damit die Anfrage priorisiert wird
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=de|${target}&de=deinname@gmail.com`;
+        const res = await fetch(url);
         const data = await res.json();
+        console.log("Antwort von MyMemory:", data);
         return data.responseData.translatedText;
     }
 
@@ -63,7 +64,6 @@
         document.getElementById('btnAuto').disabled = true;
 
         try {
-            // MyMemory braucht keine Keys!
             const en = await translate(de, 'en');
             const sv = await translate(de, 'sv');
 
@@ -72,8 +72,8 @@
 
             saveWord(de, en, sv);
         } catch (error) {
-            console.error("Fehler:", error);
-            alert("Automatik hat ein Problem. Bitte Felder nutzen.");
+            console.error("Detaillierter Fehler:", error);
+            alert("Fehler bei der Automatik. Bitte Felder manuell nutzen.");
             document.getElementById('manualFields').style.display = 'block';
         } finally {
             document.getElementById('loader').style.display = 'none';
@@ -86,11 +86,14 @@
             de: de, en: en, sv: sv,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => {
-            alert(`Gespeichert: ${de} -> ${sv} 🎉`);
+            alert(`Gespeichert: ${de} 🎉`);
             document.getElementById('inputDe').value = "";
             document.getElementById('inputEn').value = "";
             document.getElementById('inputSv').value = "";
             updateCount();
+        }).catch(err => {
+            console.error("Firestore Fehler:", err);
+            alert("Fehler beim Speichern in der Cloud!");
         });
     }
 
