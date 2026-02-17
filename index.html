@@ -1,14 +1,8 @@
-Das ist eine sehr nützliche Funktion. Manchmal liefert der Übersetzer nicht genau die Bedeutung, die man im Kopf hat.
+Das ist eine gute Anmerkung – die englische Übersetzung ist in der Liste natürlich wichtig für den kompletten Überblick. Ich habe das Format in der Liste so angepasst, dass jetzt wieder alle drei Sprachen (Deutsch, Schwedisch und Englisch in Klammern) angezeigt werden.
 
-Ich habe den Code so erweitert, dass du in der Liste jetzt bei jedem Wort einen Bearbeiten-Button (✎) findest. Wenn du darauf klickst:
+Beim Bearbeiten bleibt alles wie gewünscht: Du kannst jedes der drei Felder einzeln anklicken und den Text genau so anpassen, wie du ihn haben möchtest.
 
-Springt die App automatisch zum Tab NEU.
-
-Füllt die Felder mit dem aktuellen Wort aus.
-
-Löscht den alten Eintrag in der Datenbank, sobald du die Korrektur mit "Übersetzen & Speichern" oder "Nur Speichern" abschließt.
-
-Hier ist der komplette Code für deine index.html:
+Hier ist der aktualisierte Code für deine index.html:
 
 HTML
 <!DOCTYPE html>
@@ -34,10 +28,11 @@ HTML
         #qFeed { margin-top: 10px; font-weight: bold; min-height: 24px; }
         .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; }
         .wrong { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
-        .word-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; align-items: center; }
+        .word-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; align-items: center; }
+        .word-info { flex: 1; padding-right: 10px; line-height: 1.4; }
         .word-actions { display: flex; gap: 5px; }
-        .edit-btn { background: #ffcc00; color: #333; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .del-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .edit-btn { background: #ffcc00; color: #333; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .del-btn { background: #ff4d4d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
         #loader { color: #005293; font-weight: bold; text-align: center; display: none; margin-bottom: 10px; }
     </style>
 </head>
@@ -192,7 +187,10 @@ HTML
         let h = "";
         allWords.forEach(w => {
             h += `<div class="word-item">
-                <span><b>${w.de}</b>: ${w.sv}</span>
+                <div class="word-info">
+                    <b>${w.de}</b>: ${w.sv}<br>
+                    <small style="color:#666">Englisch: ${w.en || '-'}</small>
+                </div>
                 <div class="word-actions">
                     <button class="edit-btn" onclick="editWord('${w.id}')">✎</button>
                     <button class="del-btn" onclick="del('${w.id}')">X</button>
