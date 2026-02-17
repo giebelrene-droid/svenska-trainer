@@ -14,17 +14,18 @@
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 8px; }
         .nav { display: flex; gap: 5px; margin-bottom: 20px; }
-        .nav button { background: #888; flex: 1; padding: 10px 5px; font-size: 14px; }
+        .nav button { background: #888; flex: 1; padding: 10px 5px; font-size: 14px; color: white; border: none; border-radius: 8px; }
         .nav button.active { background: #005293; }
         .quiz-box { text-align: center; padding: 15px; background: #e7f3ff; border-radius: 8px; }
         .word-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; align-items: center; }
         #qFeed { margin-top: 10px; font-weight: bold; min-height: 20px; }
+        label { display: block; text-align: left; font-size: 0.8em; color: #666; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="wordCount" style="text-align:right; font-size:0.8em; margin-bottom:5px;">Bestand wird geladen...</div>
+    <div id="wordCount" style="text-align:right; font-size:0.8em; margin-bottom:5px;">Lade...</div>
 
     <div class="nav">
         <button id="btn1" class="active" onclick="changeTab('add')">➕ NEU</button>
@@ -45,13 +46,18 @@
     <div id="tabQuiz" class="card" style="display:none">
         <h2>Quiz</h2>
         <div class="quiz-box">
-            <p>Was heißt auf Schwedisch?</p>
-            <h1 id="qDe">---</h1>
-            <p id="qEn" style="font-style:italic; color: #666; font-size: 0.9em;"></p>
-            <input type="text" id="qAns" placeholder="Antwort...">
-            <button onclick="checkResult()">Prüfen</button>
+            <p>Übersetze das Wort:</p>
+            <h1 id="qDe" style="margin: 10px 0;">---</h1>
+            
+            <label>Englisch:</label>
+            <input type="text" id="qAnsEn" placeholder="Englisch...">
+            
+            <label>Schwedisch:</label>
+            <input type="text" id="qAnsSv" placeholder="Schwedisch..." onkeypress="if(event.key==='Enter') checkResult()">
+            
+            <button onclick="checkResult()" style="margin-top:10px;">Prüfen</button>
             <div id="qFeed"></div>
-            <button style="background:#666; margin-top:10px" onclick="nextQuestion()">Nächstes Wort</button>
+            <button style="background:#666; margin-top:10px" onclick="nextQuestion()">Nächstes Wort ➡️</button>
         </div>
     </div>
 
@@ -62,7 +68,6 @@
 </div>
 
 <script>
-    // Firebase Setup
     const firebaseConfig = {
         apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
         authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
@@ -78,21 +83,17 @@
     let currentWords = [];
     let activeWord = null;
 
-    // Tabs umschalten
     function changeTab(name) {
         document.getElementById('tabAdd').style.display = (name === 'add') ? 'block' : 'none';
         document.getElementById('tabQuiz').style.display = (name === 'quiz') ? 'block' : 'none';
         document.getElementById('tabList').style.display = (name === 'list') ? 'block' : 'none';
-        
         document.getElementById('btn1').className = (name === 'add') ? 'active' : '';
         document.getElementById('btn2').className = (name === 'quiz') ? 'active' : '';
         document.getElementById('btn3').className = (name === 'list') ? 'active' : '';
-
         if(name === 'list') getList();
         if(name === 'quiz') startQuiz();
     }
 
-    // Automatik
     async function handleAuto() {
         const text = document.getElementById('inDe').value;
         if(!text) return;
@@ -101,7 +102,6 @@
             const dEn = await rEn.json();
             const rSv = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=de|sv`);
             const dSv = await rSv.json();
-            
             document.getElementById('inEn').value = dEn.responseData.translatedText;
             document.getElementById('inSv').value = dSv.responseData.translatedText;
             handleManual();
@@ -113,7 +113,6 @@
         const en = document.getElementById('inEn').value;
         const sv = document.getElementById('inSv').value;
         if(!de || !sv) return;
-        
         db.collection("words").add({ de, en, sv, ts: firebase.firestore.FieldValue.serverTimestamp() })
         .then(() => {
             document.getElementById('inDe').value = "";
@@ -135,7 +134,7 @@
             let h = "";
             s.forEach(doc => {
                 const w = doc.data();
-                h += `<div class="word-item"><span><b>${w.de}</b>: ${w.sv}</span><button style="width:auto;background:red;margin:0" onclick="removeW('${doc.id}')">X</button></div>`;
+                h += `<div class="word-item"><span><b>${w.de}</b>: ${w.sv} (${w.en})</span><button style="width:auto;background:red;margin:0" onclick="removeW('${doc.id}')">X</button></div>`;
             });
             document.getElementById('listCont').innerHTML = h || "Keine Wörter vorhanden.";
         });
@@ -145,7 +144,6 @@
         if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(() => getList());
     }
 
-    // Quiz Logik
     function startQuiz() {
         db.collection("words").get().then(s => {
             currentWords = s.docs.map(d => d.data());
@@ -155,27 +153,4 @@
 
     function nextQuestion() {
         if(currentWords.length === 0) return alert("Füge erst Wörter hinzu!");
-        activeWord = currentWords[Math.floor(Math.random() * currentWords.length)];
-        document.getElementById('qDe').innerText = activeWord.de;
-        document.getElementById('qEn').innerText = "Englisch: " + (activeWord.en || "---");
-        document.getElementById('qAns').value = activeWord.sv.charAt(0);
-        document.getElementById('qFeed').innerText = "";
-    }
-
-    function checkResult() {
-        const input = document.getElementById('qAns').value.toLowerCase().trim();
-        const correct = activeWord.sv.toLowerCase().trim();
-        const f = document.getElementById('qFeed');
-        if(input === correct) {
-            f.innerHTML = "<span style='color:green'>Richtig! ✨</span>";
-        } else {
-            f.innerHTML = `<span style='color:red'>Falsch.</span> Richtig: ${activeWord.sv}`;
-        }
-    }
-
-    // Beim Start laden
-    refreshCount();
-</script>
-
-</body>
-</html>
+        activeWord = currentWords[Math.floor(Math.random
