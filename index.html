@@ -19,8 +19,9 @@
         .status { text-align: center; font-size: 0.9em; color: #666; margin-bottom: 10px; }
         .word-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; align-items: center; }
         .quiz-box { text-align: center; padding: 20px; background: #e7f3ff; border-radius: 8px; }
-        .feedback { margin-top: 15px; font-weight: bold; min-height: 20px; }
+        .feedback { margin-top: 15px; font-weight: bold; min-height: 20px; font-size: 1.1em; }
         .loader { display: none; color: #005293; font-weight: bold; margin-bottom: 10px; }
+        .hint { font-size: 0.9em; color: #555; margin-bottom: 10px; font-style: italic; }
     </style>
 </head>
 <body>
@@ -49,8 +50,9 @@
         <h2>Vokabel-Trainer</h2>
         <div class="quiz-box">
             <p>Was heißt auf Schwedisch?</p>
-            <h1 id="qText">---</h1>
-            <input type="text" id="qAns" placeholder="Antwort eintippen..." onkeypress="if(event.key==='Enter') check()">
+            <h1 id="qText" style="margin-bottom:5px;">---</h1>
+            <div id="qHint" class="hint"></div>
+            <input type="text" id="qAns" placeholder="Antwort..." onkeypress="if(event.key==='Enter') check()">
             <button onclick="check()">Prüfen</button>
             <div id="qFeed" class="feedback"></div>
             <button style="background:#666; margin-top:15px" onclick="next()">Nächstes Wort ➡️</button>
@@ -64,11 +66,6 @@
 </div>
 
 <script>
-    // DEINE FIREBASE DATEN
     const firebaseConfig = {
         apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
-        authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
-        projectId: "uebersetzer-d-eng-swe",
-        storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app",
-        messagingSenderId: "28644987259",
-        appId: "1:28644987259:web:ad9844766
+        auth
