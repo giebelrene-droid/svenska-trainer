@@ -1,3 +1,14 @@
+Das ist eine sehr gute Idee für mehr Übersichtlichkeit. Ich habe das Format der Liste so angepasst, dass jetzt explizit DE:, EN: und SV: vor den jeweiligen Wörtern steht.
+
+Hier ist der aktualisierte Code für deine index.html:
+
+ Google Notizen 
+Svenska Trainer Projekt-Fortschritt
+Vokabeln hinzufügen: Deutsch -> Englisch/Schwedisch Automatik
+Bereinigung von Zahlen/Fehlern im Übersetzer-Code
+Datenbank-Füll-Modus (Schnelleingabe) aktivieren
+
+HTML
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -22,10 +33,11 @@
         .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; }
         .wrong { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
         .word-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; align-items: center; }
-        .word-info { flex: 1; padding-right: 10px; line-height: 1.4; }
+        .word-info { flex: 1; padding-right: 10px; line-height: 1.6; }
         .word-actions { display: flex; gap: 5px; }
         .edit-btn { background: #ffcc00; color: #333; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
         .del-btn { background: #ff4d4d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .lang-label { color: #005293; font-weight: bold; font-size: 0.85em; margin-right: 5px; }
         #loader { color: #005293; font-weight: bold; text-align: center; display: none; margin-bottom: 10px; }
     </style>
 </head>
@@ -179,8 +191,9 @@
         allWords.forEach(w => {
             h += `<div class="word-item">
                 <div class="word-info">
-                    <b>${w.de}</b>: ${w.sv}<br>
-                    <small style="color:#666">Englisch: ${w.en || '-'}</small>
+                    <div><span class="lang-label">DE:</span>${w.de}</div>
+                    <div><span class="lang-label">SV:</span>${w.sv}</div>
+                    <div><span class="lang-label">EN:</span>${w.en || '-'}</div>
                 </div>
                 <div class="word-actions">
                     <button class="edit-btn" onclick="editWord('${w.id}')">✎</button>
@@ -212,7 +225,7 @@
         const cE = curWord.en.toLowerCase().trim(), cS = curWord.sv.toLowerCase().trim();
         const rE = e.value.toLowerCase().trim() === cE, rS = s.value.toLowerCase().trim() === cS;
         e.className = rE ? "correct" : "wrong"; s.className = rS ? "correct" : "wrong";
-        document.getElementById('qFeed').innerHTML = (rE && rS) ? "<span style='color:green'>Richtig! ✨</span>" : `<span style='color:red'>Korrektur:</span><br><small>En: ${curWord.en} | Sv: ${curWord.sv}</small>`;
+        document.getElementById('qFeed').innerHTML = (rE && rS) ? "<span style='color:green'>Richtig! ✨</span>" : `<span style='color:red'>Korrektur:</span><br><small>EN: ${curWord.en} | SV: ${curWord.sv}</small>`;
     }
     refreshData();
 </script>
