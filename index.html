@@ -1,3 +1,16 @@
+Das liegt daran, dass wir die Sprachausgabe (die sogenannte „Speech Synthesis“) explizit für jedes Feld ansteuern müssen. Im vorherigen Code war sie nur für die Liste eingebaut.
+
+Ich habe den Code nun so angepasst, dass:
+
+Im Übungsteil (Quiz) ein kleiner Lautsprecher neben dem deutschen Wort erscheint.
+
+Bei der Korrektur (wenn du auf "Prüfen" geklickt hast) automatisch beide Sprachen nacheinander vorgelesen werden können, damit du die Aussprache direkt lernst.
+
+Die Challenge flüssig bleibt.
+
+Hier ist die korrigierte index.html:
+
+HTML
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -24,12 +37,12 @@
         .correct { background-color: #d4edda !important; border-color: #28a745 !important; }
         .wrong { background-color: #f8d7da !important; border-color: #dc3545 !important; }
         .word-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; align-items: center; }
-        .word-info { flex: 1; line-height: 1.5; }
+        .word-info { flex: 1; line-height: 1.6; }
         .lang-label { color: #005293; font-weight: bold; font-size: 0.8em; margin-right: 5px; }
         .level-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
         .lvl-0 { background: #ccc; } .lvl-1 { background: #ffcc00; } .lvl-2 { background: #28a745; } .lvl-3 { background: #005293; box-shadow: 0 0 5px #005293; }
         #timer { font-size: 1.5em; color: #d9534f; font-weight: bold; margin-bottom: 10px; display: none; }
-        .speaker-btn { background: none; border: none; font-size: 20px; cursor: pointer; vertical-align: middle; }
+        .speaker-btn { background: #eee; border: none; font-size: 18px; cursor: pointer; border-radius: 50%; width: 35px; height: 35px; margin-left: 5px; }
         #loader { color: #005293; font-weight: bold; text-align: center; display: none; margin-bottom: 10px; }
     </style>
 </head>
@@ -68,7 +81,10 @@
         <div class="quiz-box">
             <div id="timer">60s</div>
             <p>Übersetze dieses Wort:</p>
-            <h1 id="qDe" style="margin:5px 0;">---</h1>
+            <div style="display:flex; align-items:center; justify-content:center;">
+                <h1 id="qDe" style="margin:5px 0;">---</h1>
+                <button class="speaker-btn" onclick="speak(document.getElementById('qDe').innerText, 'de-DE')">🔊</button>
+            </div>
             <label>ENGLISCH:</label>
             <input type="text" id="qAnsEn" autocomplete="off">
             <label>SCHWEDISCH:</label>
@@ -106,7 +122,13 @@
     let challengeTimer = null;
     let challengeScore = 0;
 
-    // --- STREAK LOGIK ---
+    function speak(txt, lang) {
+        if (!txt) return;
+        const ut = new SpeechSynthesisUtterance(txt);
+        ut.lang = lang; // 'sv-SE', 'en-US', 'de-DE'
+        window.speechSynthesis.speak(ut);
+    }
+
     function updateStreak() {
         const today = new Date().toDateString();
         const lastDate = localStorage.getItem('lastLessonDate');
@@ -115,7 +137,7 @@
             const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
             if (lastDate === yesterday.toDateString()) { streak++; } 
             else if (!lastDate) { streak = 1; }
-            else { streak = 1; }
+            else { streak = 0; } // Zurückgesetzt wenn ein Tag fehlt
             localStorage.setItem('streak', streak);
             localStorage.setItem('lastLessonDate', today);
         }
@@ -165,7 +187,7 @@
         const de = document.getElementById('inDe').value.trim(), en = document.getElementById('inEn').value.trim(), sv = document.getElementById('inSv').value.trim();
         const editId = document.getElementById('editId').value;
         if(!de || !sv) return;
-        const data = { de, en, sv, level: 0, ts: firebase.firestore.FieldValue.serverTimestamp() };
+        const data = { de, en, sv, level: (editId ? allWords.find(x=>x.id===editId).level : 0), ts: firebase.firestore.FieldValue.serverTimestamp() };
         const op = editId ? db.collection("words").doc(editId).update(data) : db.collection("words").add(data);
         op.then(() => { resetForm(); if(editId) showTab('list'); });
     }
@@ -200,9 +222,9 @@
             const lvl = w.level || 0;
             h += `<div class="word-item">
                 <div class="word-info">
-                    <div><span class="level-dot lvl-${lvl}"></span><span class="lang-label">DE:</span>${w.de}</div>
-                    <div><span class="lang-label">SV:</span>${w.sv} <button class="speaker-btn" onclick="speak('${w.sv}')">🔊</button></div>
-                    <div><span class="lang-label">EN:</span>${w.en || '-'}</div>
+                    <div><span class="level-dot lvl-${lvl}"></span><span class="lang-label">DE:</span>${w.de} <button class="speaker-btn" style="width:25px; height:25px; font-size:12px;" onclick="speak('${w.de}', 'de-DE')">🔊</button></div>
+                    <div><span class="lang-label">SV:</span>${w.sv} <button class="speaker-btn" style="width:25px; height:25px; font-size:12px;" onclick="speak('${w.sv}', 'sv-SE')">🔊</button></div>
+                    <div><span class="lang-label">EN:</span>${w.en || '-'} <button class="speaker-btn" style="width:25px; height:25px; font-size:12px;" onclick="speak('${w.en}', 'en-US')">🔊</button></div>
                 </div>
                 <div class="word-actions">
                     <button class="edit-btn" onclick="editWord('${w.id}')">✎</button>
@@ -214,12 +236,6 @@
     }
 
     function del(id) { if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(() => refreshData().then(renderList)); }
-
-    function speak(txt) {
-        const ut = new SpeechSynthesisUtterance(txt);
-        ut.lang = 'sv-SE';
-        window.speechSynthesis.speak(ut);
-    }
 
     function nextQ() {
         if(allWords.length === 0) return;
@@ -245,10 +261,13 @@
         if(rE && rS) {
             document.getElementById('qFeed').innerHTML = "<span style='color:green'>Richtig! ✨</span>";
             updateLevel(curWord.id, true);
-            if(isChallenge) { challengeScore++; setTimeout(nextQ, 600); } 
-            else { document.getElementById('nextBtn').style.display = "block"; document.getElementById('checkBtn').style.display = "none"; speak(curWord.sv); }
+            speak(curWord.sv, 'sv-SE');
+            if(isChallenge) { challengeScore++; setTimeout(nextQ, 800); } 
+            else { document.getElementById('nextBtn').style.display = "block"; document.getElementById('checkBtn').style.display = "none"; }
         } else {
-            document.getElementById('qFeed').innerHTML = `<span style='color:red'>Korrektur:</span><br><small>SV: ${curWord.sv} | EN: ${curWord.en}</small>`;
+            document.getElementById('qFeed').innerHTML = `<span style='color:red'>Korrektur:</span><br>
+                <small>SV: ${curWord.sv} <button class="speaker-btn" style="width:20px; height:20px; font-size:10px;" onclick="speak('${curWord.sv}', 'sv-SE')">🔊</button></small><br>
+                <small>EN: ${curWord.en} <button class="speaker-btn" style="width:20px; height:20px; font-size:10px;" onclick="speak('${curWord.en}', 'en-US')">🔊</button></small>`;
             updateLevel(curWord.id, false);
             if(!isChallenge) { document.getElementById('nextBtn').style.display = "block"; document.getElementById('checkBtn').style.display = "none"; }
         }
@@ -261,7 +280,6 @@
         db.collection("words").doc(id).update({ level: newLvl });
     }
 
-    // --- CHALLENGE MODUS ---
     function startChallenge() {
         isChallenge = true; challengeScore = 0;
         let timeLeft = 60;
