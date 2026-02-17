@@ -144,4 +144,25 @@
 
     function nextQ() {
         if(wordsArr.length === 0) return alert("Keine Wörter zum Üben da!");
-        curWord = wordsArr
+        curWord = wordsArr[Math.floor(Math.random() * wordsArr.length)];
+        document.getElementById('qDe').innerText = curWord.de;
+        document.getElementById('qEn').innerText = "Hilfe (Englisch): " + (curWord.en || "---");
+        document.getElementById('qAns').value = curWord.sv.charAt(0); // Erster Buchstabe als Tipp
+        document.getElementById('qFeed').innerText = "";
+    }
+
+    function checkAns() {
+        const input = document.getElementById('qAns').value.toLowerCase().trim();
+        const correct = curWord.sv.toLowerCase().trim();
+        const feed = document.getElementById('qFeed');
+        if(input === correct) {
+            feed.innerHTML = "<span style='color:green'>Richtig! ✨</span>";
+        } else {
+            feed.innerHTML = `<span style='color:red'>Falsch.</span> Richtig: ${curWord.sv}`;
+        }
+    }
+
+    updateCount();
+</script>
+</body>
+</html>
