@@ -7,59 +7,54 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
         .container { max-width: 500px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { color: #005293; text-align: center; margin-top: 0; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 5px; }
         .nav { display: flex; gap: 5px; margin-bottom: 20px; }
-        .nav button { background: #ccc; flex: 1; font-size: 14px; color: white; }
+        .nav button { background: #ccc; flex: 1; }
         .nav button.active { background: #005293; }
-        .status { text-align: center; font-size: 0.9em; color: #666; margin-bottom: 10px; }
         .word-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; align-items: center; }
         .quiz-box { text-align: center; padding: 20px; background: #e7f3ff; border-radius: 8px; }
-        .feedback { margin-top: 15px; font-weight: bold; min-height: 20px; font-size: 1.1em; }
-        .loader { display: none; color: #005293; font-weight: bold; margin-bottom: 10px; }
-        .hint { font-size: 0.9em; color: #555; margin-bottom: 10px; font-style: italic; }
+        .feedback { margin-top: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="wordCount" class="status">Lade Wörter... 📚</div>
+    <div id="wordCount" style="text-align:right; font-size:0.8em; margin-bottom:10px;">Lade...</div>
 
     <div class="nav">
-        <button id="t1" class="active" onclick="tab('add')">➕ Neu</button>
-        <button id="t2" onclick="tab('quiz')">🧠 Üben</button>
-        <button id="t3" onclick="tab('list')">📖 Liste</button>
+        <button id="t1" class="active" onclick="show('add')">➕ Neu</button>
+        <button id="t2" onclick="show('quiz')">🧠 Üben</button>
+        <button id="t3" onclick="show('list')">📖 Liste</button>
     </div>
 
-    <div id="tabAdd" class="card">
+    <div id="secAdd" class="card">
         <h2>Neues Wort</h2>
-        <div id="loader" class="loader">Übersetze... ⏳</div>
-        <input type="text" id="inDe" placeholder="Deutsch..." onkeypress="if(event.key==='Enter') auto()">
-        <button onclick="auto()">Übersetzen & Speichern</button>
-        <hr style="margin:20px 0; border:0; border-top:1px dashed #ccc;">
+        <input type="text" id="inDe" placeholder="Deutsch..." onkeypress="if(event.key==='Enter') autoTr()">
+        <button onclick="autoTr()">Übersetzen & Speichern</button>
+        <hr>
         <input type="text" id="inEn" placeholder="Englisch">
         <input type="text" id="inSv" placeholder="Schwedisch">
-        <button style="background:#28a745" onclick="save()">Manuell Speichern</button>
+        <button style="background:#28a745" onclick="manualSave()">Manuell Speichern</button>
     </div>
 
-    <div id="tabQuiz" class="card" style="display:none">
+    <div id="secQuiz" class="card" style="display:none">
         <h2>Vokabel-Trainer</h2>
         <div class="quiz-box">
             <p>Was heißt auf Schwedisch?</p>
-            <h1 id="qText" style="margin-bottom:5px;">---</h1>
-            <div id="qHint" class="hint"></div>
-            <input type="text" id="qAns" placeholder="Antwort..." onkeypress="if(event.key==='Enter') check()">
-            <button onclick="check()">Prüfen</button>
+            <h1 id="qDe">---</h1>
+            <p id="qEn" style="font-style:italic; color: #555;"></p>
+            <input type="text" id="qAns" placeholder="Antwort...">
+            <button onclick="checkAns()">Prüfen</button>
             <div id="qFeed" class="feedback"></div>
-            <button style="background:#666; margin-top:15px" onclick="next()">Nächstes Wort ➡️</button>
+            <button style="background:#666; margin-top:10px" onclick="nextQ()">Nächstes Wort</button>
         </div>
     </div>
 
-    <div id="tabList" class="card" style="display:none">
+    <div id="secList" class="card" style="display:none">
         <h2>Dein Wortschatz</h2>
         <div id="listCont"></div>
     </div>
@@ -68,4 +63,85 @@
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
-        auth
+        authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
+        projectId: "uebersetzer-d-eng-swe",
+        storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app",
+        messagingSenderId: "28644987259",
+        appId: "1:28644987259:web:ad9844766de2ced699adde",
+        measurementId: "G-WDX870XE6B"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let wordsArr = [];
+    let curWord = null;
+
+    function show(name) {
+        document.getElementById('secAdd').style.display = name === 'add' ? 'block' : 'none';
+        document.getElementById('secQuiz').style.display = name === 'quiz' ? 'block' : 'none';
+        document.getElementById('secList').style.display = name === 'list' ? 'block' : 'none';
+        document.getElementById('t1').className = name === 'add' ? 'active' : '';
+        document.getElementById('t2').className = name === 'quiz' ? 'active' : '';
+        document.getElementById('t3').className = name === 'list' ? 'active' : '';
+        if(name === 'list') renderList();
+        if(name === 'quiz') prepareQuiz();
+    }
+
+    async function autoTr() {
+        const de = document.getElementById('inDe').value;
+        if(!de) return;
+        try {
+            const rEn = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|en`);
+            const dEn = await rEn.json();
+            const rSv = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|sv`);
+            const dSv = await rSv.json();
+            document.getElementById('inEn').value = dEn.responseData.translatedText;
+            document.getElementById('inSv').value = dSv.responseData.translatedText;
+            manualSave();
+        } catch(e) { alert("Übersetzungsfehler"); }
+    }
+
+    function manualSave() {
+        const de = document.getElementById('inDe').value;
+        const en = document.getElementById('inEn').value;
+        const sv = document.getElementById('inSv').value;
+        if(!de || !sv) return;
+        db.collection("words").add({ de, en, sv, ts: firebase.firestore.FieldValue.serverTimestamp() })
+        .then(() => {
+            document.getElementById('inDe').value = "";
+            document.getElementById('inEn').value = "";
+            document.getElementById('inSv').value = "";
+            updateCount();
+        });
+    }
+
+    function updateCount() {
+        db.collection("words").get().then(s => {
+            document.getElementById('wordCount').innerText = "Bestand: " + s.size + " Wörter";
+            wordsArr = s.docs.map(d => d.data());
+        });
+    }
+
+    function renderList() {
+        db.collection("words").orderBy("ts", "desc").get().then(s => {
+            let h = "";
+            s.forEach(doc => {
+                const w = doc.data();
+                h += `<div class="word-item"><span><b>${w.de}</b>: ${w.sv} (${w.en})</span><button style="width:auto;background:red" onclick="delW('${doc.id}')">X</button></div>`;
+            });
+            document.getElementById('listCont').innerHTML = h;
+        });
+    }
+
+    function delW(id) { if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(() => renderList()); }
+
+    function prepareQuiz() {
+        db.collection("words").get().then(s => {
+            wordsArr = s.docs.map(d => d.data());
+            nextQ();
+        });
+    }
+
+    function nextQ() {
+        if(wordsArr.length === 0) return alert("Keine Wörter zum Üben da!");
+        curWord = wordsArr
