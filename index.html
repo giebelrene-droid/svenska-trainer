@@ -7,25 +7,26 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f0f0; padding: 20px; }
+        body { font-family: sans-serif; background: #f0f0f0; padding: 20px; text-align: center; }
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #005293; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #003d6e; }
-        #manualFields { display: none; border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px; }
-        .status { font-size: 0.8em; color: #666; text-align: center; margin-bottom: 10px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        #manualFields { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; }
+        .status { font-size: 0.9em; color: #666; margin-bottom: 15px; }
+        .loader { display: none; color: #005293; margin: 10px 0; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <div id="wordCount" class="status">Verbinde zur Cloud... ☁️</div>
-    <h2>Vokabel hinzufügen</h2>
+    <h2>🇸🇪 Svenska Trainer</h2>
     
-    <input type="text" id="inputDe" placeholder="Deutsch (Enter zum Übersetzen)" onkeypress="if(event.key === 'Enter') startAuto()">
-    <button onclick="startAuto()">Automatisch übersetzen & speichern</button>
+    <input type="text" id="inputDe" placeholder="Deutsch eingeben..." onkeypress="if(event.key === 'Enter') startAuto()">
+    <div id="loader" class="loader">Übersetze... ⏳</div>
+    <button id="btnAuto" onclick="startAuto()">Automatisch speichern</button>
 
-    <div id="manualFields">
+    <div id="manualFields" id="manualFields">
         <input type="text" id="inputEn" placeholder="Englisch">
         <input type="text" id="inputSv" placeholder="Schwedisch">
         <button onclick="manualSave()" style="background: #28a745;">Manuell speichern</button>
@@ -34,7 +35,6 @@
 
 <script>
     // --- KONFIGURATION ---
-    const DEEPL_KEY = "07e513ce-d6a2-4cae-ae99-2eb248ad6b2e:fx"; 
     const firebaseConfig = {
         apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
         authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
@@ -48,35 +48,36 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    async function translate(text, target) {
+        // Wir nutzen MyMemory - ein offener API-Dienst
+        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=de|${target}`);
+        const data = await res.json();
+        return data.responseData.translatedText;
+    }
+
     async function startAuto() {
         const de = document.getElementById('inputDe').value;
         if (!de) return;
 
-        // Wir nutzen hier einen Proxy, der die Anfrage "einpackt"
-        const apiBase = "https://api-free.deepl.com/v2/translate";
-        
-        try {
-            // Englisch Übersetzung
-            const urlEn = `${apiBase}?auth_key=${DEEPL_KEY}&text=${encodeURIComponent(de)}&target_lang=EN&source_lang=DE`;
-            const resEn = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(urlEn)}`);
-            const dataEn = await resEn.json();
-            const resultEn = JSON.parse(dataEn.contents);
-            const en = resultEn.translations[0].text;
-            document.getElementById('inputEn').value = en;
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('btnAuto').disabled = true;
 
-            // Schwedisch Übersetzung
-            const urlSv = `${apiBase}?auth_key=${DEEPL_KEY}&text=${encodeURIComponent(de)}&target_lang=SV&source_lang=DE`;
-            const resSv = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(urlSv)}`);
-            const dataSv = await resSv.json();
-            const resultSv = JSON.parse(dataSv.contents);
-            const sv = resultSv.translations[0].text;
+        try {
+            // MyMemory braucht keine Keys!
+            const en = await translate(de, 'en');
+            const sv = await translate(de, 'sv');
+
+            document.getElementById('inputEn').value = en;
             document.getElementById('inputSv').value = sv;
 
             saveWord(de, en, sv);
         } catch (error) {
-            console.error("Übersetzungsfehler:", error);
-            alert("Fehler bei der Automatik. Bitte Felder manuell nutzen.");
+            console.error("Fehler:", error);
+            alert("Automatik hat ein Problem. Bitte Felder nutzen.");
             document.getElementById('manualFields').style.display = 'block';
+        } finally {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('btnAuto').disabled = false;
         }
     }
 
@@ -85,7 +86,7 @@
             de: de, en: en, sv: sv,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => {
-            alert("Gespeichert! 🎉");
+            alert(`Gespeichert: ${de} -> ${sv} 🎉`);
             document.getElementById('inputDe').value = "";
             document.getElementById('inputEn').value = "";
             document.getElementById('inputSv').value = "";
