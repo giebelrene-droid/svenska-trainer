@@ -1,8 +1,3 @@
-Das liegt daran, dass der Übungs-Counter im Hintergrund noch auf eine ältere Liste zugegriffen hat. Ich habe den Code so korrigiert, dass er jedes Mal, wenn du auf einen Button klickst oder ein Wort hinzufügst, die komplette Datenbank neu abfragt. So sind die Liste und der Zähler (Counter) immer absolut synchron.
-
-Hier ist das Update für deine index.html:
-
-HTML
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -23,9 +18,10 @@ HTML
         button.action-btn { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
         .quiz-box { background: #e7f3ff; padding: 15px; border-radius: 8px; text-align: center; }
         label { display: block; text-align: left; font-size: 0.8em; color: #666; margin-top: 5px; }
-        #qFeed { margin-top: 10px; font-weight: bold; min-height: 24px; }
+        #qFeed { margin-top: 10px; font-weight: bold; min-height: 24px; line-height: 1.5; }
         .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; }
         .wrong { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+        .solution-text { display: block; font-size: 0.9em; color: #d9534f; margin-top: 5px; font-weight: normal; }
         .word-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; align-items: center; }
     </style>
 </head>
@@ -55,13 +51,16 @@ HTML
         <div class="quiz-box">
             <p>Übersetze dieses Wort:</p>
             <h1 id="qDe" style="margin:5px 0;">---</h1>
+            
             <label>Englisch:</label>
             <input type="text" id="qAnsEn" placeholder="Englisch...">
+            
             <label>Schwedisch:</label>
             <input type="text" id="qAnsSv" placeholder="Schwedisch..." onkeypress="if(event.key==='Enter') checkAns()">
+            
             <button class="action-btn" onclick="checkAns()" style="margin-top:10px;">Prüfen</button>
             <div id="qFeed"></div>
-            <button class="action-btn" style="background:#666; margin-top:10px;" onclick="nextQ()">Nächstes Wort ➡️</button>
+            <button id="nextBtn" class="action-btn" style="background:#666; margin-top:10px;" onclick="nextQ()">Nächstes Wort ➡️</button>
         </div>
     </div>
 
@@ -86,6 +85,7 @@ HTML
     const db = firebase.firestore();
     let allWords = [];
     let curWord = null;
+    let lastWordId = null;
 
     function showTab(name) {
         document.getElementById('tabAdd').style.display = (name === 'add') ? 'block' : 'none';
@@ -96,7 +96,6 @@ HTML
         document.getElementById('btn2').className = (name === 'quiz') ? 'active' : '';
         document.getElementById('btn3').className = (name === 'list') ? 'active' : '';
         
-        // Jedes Mal beim Tab-Wechsel Daten frisch laden
         refreshData().then(() => {
             if(name === 'list') renderList();
             if(name === 'quiz') nextQ();
@@ -153,12 +152,26 @@ HTML
 
     function nextQ() {
         if(allWords.length === 0) return;
-        curWord = allWords[Math.floor(Math.random() * allWords.length)];
+        
+        let nextWord;
+        if (allWords.length > 1) {
+            do {
+                nextWord = allWords[Math.floor(Math.random() * allWords.length)];
+            } while (nextWord.id === lastWordId);
+        } else {
+            nextWord = allWords[0];
+        }
+
+        curWord = nextWord;
+        lastWordId = nextWord.id;
+
         document.getElementById('qDe').innerText = curWord.de;
         const inEn = document.getElementById('qAnsEn');
         const inSv = document.getElementById('qAnsSv');
+        
         inEn.value = curWord.en ? curWord.en.charAt(0) : "";
         inSv.value = curWord.sv ? curWord.sv.charAt(0) : "";
+        
         inEn.className = ""; inSv.className = "";
         document.getElementById('qFeed').innerText = "";
         inEn.focus();
@@ -169,10 +182,22 @@ HTML
         const inSv = document.getElementById('qAnsSv');
         const corEn = curWord.en.toLowerCase().trim();
         const corSv = curWord.sv.toLowerCase().trim();
-        inEn.className = (inEn.value.toLowerCase().trim() === corEn) ? "correct" : "wrong";
-        inSv.className = (inSv.value.toLowerCase().trim() === corSv) ? "correct" : "wrong";
-        document.getElementById('qFeed').innerHTML = (inEn.className === "correct" && inSv.className === "correct") ? 
-            "<span style='color:green'>Richtig! ✨</span>" : "<span style='color:red'>Fehler gefunden.</span>";
+        
+        const isEnCorrect = inEn.value.toLowerCase().trim() === corEn;
+        const isSvCorrect = inSv.value.toLowerCase().trim() === corSv;
+
+        inEn.className = isEnCorrect ? "correct" : "wrong";
+        inSv.className = isSvCorrect ? "correct" : "wrong";
+
+        const feed = document.getElementById('qFeed');
+        if(isEnCorrect && isSvCorrect) {
+            feed.innerHTML = "<span style='color:green'>Richtig! ✨</span>";
+        } else {
+            let errorText = "<span style='color:red'>Fehler gefunden!</span><br>";
+            if(!isEnCorrect) errorText += `<span class="solution-text">Englisch: <b>${curWord.en}</b></span>`;
+            if(!isSvCorrect) errorText += `<span class="solution-text">Schwedisch: <b>${curWord.sv}</b></span>`;
+            feed.innerHTML = errorText;
+        }
     }
 
     refreshData();
