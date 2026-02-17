@@ -112,7 +112,7 @@
     function speak(txt, lang) {
         if (!txt) return;
         const ut = new SpeechSynthesisUtterance(txt);
-        ut.lang = lang; // 'sv-SE', 'en-US', 'de-DE'
+        ut.lang = lang;
         window.speechSynthesis.speak(ut);
     }
 
@@ -124,7 +124,7 @@
             const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
             if (lastDate === yesterday.toDateString()) { streak++; } 
             else if (!lastDate) { streak = 1; }
-            else { streak = 0; } // Zurückgesetzt wenn ein Tag fehlt
+            else { streak = 0; }
             localStorage.setItem('streak', streak);
             localStorage.setItem('lastLessonDate', today);
         }
@@ -152,28 +152,46 @@
 
     async function handleSmartTranslate() {
         const de = document.getElementById('inDe').value.trim();
-        const en = document.getElementById('inEn').value.trim();
-        const sv = document.getElementById('inSv').value.trim();
-        let src = de || en || sv; let lang = de ? "de" : (en ? "en" : "sv");
-        if (!src) return;
+        if (!de) return;
+        
+        // Prüfen ob Wort schon existiert
+        if (checkDuplicate(de)) return;
+
         document.getElementById('loader').style.display = "block";
         try {
-            for (let t of ["de", "en", "sv"]) {
-                if (t !== lang) {
-                    const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(src)}&langpair=${lang}|${t}`);
-                    const d = await r.json();
-                    document.getElementById('in'+t.charAt(0).toUpperCase()+t.slice(1)).value = d.responseData.translatedText;
-                }
-            }
+            const enInput = document.getElementById('inEn');
+            const svInput = document.getElementById('inSv');
+            
+            const rEn = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|en`);
+            const dEn = await rEn.json();
+            enInput.value = dEn.responseData.translatedText;
+
+            const rSv = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|sv`);
+            const dSv = await rSv.json();
+            svInput.value = dSv.responseData.translatedText;
+
             manualSave();
         } catch(e) { alert("Übersetzungsfehler"); }
         finally { document.getElementById('loader').style.display = "none"; }
+    }
+
+    function checkDuplicate(de) {
+        const editId = document.getElementById('editId').value;
+        const exists = allWords.some(w => w.de.toLowerCase() === de.toLowerCase() && w.id !== editId);
+        if (exists) {
+            alert("Wort ist schon in der Liste eingetragen!");
+            return true;
+        }
+        return false;
     }
 
     function manualSave() {
         const de = document.getElementById('inDe').value.trim(), en = document.getElementById('inEn').value.trim(), sv = document.getElementById('inSv').value.trim();
         const editId = document.getElementById('editId').value;
         if(!de || !sv) return;
+
+        if (checkDuplicate(de)) return;
+
         const data = { de, en, sv, level: (editId ? allWords.find(x=>x.id===editId).level : 0), ts: firebase.firestore.FieldValue.serverTimestamp() };
         const op = editId ? db.collection("words").doc(editId).update(data) : db.collection("words").add(data);
         op.then(() => { resetForm(); if(editId) showTab('list'); });
