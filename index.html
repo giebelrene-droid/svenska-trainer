@@ -11,30 +11,50 @@
         .container { max-width: 500px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
         h2 { color: #005293; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 5px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: background 0.3s; }
-        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        
+        /* Navigation */
+        .nav { display: flex; gap: 5px; margin-bottom: 20px; }
+        .nav button { background: #888; flex: 1; padding: 12px 5px; font-size: 14px; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .nav button.active { background: #005293; }
+
+        /* Eingabefelder */
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: all 0.3s; }
+        button.action-btn { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        
+        /* Quiz & Feedback */
         .quiz-box { background: #e7f3ff; padding: 15px; border-radius: 8px; text-align: center; }
-        .word-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9em; }
-        #qFeed { margin-top: 10px; font-weight: bold; }
         label { display: block; text-align: left; font-size: 0.8em; color: #666; margin-top: 5px; }
-        .correct { background-color: #d4edda !important; border-color: #28a745 !important; }
-        .wrong { background-color: #f8d7da !important; border-color: #dc3545 !important; }
+        #qFeed { margin-top: 10px; font-weight: bold; min-height: 24px; }
+        .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; }
+        .wrong { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+        
+        /* Liste */
+        .word-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; align-items: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="card">
-        <h2>➕ Neues Wort</h2>
-        <input type="text" id="inDe" placeholder="Deutsch...">
-        <button onclick="autoTr()">Übersetzen & Speichern</button>
-        <input type="text" id="inEn" placeholder="Englisch">
-        <input type="text" id="inSv" placeholder="Schwedisch">
-        <button style="background:#28a745" onclick="manualSave()">Manuell Speichern</button>
+    <div id="wordCount" style="text-align:right; font-size:0.8em; margin-bottom:10px; color:#666;">Bestand wird geladen...</div>
+
+    <div class="nav">
+        <button id="btn1" class="active" onclick="showTab('add')">➕ NEU</button>
+        <button id="btn2" onclick="showTab('quiz')">🧠 ÜBEN</button>
+        <button id="btn3" onclick="showTab('list')">📖 LISTE</button>
     </div>
 
-    <div class="card">
-        <h2>🧠 Üben</h2>
+    <div id="tabAdd" class="card">
+        <h2>Neues Wort</h2>
+        <input type="text" id="inDe" placeholder="Deutsch (z.B. Wald)..." onkeypress="if(event.key==='Enter') autoTr()">
+        <button class="action-btn" onclick="autoTr()">Übersetzen & Speichern</button>
+        <hr style="border:0; border-top:1px dashed #ccc; margin:15px 0;">
+        <input type="text" id="inEn" placeholder="Englisch">
+        <input type="text" id="inSv" placeholder="Schwedisch">
+        <button class="action-btn" style="background:#28a745" onclick="manualSave()">Nur Speichern</button>
+    </div>
+
+    <div id="tabQuiz" class="card" style="display:none">
+        <h2>Trainer</h2>
         <div class="quiz-box">
             <p>Übersetze dieses Wort:</p>
             <h1 id="qDe" style="margin:5px 0;">---</h1>
@@ -45,14 +65,14 @@
             <label>Schwedisch:</label>
             <input type="text" id="qAnsSv" placeholder="Schwedisch..." onkeypress="if(event.key==='Enter') checkAns()">
             
-            <button onclick="checkAns()" style="margin-top:10px;">Prüfen</button>
+            <button class="action-btn" onclick="checkAns()" style="margin-top:10px;">Prüfen</button>
             <div id="qFeed"></div>
-            <button style="background:#666; margin-top:10px;" onclick="nextQ()">Nächstes Wort ➡️</button>
+            <button class="action-btn" style="background:#666; margin-top:10px;" onclick="nextQ()">Nächstes Wort ➡️</button>
         </div>
     </div>
 
-    <div class="card">
-        <h2>📖 Deine Liste (<span id="count">0</span>)</h2>
+    <div id="tabList" class="card" style="display:none">
+        <h2>Vokabelheft</h2>
         <div id="listCont"></div>
     </div>
 </div>
@@ -73,6 +93,21 @@
     let allWords = [];
     let curWord = null;
 
+    // Navigation Steuerung
+    function showTab(name) {
+        document.getElementById('tabAdd').style.display = (name === 'add') ? 'block' : 'none';
+        document.getElementById('tabQuiz').style.display = (name === 'quiz') ? 'block' : 'none';
+        document.getElementById('tabList').style.display = (name === 'list') ? 'block' : 'none';
+        
+        document.getElementById('btn1').className = (name === 'add') ? 'active' : '';
+        document.getElementById('btn2').className = (name === 'quiz') ? 'active' : '';
+        document.getElementById('btn3').className = (name === 'list') ? 'active' : '';
+        
+        if(name === 'list') renderList();
+        if(name === 'quiz') startQuiz();
+    }
+
+    // Automatik
     async function autoTr() {
         const de = document.getElementById('inDe').value;
         if(!de) return;
@@ -84,7 +119,7 @@
             document.getElementById('inEn').value = dEn.responseData.translatedText;
             document.getElementById('inSv').value = dSv.responseData.translatedText;
             manualSave();
-        } catch(e) { alert("Fehler!"); }
+        } catch(e) { alert("Übersetzung fehlgeschlagen."); }
     }
 
     function manualSave() {
@@ -97,28 +132,34 @@
             document.getElementById('inDe').value = "";
             document.getElementById('inEn').value = "";
             document.getElementById('inSv').value = "";
-            init();
+            updateData();
         });
     }
 
-    function init() {
+    function updateData() {
         db.collection("words").orderBy("ts", "desc").get().then(s => {
             allWords = s.docs.map(d => ({id: d.id, ...d.data()}));
-            document.getElementById('count').innerText = allWords.length;
-            renderList();
-            if(!curWord && allWords.length > 0) nextQ();
+            document.getElementById('wordCount').innerText = "Bestand: " + allWords.length + " Wörter";
         });
     }
 
     function renderList() {
         let h = "";
         allWords.forEach(w => {
-            h += `<div class="word-item"><span><b>${w.de}</b>: ${w.sv} (${w.en})</span><button style="width:auto;background:red;padding:2px 7px;" onclick="del('${w.id}')">X</button></div>`;
+            h += `<div class="word-item"><span><b>${w.de}</b>: ${w.sv} (${w.en})</span><button style="width:auto;background:#ff4d4d;color:white;border:none;padding:3px 8px;border-radius:4px;" onclick="del('${w.id}')">X</button></div>`;
         });
-        document.getElementById('listCont').innerHTML = h;
+        document.getElementById('listCont').innerHTML = h || "Liste ist leer.";
     }
 
-    function del(id) { if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(init); }
+    function del(id) { if(confirm("Dieses Wort löschen?")) db.collection("words").doc(id).delete().then(updateData).then(renderList); }
+
+    // Üben Bereich
+    function startQuiz() {
+        db.collection("words").get().then(s => {
+            allWords = s.docs.map(d => d.data());
+            nextQ();
+        });
+    }
 
     function nextQ() {
         if(allWords.length === 0) return;
@@ -126,13 +167,14 @@
         
         document.getElementById('qDe').innerText = curWord.de;
         
-        // Reset Inputs und Farben
         const inEn = document.getElementById('qAnsEn');
         const inSv = document.getElementById('qAnsSv');
         
+        // Anfangsbuchstaben setzen
         inEn.value = curWord.en ? curWord.en.charAt(0) : "";
         inSv.value = curWord.sv ? curWord.sv.charAt(0) : "";
         
+        // Farben zurücksetzen
         inEn.className = "";
         inSv.className = "";
         
@@ -146,33 +188,22 @@
         
         const valEn = inEn.value.toLowerCase().trim();
         const valSv = inSv.value.toLowerCase().trim();
-        
         const corEn = curWord.en.toLowerCase().trim();
         const corSv = curWord.sv.toLowerCase().trim();
         
-        // Englisch prüfen
-        if(valEn === corEn) {
-            inEn.className = "correct";
-        } else {
-            inEn.className = "wrong";
-        }
-        
-        // Schwedisch prüfen
-        if(valSv === corSv) {
-            inSv.className = "correct";
-        } else {
-            inSv.className = "wrong";
-        }
+        // Farben setzen
+        inEn.className = (valEn === corEn) ? "correct" : "wrong";
+        inSv.className = (valSv === corSv) ? "correct" : "wrong";
 
         const feed = document.getElementById('qFeed');
         if(valEn === corEn && valSv === corSv) {
             feed.innerHTML = "<span style='color:green'>Beides richtig! ✨</span>";
         } else {
-            feed.innerHTML = "<span style='color:red'>Überprüfe die roten Felder.</span>";
+            feed.innerHTML = "<span style='color:red'>Überprüfe die markierten Felder.</span>";
         }
     }
 
-    init();
+    updateData();
 </script>
 </body>
 </html>
