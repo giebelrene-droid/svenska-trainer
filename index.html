@@ -117,7 +117,7 @@
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.7.8</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.7.9</div>
 
 <script>
     const firebaseConfig = {
@@ -134,14 +134,22 @@
     const db = firebase.firestore();
     let allWords = [], curWord = null, lastWordId = null, isChallenge = false, audioMode = false, voices = [];
 
-    // AUTO-KORREKTUR LISTE
-    const badWords = {
-        "als sieger": "gewinnen",
-        "als sieger hervorgehen": "gewinnen",
-        "zu gewinnen": "gewinnen",
-        "ein sieg": "der Sieg",
-        "hallo": "Hej"
-    };
+    // INTELLIGENTE KORREKTUR-LOGIK
+    function refineText(text, targetLang) {
+        if(!text) return "";
+        let clean = text.trim();
+        
+        if(targetLang === 'de') {
+            const lower = clean.toLowerCase();
+            if(lower.includes("als sieger")) return "gewinnen";
+            if(lower === "sieg") return "der Sieg";
+            if(lower === "to win") return "gewinnen";
+            if(lower === "win") return "gewinnen";
+            if(lower === "ein haus") return "das Haus";
+            if(lower === "hallo") return "Hej";
+        }
+        return clean;
+    }
 
     function loadVoices() { voices = window.speechSynthesis.getVoices(); }
     window.speechSynthesis.onvoiceschanged = loadVoices; loadVoices();
@@ -160,16 +168,6 @@
     function toggleAudioMode() {
         audioMode = !audioMode;
         document.getElementById('audioModeToggle').innerText = audioMode ? "🔊 AUDIO-MODUS: AN" : "🔈 AUDIO-MODUS: AUS";
-    }
-
-    function refineText(text) {
-        if(!text) return "";
-        let clean = text.trim();
-        // Prüfen ob Phrase in Korrekturliste
-        for (let [bad, good] of Object.entries(badWords)) {
-            if (clean.toLowerCase() === bad) return good;
-        }
-        return clean;
     }
 
     async function handleSmartTranslate() {
@@ -193,7 +191,7 @@
                 .map(t => 
                     fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(textToTranslate)}&langpair=${sourceLang}|${t.lang}`)
                     .then(res => res.json())
-                    .then(data => ({ id: t.id, text: refineText(data.responseData.translatedText) }))
+                    .then(data => ({ id: t.id, text: refineText(data.responseData.translatedText, t.lang) }))
                 );
 
             const results = await Promise.all(translateTasks);
@@ -214,7 +212,6 @@
         const ex = document.getElementById('inEx').value.trim();
         const editId = document.getElementById('editId').value;
         if(!de || !sv) { alert("Bitte ausfüllen."); return; }
-        
         const data = { de, en, sv, ex: ex || `Jag gillar ${sv}.`, level: (editId ? allWords.find(x=>x.id===editId).level : 0), ts: firebase.firestore.FieldValue.serverTimestamp() };
         const op = editId ? db.collection("words").doc(editId).update(data) : db.collection("words").add(data);
         op.then(() => { resetForm(); if(editId) showTab('list'); });
