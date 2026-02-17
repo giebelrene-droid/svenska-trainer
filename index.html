@@ -11,71 +11,37 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
-        :root {
-            --se-blue: #005293;
-            --se-yellow: #FECC00;
-            --bg-gray: #f4f7f9;
-            --text-dark: #1a2b3c;
-            --card-shadow: 0 8px 30px rgba(0,0,0,0.08);
-        }
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: var(--bg-gray); padding: 15px; color: var(--text-dark); margin: 0; 
-            line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh;
-        }
-
+        :root { --se-blue: #005293; --se-yellow: #FECC00; --bg-gray: #f4f7f9; --text-dark: #1a2b3c; --card-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-gray); padding: 15px; color: var(--text-dark); margin: 0; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
         .container { max-width: 480px; margin: auto; flex: 1; width: 100%; }
         .header-info { display: flex; justify-content: space-between; margin-bottom: 20px; }
-
-        .badge {
-            background: white; padding: 8px 16px; border-radius: 20px; font-weight: 700;
-            font-size: 0.85em; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 6px;
-        }
-
+        .badge { background: white; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.85em; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 6px; }
         .badge-streak { color: #e67e22; border: 1px solid #ffeaa7; }
         .badge-count { color: var(--se-blue); border: 1px solid #d1dce5; }
-
         .nav { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .nav button { 
-            background: #d1dce5; flex: 1; padding: 12px 5px; font-size: 11px; color: #4a627a; 
-            border: none; border-radius: 12px; cursor: pointer; font-weight: 800; transition: all 0.2s ease;
-        }
-
-        .nav button.active { 
-            background: var(--se-blue); color: white; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 82, 147, 0.3);
-        }
-
+        .nav button { background: #d1dce5; flex: 1; padding: 12px 5px; font-size: 11px; color: #4a627a; border: none; border-radius: 12px; cursor: pointer; font-weight: 800; transition: all 0.2s ease; }
+        .nav button.active { background: var(--se-blue); color: white; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 82, 147, 0.3); }
         .card { background: white; padding: 24px; border-radius: 20px; box-shadow: var(--card-shadow); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.8); }
         h2 { color: var(--se-blue); margin-top: 0; font-size: 1.3em; font-weight: 800; }
-
         label { display: block; font-size: 0.75em; font-weight: 700; color: #7f8c8d; margin: 12px 0 4px 4px; text-transform: uppercase; }
         .input-row { display: flex; align-items: center; gap: 8px; width: 100%; }
         input { flex: 1; padding: 14px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 14px; font-size: 16px; margin-bottom: 5px; }
         input:focus { border-color: var(--se-blue); background: white; outline: none; }
-
         .action-btn { width: 100%; padding: 16px; background: var(--se-blue); color: white; border: none; border-radius: 14px; cursor: pointer; font-weight: 700; font-size: 16px; margin-top: 10px; }
-        
         .quiz-box { background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%); padding: 25px; border-radius: 18px; text-align: center; }
         #qDe { font-size: 2.2em; margin: 10px 0; color: var(--se-blue); }
-
         .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
         .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
-
         .word-item { padding: 16px; border-bottom: 1px solid #f1f5f9; position: relative; }
         .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
-        .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--se-yellow); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--se-blue); }
-
+        .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--se-yellow); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--se-blue); box-shadow: 0 0 8px var(--se-blue); }
         .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 16px; cursor: pointer; border-radius: 10px; padding: 8px; }
-        
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
         .stat-card { background: #f8fafc; padding: 8px; border-radius: 12px; text-align: center; border: 1px solid #edf2f7; }
         .stat-val { font-size: 1.2em; font-weight: 800; color: var(--se-blue); }
-
         .example-box { font-size: 0.85em; color: #4a5568; font-style: italic; margin-top: 5px; padding: 10px; background: #f1f5f9; border-radius: 10px; border-left: 4px solid var(--se-blue); }
         .word-count-hint { font-size: 0.8em; color: #e67e22; font-weight: 700; margin-top: 5px; }
         .version-info { text-align: center; font-size: 0.7em; color: #a0aec0; padding: 20px; font-weight: 600; }
-        
         .backup-section { margin-top: 20px; display: flex; gap: 10px; }
         .backup-btn { flex: 1; padding: 10px; font-size: 10px; font-weight: 800; border-radius: 10px; border: none; background: #edf2f7; cursor: pointer; }
         .lang-tag { font-size: 0.7em; font-weight: 800; color: var(--se-blue); margin-right: 5px; display: inline-block; width: 25px; }
@@ -98,7 +64,7 @@
 
     <div id="tabAdd" class="card">
         <h2 id="addTitle">Vokabel-Zentrale</h2>
-        <div id="loader" style="color:var(--se-blue); font-weight:700; text-align:center; display:none;">KI sucht Übersetzungen... 🌐</div>
+        <div id="loader" style="color:var(--se-blue); font-weight:700; text-align:center; display:none;">KI optimiert Wörter... 🪄</div>
         <input type="hidden" id="editId">
         
         <label>Deutsch</label>
@@ -151,10 +117,9 @@
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.7.7</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.7.8</div>
 
 <script>
-    // Firebase Config bleibt gleich
     const firebaseConfig = {
         apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
         authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
@@ -168,6 +133,15 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let allWords = [], curWord = null, lastWordId = null, isChallenge = false, audioMode = false, voices = [];
+
+    // AUTO-KORREKTUR LISTE
+    const badWords = {
+        "als sieger": "gewinnen",
+        "als sieger hervorgehen": "gewinnen",
+        "zu gewinnen": "gewinnen",
+        "ein sieg": "der Sieg",
+        "hallo": "Hej"
+    };
 
     function loadVoices() { voices = window.speechSynthesis.getVoices(); }
     window.speechSynthesis.onvoiceschanged = loadVoices; loadVoices();
@@ -188,12 +162,20 @@
         document.getElementById('audioModeToggle').innerText = audioMode ? "🔊 AUDIO-MODUS: AN" : "🔈 AUDIO-MODUS: AUS";
     }
 
-    // --- VERBESSERTER ÜBERSETZER (Verhindert Überschreiben) ---
+    function refineText(text) {
+        if(!text) return "";
+        let clean = text.trim();
+        // Prüfen ob Phrase in Korrekturliste
+        for (let [bad, good] of Object.entries(badWords)) {
+            if (clean.toLowerCase() === bad) return good;
+        }
+        return clean;
+    }
+
     async function handleSmartTranslate() {
         const inDe = document.getElementById('inDe').value.trim();
         const inEn = document.getElementById('inEn').value.trim();
         const inSv = document.getElementById('inSv').value.trim();
-
         let textToTranslate = "";
         let sourceLang = "";
 
@@ -205,33 +187,24 @@
         document.getElementById('loader').style.display = "block";
         
         try {
-            const targets = [
-                { id: 'inDe', lang: 'de' },
-                { id: 'inEn', lang: 'en' },
-                { id: 'inSv', lang: 'sv' }
-            ];
-
+            const targets = [{ id: 'inDe', lang: 'de' }, { id: 'inEn', lang: 'en' }, { id: 'inSv', lang: 'sv' }];
             const translateTasks = targets
                 .filter(t => t.lang !== sourceLang && document.getElementById(t.id).value.trim() === "")
                 .map(t => 
                     fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(textToTranslate)}&langpair=${sourceLang}|${t.lang}`)
                     .then(res => res.json())
-                    .then(data => ({ id: t.id, text: data.responseData.translatedText }))
+                    .then(data => ({ id: t.id, text: refineText(data.responseData.translatedText) }))
                 );
 
             const results = await Promise.all(translateTasks);
             results.forEach(res => { if(res.text) document.getElementById(res.id).value = res.text; });
-
+            
             const finalSv = document.getElementById('inSv').value;
             if(document.getElementById('inEx').value.trim() === "") {
                 document.getElementById('inEx').value = `Jag gillar ${finalSv}.`;
             }
-            
-        } catch(error) {
-            alert("Fehler beim Übersetzen.");
-        } finally {
-            document.getElementById('loader').style.display = "none";
-        }
+        } catch(error) { alert("Fehler beim Übersetzen."); }
+        finally { document.getElementById('loader').style.display = "none"; }
     }
 
     function manualSave() {
@@ -240,26 +213,11 @@
         const sv = document.getElementById('inSv').value.trim();
         const ex = document.getElementById('inEx').value.trim();
         const editId = document.getElementById('editId').value;
-
-        if(!de || !sv) { alert("Mindestens Deutsch und Schwedisch ausfüllen."); return; }
+        if(!de || !sv) { alert("Bitte ausfüllen."); return; }
         
-        // Prüfen ob exaktes Duplikat
-        if(!editId && allWords.some(w => w.de.toLowerCase() === de.toLowerCase() && w.sv.toLowerCase() === sv.toLowerCase())) {
-            alert("Dieses Vokabelpaar existiert bereits!"); return;
-        }
-
-        const data = { 
-            de, en, sv, ex: ex || `Jag gillar ${sv}.`, 
-            level: (editId ? allWords.find(x=>x.id===editId).level : 0), 
-            ts: firebase.firestore.FieldValue.serverTimestamp() 
-        };
-
+        const data = { de, en, sv, ex: ex || `Jag gillar ${sv}.`, level: (editId ? allWords.find(x=>x.id===editId).level : 0), ts: firebase.firestore.FieldValue.serverTimestamp() };
         const op = editId ? db.collection("words").doc(editId).update(data) : db.collection("words").add(data);
-        op.then(() => { 
-            resetForm(); 
-            if(editId) showTab('list'); 
-            else alert("Gespeichert! ✨");
-        });
+        op.then(() => { resetForm(); if(editId) showTab('list'); });
     }
 
     async function refreshData() {
