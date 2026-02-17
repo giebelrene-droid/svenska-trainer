@@ -7,29 +7,49 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f0f0; padding: 20px; text-align: center; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        #manualFields { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; }
-        .status { font-size: 0.9em; color: #666; margin-bottom: 15px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        h2 { color: #005293; margin-top: 0; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
+        button:hover { background: #003d6e; }
+        .secondary-btn { background: #28a745; margin-top: 10px; }
+        .secondary-btn:hover { background: #218838; }
+        .status { font-size: 0.9em; color: #666; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .loader { display: none; color: #005293; margin: 10px 0; font-weight: bold; }
+        
+        /* Liste der Wörter */
+        #wordList { margin-top: 30px; text-align: left; }
+        .word-item { background: #fff; padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .word-item:last-child { border-bottom: none; }
+        .delete-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; width: auto; font-size: 12px; }
+        
+        .manual-section { margin-top: 20px; padding-top: 20px; border-top: 2px dashed #005293; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <div id="wordCount" class="status">Verbinde zur Cloud... ☁️</div>
-    <h2>🇸🇪 Svenska Trainer</h2>
+    <h2>🇸🇪 Svenska Trainer Pro</h2>
     
-    <input type="text" id="inputDe" placeholder="Deutsch eingeben..." onkeypress="if(event.key === 'Enter') startAuto()">
-    <div id="loader" class="loader">Übersetze... ⏳</div>
-    <button id="btnAuto" onclick="startAuto()">Automatisch speichern</button>
+    <div class="input-group">
+        <label><b>Schnell-Eingabe (Deutsch):</b></label>
+        <input type="text" id="inputDe" placeholder="z.B. Elch oder Heidelbeere" onkeypress="if(event.key === 'Enter') startAuto()">
+        <div id="loader" class="loader">Übersetze & speichere... ⏳</div>
+        <button id="btnAuto" onclick="startAuto()">Automatisch übersetzen & speichern</button>
+    </div>
 
-    <div id="manualFields">
+    <div class="manual-section">
+        <p style="font-size: 0.8em; color: #888;">Manuelle Korrektur / Eingabe:</p>
         <input type="text" id="inputEn" placeholder="Englisch">
         <input type="text" id="inputSv" placeholder="Schwedisch">
-        <button onclick="manualSave()" style="background: #28a745;">Manuell speichern</button>
+        <button class="secondary-btn" onclick="manualSave()">Manuell speichern / Korrigieren</button>
+    </div>
+
+    <div id="wordList">
+        <h3>Deine Wörter:</h3>
+        <div id="listContainer">Lade Liste...</div>
     </div>
 </div>
 
@@ -47,37 +67,28 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // Übersetzung
     async function translate(text, target) {
-        // MyMemory mit einer Kontakt-Mail, damit die Anfrage priorisiert wird
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=de|${target}&de=deinname@gmail.com`;
         const res = await fetch(url);
         const data = await res.json();
-        console.log("Antwort von MyMemory:", data);
         return data.responseData.translatedText;
     }
 
     async function startAuto() {
         const de = document.getElementById('inputDe').value;
         if (!de) return;
-
         document.getElementById('loader').style.display = 'block';
-        document.getElementById('btnAuto').disabled = true;
-
         try {
             const en = await translate(de, 'en');
             const sv = await translate(de, 'sv');
-
             document.getElementById('inputEn').value = en;
             document.getElementById('inputSv').value = sv;
-
             saveWord(de, en, sv);
         } catch (error) {
-            console.error("Detaillierter Fehler:", error);
-            alert("Fehler bei der Automatik. Bitte Felder manuell nutzen.");
-            document.getElementById('manualFields').style.display = 'block';
+            alert("Automatik-Fehler. Bitte manuell ausfüllen.");
         } finally {
             document.getElementById('loader').style.display = 'none';
-            document.getElementById('btnAuto').disabled = false;
         }
     }
 
@@ -86,14 +97,10 @@
             de: de, en: en, sv: sv,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => {
-            alert(`Gespeichert: ${de} 🎉`);
             document.getElementById('inputDe').value = "";
             document.getElementById('inputEn').value = "";
             document.getElementById('inputSv').value = "";
-            updateCount();
-        }).catch(err => {
-            console.error("Firestore Fehler:", err);
-            alert("Fehler beim Speichern in der Cloud!");
+            updateView();
         });
     }
 
@@ -102,14 +109,31 @@
         const en = document.getElementById('inputEn').value;
         const sv = document.getElementById('inputSv').value;
         if (de && en && sv) saveWord(de, en, sv);
+        else alert("Bitte alle Felder ausfüllen!");
     }
 
-    function updateCount() {
-        db.collection("words").get().then(snap => {
+    function deleteWord(id) {
+        if(confirm("Wort wirklich löschen?")) {
+            db.collection("words").doc(id).delete().then(() => updateView());
+        }
+    }
+
+    function updateView() {
+        db.collection("words").orderBy("timestamp", "desc").get().then(snap => {
             document.getElementById('wordCount').innerText = "Bestand: " + snap.size + " Wörter 📚";
+            let html = "";
+            snap.forEach(doc => {
+                const w = doc.data();
+                html += `<div class="word-item">
+                            <span><b>${w.de}</b>: ${w.sv} (${w.en})</span>
+                            <button class="delete-btn" onclick="deleteWord('${doc.id}')">X</button>
+                         </div>`;
+            });
+            document.getElementById('listContainer').innerHTML = html || "Noch keine Wörter gespeichert.";
         });
     }
-    updateCount();
+
+    updateView(); // Liste beim Start laden
 </script>
 
 </body>
