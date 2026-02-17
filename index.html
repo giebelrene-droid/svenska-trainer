@@ -7,53 +7,70 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
-        h2 { color: #005293; margin-top: 0; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2, h3 { color: #005293; margin-top: 0; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 5px; }
         button:hover { background: #003d6e; }
         .secondary-btn { background: #28a745; margin-top: 10px; }
-        .secondary-btn:hover { background: #218838; }
-        .status { font-size: 0.9em; color: #666; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .loader { display: none; color: #005293; margin: 10px 0; font-weight: bold; }
-        
-        /* Liste der Wörter */
-        #wordList { margin-top: 30px; text-align: left; }
-        .word-item { background: #fff; padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .word-item:last-child { border-bottom: none; }
-        .delete-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; width: auto; font-size: 12px; }
-        
-        .manual-section { margin-top: 20px; padding-top: 20px; border-top: 2px dashed #005293; }
+        .delete-btn { background: #ff4d4d; width: auto; padding: 5px 10px; font-size: 12px; }
+        .status { font-size: 0.85em; color: #666; margin-bottom: 15px; text-align: right; }
+        .loader { display: none; color: #005293; font-weight: bold; margin: 10px 0; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .quiz-area { background: #e7f3ff; border-radius: 8px; padding: 15px; text-align: center; }
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .nav-tabs button { background: #ccc; flex: 1; }
+        .nav-tabs button.active { background: #005293; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div id="wordCount" class="status">Verbinde zur Cloud... ☁️</div>
-    <h2>🇸🇪 Svenska Trainer Pro</h2>
-    
-    <div class="input-group">
-        <label><b>Schnell-Eingabe (Deutsch):</b></label>
-        <input type="text" id="inputDe" placeholder="z.B. Elch oder Heidelbeere" onkeypress="if(event.key === 'Enter') startAuto()">
-        <div id="loader" class="loader">Übersetze & speichere... ⏳</div>
-        <button id="btnAuto" onclick="startAuto()">Automatisch übersetzen & speichern</button>
+<div class="container">
+    <div id="wordCount" class="status">Lade Bestand... 📚</div>
+
+    <div class="nav-tabs">
+        <button id="tab1" class="active" onclick="showSection('add')">Hinzufügen</button>
+        <button id="tab2" onclick="showSection('quiz')">Üben</button>
+        <button id="tab3" onclick="showSection('list')">Liste</button>
     </div>
 
-    <div class="manual-section">
-        <p style="font-size: 0.8em; color: #888;">Manuelle Korrektur / Eingabe:</p>
-        <input type="text" id="inputEn" placeholder="Englisch">
-        <input type="text" id="inputSv" placeholder="Schwedisch">
-        <button class="secondary-btn" onclick="manualSave()">Manuell speichern / Korrigieren</button>
+    <div id="sectionAdd" class="card">
+        <h2>Neues Wort</h2>
+        <input type="text" id="inputDe" placeholder="Deutsch (z.B. Katze)" onkeypress="if(event.key === 'Enter') startAuto()">
+        <div id="loader" class="loader">Suche Übersetzung... ⏳</div>
+        <button onclick="startAuto()">Automatisch Übersetzen</button>
+        
+        <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+            <input type="text" id="inputEn" placeholder="Englisch">
+            <input type="text" id="inputSv" placeholder="Schwedisch">
+            <button class="secondary-btn" onclick="manualSave()">Speichern</button>
+        </div>
     </div>
 
-    <div id="wordList">
-        <h3>Deine Wörter:</h3>
-        <div id="listContainer">Lade Liste...</div>
+    <div id="sectionQuiz" class="card" style="display:none;">
+        <h2>Vokabel-Trainer</h2>
+        <div id="quizContainer" class="quiz-area">
+            <p>Klicke auf Start, um zu üben!</p>
+            <button onclick="nextQuiz()">Start / Nächstes Wort</button>
+        </div>
+        <div id="quizQuestion" style="margin-top:15px; font-size: 1.2em; display:none;">
+            Was heißt: <b id="qText">?</b>
+            <input type="text" id="qAnswer" placeholder="Deine Antwort auf Schwedisch">
+            <button onclick="checkAnswer()">Prüfen</button>
+            <p id="qFeedback"></p>
+        </div>
+    </div>
+
+    <div id="sectionList" class="card" style="display:none;">
+        <h2>Dein Vokabelheft</h2>
+        <div id="listContainer">Wird geladen...</div>
     </div>
 </div>
 
 <script>
+    // Firebase Konfiguration
     const firebaseConfig = {
         apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
         authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
@@ -66,74 +83,106 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    let allWords = [];
+    let currentQuizWord = null;
 
-    // Übersetzung
-    async function translate(text, target) {
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=de|${target}&de=deinname@gmail.com`;
-        const res = await fetch(url);
-        const data = await res.json();
-        return data.responseData.translatedText;
+    // Navigation Steuerung
+    function showSection(name) {
+        document.getElementById('sectionAdd').style.display = name === 'add' ? 'block' : 'none';
+        document.getElementById('sectionQuiz').style.display = name === 'quiz' ? 'block' : 'none';
+        document.getElementById('sectionList').style.display = name === 'list' ? 'block' : 'none';
+        
+        document.getElementById('tab1').className = name === 'add' ? 'active' : '';
+        document.getElementById('tab2').className = name === 'quiz' ? 'active' : '';
+        document.getElementById('tab3').className = name === 'list' ? 'active' : '';
+        
+        if(name === 'list') updateListView();
+        if(name === 'quiz') loadWordsForQuiz();
     }
 
+    // Automatik mit MyMemory
     async function startAuto() {
         const de = document.getElementById('inputDe').value;
         if (!de) return;
         document.getElementById('loader').style.display = 'block';
         try {
-            const en = await translate(de, 'en');
-            const sv = await translate(de, 'sv');
-            document.getElementById('inputEn').value = en;
-            document.getElementById('inputSv').value = sv;
-            saveWord(de, en, sv);
-        } catch (error) {
-            alert("Automatik-Fehler. Bitte manuell ausfüllen.");
-        } finally {
-            document.getElementById('loader').style.display = 'none';
-        }
-    }
-
-    function saveWord(de, en, sv) {
-        db.collection("words").add({
-            de: de, en: en, sv: sv,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-            document.getElementById('inputDe').value = "";
-            document.getElementById('inputEn').value = "";
-            document.getElementById('inputSv').value = "";
-            updateView();
-        });
+            const resEn = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|en`);
+            const dataEn = await resEn.json();
+            const resSv = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|sv`);
+            const dataSv = await resSv.json();
+            
+            document.getElementById('inputEn').value = dataEn.responseData.translatedText;
+            document.getElementById('inputSv').value = dataSv.responseData.translatedText;
+        } catch (e) { alert("Fehler bei der Suche"); }
+        document.getElementById('loader').style.display = 'none';
     }
 
     function manualSave() {
         const de = document.getElementById('inputDe').value;
         const en = document.getElementById('inputEn').value;
         const sv = document.getElementById('inputSv').value;
-        if (de && en && sv) saveWord(de, en, sv);
-        else alert("Bitte alle Felder ausfüllen!");
-    }
+        if(!de || !en || !sv) return alert("Alles ausfüllen!");
 
-    function deleteWord(id) {
-        if(confirm("Wort wirklich löschen?")) {
-            db.collection("words").doc(id).delete().then(() => updateView());
-        }
-    }
-
-    function updateView() {
-        db.collection("words").orderBy("timestamp", "desc").get().then(snap => {
-            document.getElementById('wordCount').innerText = "Bestand: " + snap.size + " Wörter 📚";
-            let html = "";
-            snap.forEach(doc => {
-                const w = doc.data();
-                html += `<div class="word-item">
-                            <span><b>${w.de}</b>: ${w.sv} (${w.en})</span>
-                            <button class="delete-btn" onclick="deleteWord('${doc.id}')">X</button>
-                         </div>`;
-            });
-            document.getElementById('listContainer').innerHTML = html || "Noch keine Wörter gespeichert.";
+        db.collection("words").add({ de, en, sv, timestamp: firebase.firestore.FieldValue.serverTimestamp() })
+        .then(() => {
+            alert("Gespeichert! 🎉");
+            document.getElementById('inputDe').value = "";
+            document.getElementById('inputEn').value = "";
+            document.getElementById('inputSv').value = "";
+            updateCount();
         });
     }
 
-    updateView(); // Liste beim Start laden
+    function updateCount() {
+        db.collection("words").get().then(s => document.getElementById('wordCount').innerText = "Bestand: " + s.size + " Wörter 📚");
+    }
+
+    function updateListView() {
+        db.collection("words").orderBy("timestamp", "desc").get().then(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                const w = doc.data();
+                html += `<div class="list-item">
+                    <span><b>${w.de}</b> -> ${w.sv} <small>(${w.en})</small></span>
+                    <button class="delete-btn" onclick="deleteWord('${doc.id}')">Löschen</button>
+                </div>`;
+            });
+            document.getElementById('listContainer').innerHTML = html || "Keine Wörter gefunden.";
+        });
+    }
+
+    function deleteWord(id) {
+        if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(() => updateListView());
+    }
+
+    // Quiz Logik
+    function loadWordsForQuiz() {
+        db.collection("words").get().then(s => {
+            allWords = [];
+            s.forEach(doc => allWords.push(doc.data()));
+        });
+    }
+
+    function nextQuiz() {
+        if(allWords.length === 0) return alert("Erst Wörter hinzufügen!");
+        document.getElementById('quizQuestion').style.display = 'block';
+        document.getElementById('qFeedback').innerText = "";
+        document.getElementById('qAnswer').value = "";
+        currentQuizWord = allWords[Math.floor(Math.random() * allWords.length)];
+        document.getElementById('qText').innerText = currentQuizWord.de;
+    }
+
+    function checkAnswer() {
+        const ans = document.getElementById('qAnswer').value.toLowerCase().trim();
+        const correct = currentQuizWord.sv.toLowerCase().trim();
+        if(ans === correct) {
+            document.getElementById('qFeedback').innerHTML = "<b style='color:green'>Richtig! ✨</b>";
+        } else {
+            document.getElementById('qFeedback').innerHTML = `<b style='color:red'>Falsch.</b> Richtig wäre: ${currentQuizWord.sv}`;
+        }
+    }
+
+    updateCount();
 </script>
 
 </body>
