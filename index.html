@@ -133,7 +133,7 @@
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.5.4</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.5.5</div>
 
 <script>
     const firebaseConfig = {
@@ -154,12 +154,27 @@
     let isChallenge = false;
     let challengeTimer = null;
     let challengeScore = 0;
+    let voices = [];
+
+    // Stimmen laden
+    function loadVoices() {
+        voices = window.speechSynthesis.getVoices();
+    }
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
 
     function speak(txt, lang) {
         if (!txt) return;
-        window.speechSynthesis.cancel(); // Stoppt laufende Ausgabe
+        window.speechSynthesis.cancel();
         const ut = new SpeechSynthesisUtterance(txt);
+        
+        // Suche beste Stimme für die Sprache
+        const preferredVoice = voices.find(v => v.lang.startsWith(lang) && (v.name.includes("Premium") || v.name.includes("Natural") || v.name.includes("Google")));
+        if (preferredVoice) ut.voice = preferredVoice;
+
         ut.lang = lang;
+        ut.rate = 0.9; // Etwas langsamer = deutlicher
+        ut.pitch = 1.0;
         window.speechSynthesis.speak(ut);
     }
 
