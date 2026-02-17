@@ -151,9 +151,10 @@
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.7.6</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.7.7</div>
 
 <script>
+    // Firebase Config bleibt gleich
     const firebaseConfig = {
         apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
         authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
@@ -187,6 +188,7 @@
         document.getElementById('audioModeToggle').innerText = audioMode ? "🔊 AUDIO-MODUS: AN" : "🔈 AUDIO-MODUS: AUS";
     }
 
+    // --- VERBESSERTER ÜBERSETZER (Verhindert Überschreiben) ---
     async function handleSmartTranslate() {
         const inDe = document.getElementById('inDe').value.trim();
         const inEn = document.getElementById('inEn').value.trim();
@@ -210,7 +212,7 @@
             ];
 
             const translateTasks = targets
-                .filter(t => t.lang !== sourceLang)
+                .filter(t => t.lang !== sourceLang && document.getElementById(t.id).value.trim() === "")
                 .map(t => 
                     fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(textToTranslate)}&langpair=${sourceLang}|${t.lang}`)
                     .then(res => res.json())
@@ -218,24 +220,18 @@
                 );
 
             const results = await Promise.all(translateTasks);
-            results.forEach(res => { document.getElementById(res.id).value = res.text; });
+            results.forEach(res => { if(res.text) document.getElementById(res.id).value = res.text; });
 
             const finalSv = document.getElementById('inSv').value;
-            document.getElementById('inEx').value = `Jag gillar ${finalSv}.`;
+            if(document.getElementById('inEx').value.trim() === "") {
+                document.getElementById('inEx').value = `Jag gillar ${finalSv}.`;
+            }
             
         } catch(error) {
             alert("Fehler beim Übersetzen.");
         } finally {
             document.getElementById('loader').style.display = "none";
         }
-    }
-
-    function checkDuplicate(de) {
-        const editId = document.getElementById('editId').value;
-        if (allWords.some(w => w.de.toLowerCase() === de.toLowerCase() && w.id !== editId)) {
-            alert("Wort bereits vorhanden!"); return true;
-        }
-        return false;
     }
 
     function manualSave() {
@@ -246,7 +242,11 @@
         const editId = document.getElementById('editId').value;
 
         if(!de || !sv) { alert("Mindestens Deutsch und Schwedisch ausfüllen."); return; }
-        if(!editId && checkDuplicate(de)) return;
+        
+        // Prüfen ob exaktes Duplikat
+        if(!editId && allWords.some(w => w.de.toLowerCase() === de.toLowerCase() && w.sv.toLowerCase() === sv.toLowerCase())) {
+            alert("Dieses Vokabelpaar existiert bereits!"); return;
+        }
 
         const data = { 
             de, en, sv, ex: ex || `Jag gillar ${sv}.`, 
@@ -258,7 +258,7 @@
         op.then(() => { 
             resetForm(); 
             if(editId) showTab('list'); 
-            else alert("Vokabel gespeichert!");
+            else alert("Gespeichert! ✨");
         });
     }
 
@@ -283,10 +283,7 @@
         document.getElementById('tabAdd').style.display = (name === 'add') ? 'block' : 'none';
         document.getElementById('tabQuiz').style.display = (name === 'quiz' || name === 'challenge') ? 'block' : 'none';
         document.getElementById('tabList').style.display = (name === 'list') ? 'block' : 'none';
-        if(name === 'quiz' || name === 'challenge') { 
-            document.getElementById('timer').style.display = isChallenge ? 'inline-block' : 'none'; 
-            nextQ(); 
-        }
+        if(name === 'quiz' || name === 'challenge') { nextQ(); }
         if(name === 'list') renderList();
     }
 
