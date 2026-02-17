@@ -100,16 +100,18 @@
         <h2 id="addTitle">Vokabel-Zentrale</h2>
         <div id="loader" style="color:var(--se-blue); font-weight:700; text-align:center; display:none;">KI sucht Übersetzungen... 🌐</div>
         <input type="hidden" id="editId">
+        
         <label>Deutsch</label>
-        <input type="text" id="inDe" placeholder="Eingabe für Übersetzung...">
+        <input type="text" id="inDe" placeholder="Eingabe...">
         <label>Englisch</label>
-        <input type="text" id="inEn" placeholder="Eingabe für Übersetzung...">
+        <input type="text" id="inEn" placeholder="Eingabe...">
         <label>Schwedisch</label>
-        <input type="text" id="inSv" placeholder="Eingabe für Übersetzung...">
+        <input type="text" id="inSv" placeholder="Eingabe...">
         <label>Beispielsatz (KI)</label>
-        <input type="text" id="inEx" placeholder="Wird automatisch ergänzt...">
-        <button class="action-btn" onclick="handleSmartTranslate()">Smart Übersetzen & Speichern</button>
-        <button class="action-btn" style="background:#48bb78" onclick="manualSave()">Nur Speichern</button>
+        <input type="text" id="inEx" placeholder="Beispiel...">
+        
+        <button class="action-btn" onclick="handleSmartTranslate()" style="background:#e67e22">1. Smart Übersetzen</button>
+        <button class="action-btn" style="background:#48bb78" onclick="manualSave()">2. Wort jetzt speichern</button>
         <button id="cancelEdit" class="action-btn" style="background:#718096; display:none;" onclick="resetForm()">Abbrechen</button>
     </div>
 
@@ -149,7 +151,7 @@
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.7.5</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.7.6</div>
 
 <script>
     const firebaseConfig = {
@@ -185,7 +187,6 @@
         document.getElementById('audioModeToggle').innerText = audioMode ? "🔊 AUDIO-MODUS: AN" : "🔈 AUDIO-MODUS: AUS";
     }
 
-    // --- FLEXIBLER ÜBERSETZER (DE, EN oder SV Erkennung) ---
     async function handleSmartTranslate() {
         const inDe = document.getElementById('inDe').value.trim();
         const inEn = document.getElementById('inEn').value.trim();
@@ -197,7 +198,7 @@
         if (inDe) { textToTranslate = inDe; sourceLang = "de"; }
         else if (inEn) { textToTranslate = inEn; sourceLang = "en"; }
         else if (inSv) { textToTranslate = inSv; sourceLang = "sv"; }
-        else { alert("Bitte gib in eines der Felder ein Wort ein."); return; }
+        else { alert("Bitte Wort in ein Feld eingeben."); return; }
 
         document.getElementById('loader').style.display = "block";
         
@@ -217,19 +218,13 @@
                 );
 
             const results = await Promise.all(translateTasks);
-            
-            results.forEach(res => {
-                document.getElementById(res.id).value = res.text;
-            });
+            results.forEach(res => { document.getElementById(res.id).value = res.text; });
 
-            // Beispielsatz basierend auf dem schwedischen Wort
             const finalSv = document.getElementById('inSv').value;
             document.getElementById('inEx').value = `Jag gillar ${finalSv}.`;
-
-            manualSave();
             
         } catch(error) {
-            alert("Übersetzungsfehler. Bitte manuell ergänzen.");
+            alert("Fehler beim Übersetzen.");
         } finally {
             document.getElementById('loader').style.display = "none";
         }
@@ -250,7 +245,8 @@
         const ex = document.getElementById('inEx').value.trim();
         const editId = document.getElementById('editId').value;
 
-        if(!de || !sv) return;
+        if(!de || !sv) { alert("Mindestens Deutsch und Schwedisch ausfüllen."); return; }
+        if(!editId && checkDuplicate(de)) return;
 
         const data = { 
             de, en, sv, ex: ex || `Jag gillar ${sv}.`, 
@@ -259,7 +255,11 @@
         };
 
         const op = editId ? db.collection("words").doc(editId).update(data) : db.collection("words").add(data);
-        op.then(() => { resetForm(); if(editId) showTab('list'); });
+        op.then(() => { 
+            resetForm(); 
+            if(editId) showTab('list'); 
+            else alert("Vokabel gespeichert!");
+        });
     }
 
     async function refreshData() {
@@ -284,7 +284,7 @@
         document.getElementById('tabQuiz').style.display = (name === 'quiz' || name === 'challenge') ? 'block' : 'none';
         document.getElementById('tabList').style.display = (name === 'list') ? 'block' : 'none';
         if(name === 'quiz' || name === 'challenge') { 
-            document.getElementById('timer').style.display = isChallenge ? 'inline-block' : 'none';
+            document.getElementById('timer').style.display = isChallenge ? 'inline-block' : 'none'; 
             nextQ(); 
         }
         if(name === 'list') renderList();
