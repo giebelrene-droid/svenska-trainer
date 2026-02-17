@@ -78,6 +78,7 @@
         
         .backup-section { margin-top: 20px; display: flex; gap: 10px; }
         .backup-btn { flex: 1; padding: 10px; font-size: 10px; font-weight: 800; border-radius: 10px; border: none; background: #edf2f7; cursor: pointer; }
+        .lang-tag { font-size: 0.7em; font-weight: 800; color: var(--se-blue); margin-right: 5px; display: inline-block; width: 25px; }
     </style>
 </head>
 <body>
@@ -148,7 +149,7 @@
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.7.2</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.7.3</div>
 
 <script>
     const firebaseConfig = {
@@ -187,35 +188,20 @@
     async function handleSmartTranslate() {
         const de = document.getElementById('inDe').value.trim();
         if (!de || checkDuplicate(de)) return;
-        
         document.getElementById('loader').style.display = "block";
         try {
-            // Übersetzung Englisch
             const rEn = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|en`);
             const dEn = await rEn.json();
-            const en = dEn.responseData.translatedText;
-
-            // Übersetzung Schwedisch
             const rSv = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|sv`);
             const dSv = await rSv.json();
-            const sv = dSv.responseData.translatedText;
             
-            // Beispielsatz generieren
-            const ex = `Jag gillar ${sv}.`; 
-
-            // Felder füllen
-            document.getElementById('inEn').value = en;
-            document.getElementById('inSv').value = sv;
-            document.getElementById('inEx').value = ex;
+            document.getElementById('inEn').value = dEn.responseData.translatedText;
+            document.getElementById('inSv').value = dSv.responseData.translatedText;
+            document.getElementById('inEx').value = `Jag gillar ${dSv.responseData.translatedText}.`;
             
-            // Sofort Speichern
             manualSave();
-        } catch(e) { 
-            console.error(e);
-            alert("Übersetzungsfehler - bitte manuell eingeben."); 
-        } finally { 
-            document.getElementById('loader').style.display = "none"; 
-        }
+        } catch(e) { alert("Fehler beim Übersetzen."); }
+        finally { document.getElementById('loader').style.display = "none"; }
     }
 
     function checkDuplicate(de) {
@@ -232,23 +218,10 @@
         const sv = document.getElementById('inSv').value.trim();
         const ex = document.getElementById('inEx').value.trim();
         const editId = document.getElementById('editId').value;
-
-        if(!de || !sv) {
-            alert("Bitte mindestens Deutsch und Schwedisch ausfüllen.");
-            return;
-        }
-
-        const data = { 
-            de, en, sv, ex, 
-            level: (editId ? allWords.find(x=>x.id===editId).level : 0), 
-            ts: firebase.firestore.FieldValue.serverTimestamp() 
-        };
-
+        if(!de || !sv) return;
+        const data = { de, en, sv, ex, level: (editId ? allWords.find(x=>x.id===editId).level : 0), ts: firebase.firestore.FieldValue.serverTimestamp() };
         const op = editId ? db.collection("words").doc(editId).update(data) : db.collection("words").add(data);
-        op.then(() => { 
-            resetForm(); 
-            if(editId) showTab('list'); 
-        }).catch(err => alert("Fehler beim Speichern!"));
+        op.then(() => { resetForm(); if(editId) showTab('list'); });
     }
 
     async function refreshData() {
@@ -269,15 +242,10 @@
         document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
         if(name === 'challenge') document.getElementById('btn4').classList.add('active');
         else document.getElementById('btn' + (name==='add'?'1':name==='quiz'?'2':'3')).classList.add('active');
-        
         document.getElementById('tabAdd').style.display = (name === 'add') ? 'block' : 'none';
         document.getElementById('tabQuiz').style.display = (name === 'quiz' || name === 'challenge') ? 'block' : 'none';
         document.getElementById('tabList').style.display = (name === 'list') ? 'block' : 'none';
-        
-        if(name === 'quiz' || name === 'challenge') { 
-            document.getElementById('timer').style.display = isChallenge ? 'inline-block' : 'none';
-            nextQ(); 
-        }
+        if(name === 'quiz' || name === 'challenge') { document.getElementById('timer').style.display = isChallenge ? 'inline-block' : 'none'; nextQ(); }
         if(name === 'list') renderList();
     }
 
@@ -286,20 +254,16 @@
         let pool = [];
         allWords.forEach(w => { let weight = (w.level < 2) ? 3 : 1; for(let i=0; i<weight; i++) pool.push(w); });
         curWord = pool[Math.floor(Math.random()*pool.length)];
-        
         if(audioMode) { document.getElementById('qDe').innerText = "???"; speak(curWord.sv, 'sv-SE'); }
         else { document.getElementById('qDe').innerText = curWord.de; }
-
         document.getElementById('qAnsEn').value = curWord.en.charAt(0);
         document.getElementById('qAnsSv').value = curWord.sv.charAt(0);
         document.getElementById('qAnsEn').className = ""; document.getElementById('qAnsSv').className = "";
         document.getElementById('qFeed').innerText = "";
         document.getElementById('nextBtn').style.display = "none";
         document.getElementById('checkBtn').style.display = "block";
-        
         const count = curWord.sv.split(' ').filter(w => w.length > 0).length;
         document.getElementById('qWordCountHint').innerText = count > 1 ? "💡 Hinweis: " + count + " Wörter" : "";
-        
         document.getElementById('spkEn').onclick = () => speak(curWord.en, 'en-US');
         document.getElementById('spkSv').onclick = () => speak(curWord.sv, 'sv-SE');
         document.getElementById('qAnsSv').focus();
@@ -311,17 +275,12 @@
         document.getElementById('qAnsEn').className = rE ? "correct" : "wrong";
         document.getElementById('qAnsSv').className = rS ? "correct" : "wrong";
         document.getElementById('qDe').innerText = curWord.de;
-
         if(rE && rS) {
             document.getElementById('qFeed').innerHTML = "<div style='color:#38b2ac; font-weight:800; margin-top:10px;'>RICHTIG! ✨</div><div class='example-box'>" + (curWord.ex || "") + "</div>";
             updateLevel(curWord.id, true); speak(curWord.sv, 'sv-SE');
             if(isChallenge) setTimeout(nextQ, 800); else { document.getElementById('nextBtn').style.display="block"; document.getElementById('checkBtn').style.display="none"; }
         } else {
-            document.getElementById('qFeed').innerHTML = `<div style='text-align:left; background:white; padding:10px; border-radius:12px; margin-top:10px; border:1px solid #fed7d7;'>
-                <div style='color:#e53e3e; font-weight:800; font-size:0.8em;'>KORREKTUR:</div>
-                <div style='font-size:0.9em;'>SV: <b>${curWord.sv}</b></div>
-                <div style='font-size:0.9em;'>EN: <b>${curWord.en}</b></div>
-            </div>`;
+            document.getElementById('qFeed').innerHTML = `<div style='text-align:left; background:white; padding:10px; border-radius:12px; margin-top:10px; border:1px solid #fed7d7;'><div style='color:#e53e3e; font-weight:800; font-size:0.8em;'>KORREKTUR:</div><div style='font-size:0.9em;'>SV: <b>${curWord.sv}</b></div><div style='font-size:0.9em;'>EN: <b>${curWord.en}</b></div></div>`;
             updateLevel(curWord.id, false);
             document.getElementById('nextBtn').style.display="block"; document.getElementById('checkBtn').style.display="none";
         }
@@ -336,10 +295,7 @@
     function editWord(id) {
         const w = allWords.find(word => word.id === id);
         document.getElementById('editId').value = w.id;
-        document.getElementById('inDe').value = w.de; 
-        document.getElementById('inEn').value = w.en; 
-        document.getElementById('inSv').value = w.sv; 
-        document.getElementById('inEx').value = w.ex || "";
+        document.getElementById('inDe').value = w.de; document.getElementById('inEn').value = w.en; document.getElementById('inSv').value = w.sv; document.getElementById('inEx').value = w.ex || "";
         document.getElementById('addTitle').innerText = "Bearbeiten";
         document.getElementById('cancelEdit').style.display = "block";
         showTab('add');
@@ -348,8 +304,10 @@
     function renderList() {
         document.getElementById('listCont').innerHTML = allWords.map(w => `
             <div class="word-item">
-                <span class="level-dot lvl-${w.level || 0}"></span><b>${w.de}</b>: ${w.sv}
-                <div style="font-size:0.7em; color:#718096;">EN: ${w.en}</div>
+                <span class="level-dot lvl-${w.level || 0}"></span>
+                <div><span class="lang-tag">DE:</span><b>${w.de}</b></div>
+                <div><span class="lang-tag">SV:</span>${w.sv}</div>
+                <div><span class="lang-tag">EN:</span>${w.en}</div>
                 <div class="example-box">${w.ex || 'Kein Satz.'}</div>
                 <div style="position:absolute; right:10px; top:15px;">
                     <button onclick="editWord('${w.id}')" style="border:none; background:none; cursor:pointer;">✎</button>
@@ -359,31 +317,14 @@
     }
 
     function resetForm() {
-        document.getElementById('editId').value = ""; 
-        document.getElementById('inDe').value = ""; 
-        document.getElementById('inEn').value = ""; 
-        document.getElementById('inSv').value = ""; 
-        document.getElementById('inEx').value = "";
-        document.getElementById('addTitle').innerText = "Neuzugang"; 
-        document.getElementById('cancelEdit').style.display = "none";
+        document.getElementById('editId').value = ""; document.getElementById('inDe').value = ""; document.getElementById('inEn').value = ""; document.getElementById('inSv').value = ""; document.getElementById('inEx').value = "";
+        document.getElementById('addTitle').innerText = "Neuzugang"; document.getElementById('cancelEdit').style.display = "none";
         refreshData();
     }
 
     function del(id) { if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(refreshData); }
-    
-    function exportData() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allWords));
-        const a = document.createElement('a'); a.href = dataStr; a.download = "backup.json"; a.click();
-    }
-    
-    function importData(e) {
-        const f = e.target.files[0]; if(!f) return;
-        const r = new FileReader(); r.onload = async (ev) => {
-            const data = JSON.parse(ev.target.result);
-            for(let w of data) { if(!allWords.some(x => x.de === w.de)) await db.collection("words").add({...w, ts: firebase.firestore.FieldValue.serverTimestamp()}); }
-            refreshData();
-        }; r.readAsText(f);
-    }
+    function exportData() { const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allWords)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup.json"; a.click(); }
+    function importData(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = async (ev) => { const data = JSON.parse(ev.target.result); for(let w of data) { if(!allWords.some(x => x.de === w.de)) await db.collection("words").add({...w, ts: firebase.firestore.FieldValue.serverTimestamp()}); } refreshData(); }; r.readAsText(f); }
 
     refreshData();
 </script>
