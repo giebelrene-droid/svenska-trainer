@@ -29,11 +29,7 @@
 
         .container { max-width: 480px; margin: auto; flex: 1; width: 100%; }
 
-        .header-info { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-bottom: 20px; 
-        }
+        .header-info { display: flex; justify-content: space-between; margin-bottom: 20px; }
 
         .badge {
             background: white;
@@ -50,164 +46,66 @@
         .badge-streak { color: #e67e22; border: 1px solid #ffeaa7; }
         .badge-count { color: var(--se-blue); border: 1px solid #d1dce5; }
 
-        .nav { 
-            display: flex; 
-            gap: 10px; 
-            margin-bottom: 25px; 
-            overflow-x: auto;
-            padding-bottom: 5px;
-        }
+        .nav { display: flex; gap: 10px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; }
 
         .nav button { 
-            background: #d1dce5; 
-            flex: 1; 
-            padding: 12px 8px; 
-            font-size: 12px; 
-            color: #4a627a; 
-            border: none; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            font-weight: 800; 
-            transition: all 0.2s ease;
-            white-space: nowrap;
+            background: #d1dce5; flex: 1; padding: 12px 8px; font-size: 12px; 
+            color: #4a627a; border: none; border-radius: 12px; cursor: pointer; 
+            font-weight: 800; transition: all 0.2s ease; white-space: nowrap;
         }
 
         .nav button.active { 
-            background: var(--se-blue); 
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 82, 147, 0.3);
+            background: var(--se-blue); color: white;
+            transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 82, 147, 0.3);
         }
 
         .card { 
-            background: white; 
-            padding: 24px; 
-            border-radius: 20px; 
-            box-shadow: var(--card-shadow); 
-            margin-bottom: 20px; 
+            background: white; padding: 24px; border-radius: 20px; 
+            box-shadow: var(--card-shadow); margin-bottom: 20px; 
             border: 1px solid rgba(255,255,255,0.8);
         }
 
-        h2 { 
-            color: var(--se-blue); 
-            margin-top: 0; 
-            font-size: 1.3em; 
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
+        h2 { color: var(--se-blue); margin-top: 0; font-size: 1.3em; font-weight: 800; letter-spacing: -0.5px; }
 
         label { 
-            display: block; 
-            font-size: 0.75em; 
-            font-weight: 700; 
-            color: #7f8c8d; 
-            margin: 12px 0 4px 4px; 
-            text-transform: uppercase;
+            display: block; font-size: 0.75em; font-weight: 700; 
+            color: #7f8c8d; margin: 12px 0 4px 4px; text-transform: uppercase;
         }
 
         input { 
-            width: 100%; 
-            padding: 14px; 
-            background: #f8fafc;
-            border: 2px solid #edf2f7; 
-            border-radius: 14px; 
-            box-sizing: border-box; 
-            font-size: 16px; 
-            transition: all 0.2s;
+            width: 100%; padding: 14px; background: #f8fafc;
+            border: 2px solid #edf2f7; border-radius: 14px; 
+            box-sizing: border-box; font-size: 16px; transition: all 0.2s;
         }
 
-        input:focus { 
-            border-color: var(--se-blue); 
-            background: white;
-            outline: none;
-            box-shadow: 0 0 0 4px rgba(0, 82, 147, 0.1);
-        }
+        input:focus { border-color: var(--se-blue); background: white; outline: none; box-shadow: 0 0 0 4px rgba(0, 82, 147, 0.1); }
 
         .action-btn { 
-            width: 100%; 
-            padding: 16px; 
-            background: var(--se-blue); 
-            color: white; 
-            border: none; 
-            border-radius: 14px; 
-            cursor: pointer; 
-            font-weight: 700; 
-            font-size: 16px; 
-            margin-top: 10px;
-            transition: transform 0.1s, opacity 0.2s;
+            width: 100%; padding: 16px; background: var(--se-blue); 
+            color: white; border: none; border-radius: 14px; cursor: pointer; 
+            font-weight: 700; font-size: 16px; margin-top: 10px; transition: transform 0.1s;
         }
-
-        .action-btn:active { transform: scale(0.98); }
 
         .quiz-box { 
             background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
-            padding: 25px; 
-            border-radius: 18px; 
-            text-align: center; 
+            padding: 25px; border-radius: 18px; text-align: center; 
         }
 
-        #qDe { 
-            font-size: 2.2em; 
-            margin: 10px 0; 
-            color: var(--se-blue);
-            letter-spacing: -1px;
-        }
+        #qDe { font-size: 2.2em; margin: 10px 0; color: var(--se-blue); letter-spacing: -1px; }
 
         .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; color: #234e52; }
         .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; color: #742a2a; }
 
-        .word-item { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 16px; 
-            border-bottom: 1px solid #f1f5f9; 
-            align-items: center; 
-        }
+        .word-item { display: flex; justify-content: space-between; padding: 16px; border-bottom: 1px solid #f1f5f9; align-items: center; }
 
-        .level-dot { 
-            display: inline-block; 
-            width: 10px; 
-            height: 10px; 
-            border-radius: 50%; 
-            margin-right: 8px; 
-        }
+        .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+        .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--se-yellow); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--se-blue); box-shadow: 0 0 8px var(--se-blue); }
 
-        .lvl-0 { background: #cbd5e0; }
-        .lvl-1 { background: var(--se-yellow); }
-        .lvl-2 { background: #48bb78; }
-        .lvl-3 { background: var(--se-blue); box-shadow: 0 0 8px var(--se-blue); }
+        .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 16px; cursor: pointer; border-radius: 10px; padding: 6px; margin-left: 8px; }
 
-        .speaker-btn { 
-            background: white; 
-            border: 1px solid #e2e8f0; 
-            font-size: 16px; 
-            cursor: pointer; 
-            border-radius: 10px; 
-            padding: 6px;
-            margin-left: 8px;
-            transition: all 0.2s;
-        }
+        .word-count-hint { font-size: 0.8em; color: #e67e22; font-weight: 700; margin-top: 5px; display: none; }
 
-        #timer { 
-            font-size: 1.8em; 
-            color: #e53e3e; 
-            font-weight: 800; 
-            background: white;
-            display: inline-block;
-            padding: 4px 15px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            margin-bottom: 15px;
-        }
-
-        .version-info {
-            text-align: center;
-            font-size: 0.7em;
-            color: #a0aec0;
-            padding: 20px 0 10px 0;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
+        .version-info { text-align: center; font-size: 0.7em; color: #a0aec0; padding: 20px 0 10px 0; font-weight: 600; letter-spacing: 1px; }
     </style>
 </head>
 <body>
@@ -215,7 +113,7 @@
 <div class="container">
     <div class="header-info">
         <div class="badge badge-streak" id="streakDisplay">🔥 Streak: 0</div>
-        <div class="badge badge-count" id="wordCount">Bestand: ...</div>
+        <div class="badge badge-count" id="wordCount">📚 ...</div>
     </div>
 
     <div class="nav">
@@ -227,18 +125,14 @@
 
     <div id="tabAdd" class="card">
         <h2 id="addTitle">Neuzugang</h2>
-        <div id="loader" style="color:var(--se-blue); font-weight:700; text-align:center; display:none; margin-bottom:10px;">Suche Übersetzung...</div>
+        <div id="loader" style="color:var(--se-blue); font-weight:700; text-align:center; display:none; margin-bottom:10px;">Suche...</div>
         <input type="hidden" id="editId">
-        
         <label>Deutsch</label>
         <input type="text" id="inDe" placeholder="Wort eingeben...">
-        
         <label>Englisch</label>
-        <input type="text" id="inEn" placeholder="Wird automatisch gefüllt...">
-        
+        <input type="text" id="inEn">
         <label>Schwedisch</label>
-        <input type="text" id="inSv" placeholder="Wird automatisch gefüllt...">
-        
+        <input type="text" id="inSv">
         <button class="action-btn" onclick="handleSmartTranslate()">Übersetzen & Speichern</button>
         <button class="action-btn" style="background:#48bb78" onclick="manualSave()">Nur Speichern</button>
         <button id="cancelEdit" class="action-btn" style="background:#718096; display:none;" onclick="resetForm()">Abbrechen</button>
@@ -252,10 +146,14 @@
                 <h1 id="qDe">---</h1>
                 <button class="speaker-btn" onclick="speak(document.getElementById('qDe').innerText, 'de-DE')">🔊</button>
             </div>
+            
             <label>Englisch</label>
-            <input type="text" id="qAnsEn" placeholder="...">
+            <input type="text" id="qAnsEn">
+            
             <label>Schwedisch</label>
-            <input type="text" id="qAnsSv" placeholder="..." onkeypress="if(event.key==='Enter') checkAns()">
+            <input type="text" id="qAnsSv" onkeypress="if(event.key==='Enter') checkAns()">
+            <div id="qWordCountHint" class="word-count-hint"></div>
+
             <button class="action-btn" onclick="checkAns()" id="checkBtn">PRÜFEN</button>
             <div id="qFeed"></div>
             <button class="action-btn" style="background:#718096; margin-top:15px; display:none;" id="nextBtn" onclick="nextQ()">NÄCHSTES WORT ➡️</button>
@@ -269,7 +167,7 @@
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.5.2</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.5.3</div>
 
 <script>
     const firebaseConfig = {
@@ -339,12 +237,11 @@
         const svInput = document.getElementById('inSv');
         let sourceText = de || enInput.value.trim() || svInput.value.trim();
         let sourceLang = de ? "de" : (enInput.value.trim() ? "en" : "sv");
-        if (!sourceText) { alert("Bitte ein Wort eingeben!"); return; }
+        if (!sourceText) return;
         if (checkDuplicate(sourceText)) return;
         document.getElementById('loader').style.display = "block";
         try {
-            const targets = ["de", "en", "sv"];
-            for (let t of targets) {
+            for (let t of ["de", "en", "sv"]) {
                 if (t !== sourceLang) {
                     const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(sourceText)}&langpair=${sourceLang}|${t}`);
                     const d = await r.json();
@@ -355,7 +252,7 @@
                 }
             }
             manualSave();
-        } catch(e) { alert("Übersetzung fehlgeschlagen"); }
+        } catch(e) { alert("Fehler"); }
         finally { document.getElementById('loader').style.display = "none"; }
     }
 
@@ -419,8 +316,8 @@
                     <div style="font-size:0.8em; color:#718096;">EN: ${w.en || '-'}</div>
                 </div>
                 <div class="word-actions">
-                    <button class="edit-btn" onclick="editWord('${w.id}')" title="Bearbeiten">✎</button>
-                    <button class="del-btn" style="background:#fed7d7; color:#c53030; border:none; padding:6px 10px; border-radius:8px; cursor:pointer;" onclick="del('${w.id}')">X</button>
+                    <button class="edit-btn" onclick="editWord('${w.id}')">✎</button>
+                    <button class="del-btn" style="background:#fed7d7; color:#c53030; border:none; padding:6px 10px; border-radius:8px;" onclick="del('${w.id}')">X</button>
                 </div>
             </div>`;
         });
@@ -437,10 +334,26 @@
         curWord = n; lastWordId = n.id;
         document.getElementById('qDe').innerText = curWord.de;
         const e = document.getElementById('qAnsEn'), s = document.getElementById('qAnsSv');
-        e.value = ""; s.value = ""; e.className = ""; s.className = "";
+        
+        // Anfangsbuchstaben setzen
+        e.value = curWord.en ? curWord.en.charAt(0) : "";
+        s.value = curWord.sv ? curWord.sv.charAt(0) : "";
+        
+        e.className = ""; s.className = "";
         document.getElementById('qFeed').innerText = "";
         document.getElementById('nextBtn').style.display = "none";
         document.getElementById('checkBtn').style.display = "block";
+
+        // Wortanzahl-Hinweis
+        const hint = document.getElementById('qWordCountHint');
+        const count = curWord.sv.split(' ').filter(w => w.length > 0).length;
+        if(count > 1) {
+            hint.innerText = "💡 Hinweis: Das schwedische Wort besteht aus " + count + " Wörtern";
+            hint.style.display = "block";
+        } else {
+            hint.style.display = "none";
+        }
+
         s.focus();
     }
 
