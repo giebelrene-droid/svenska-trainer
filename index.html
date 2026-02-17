@@ -7,38 +7,225 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 15px; color: #333; margin: 0; }
-        .container { max-width: 500px; margin: auto; }
-        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; color: #005293; font-size: 0.9em; }
-        .nav { display: flex; gap: 8px; margin-bottom: 20px; }
-        .nav button { background: #888; flex: 1; padding: 12px 5px; font-size: 13px; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-        .nav button.active { background: #005293; border: 2px solid #ffcc00; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { color: #005293; margin-top: 0; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; font-size: 1.2em; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 16px; outline: none; }
-        input:focus { border-color: #005293; }
-        button.action-btn { width: 100%; padding: 14px; background: #005293; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 16px; margin-bottom: 10px; }
-        .quiz-box { background: #f8fbff; padding: 20px; border-radius: 12px; text-align: center; position: relative; }
-        label { display: block; text-align: left; font-size: 0.75em; color: #666; margin-top: 8px; font-weight: bold; }
-        #qFeed { margin-top: 15px; font-weight: bold; min-height: 24px; }
-        .correct { background-color: #d4edda !important; border-color: #28a745 !important; }
-        .wrong { background-color: #f8d7da !important; border-color: #dc3545 !important; }
-        .word-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; align-items: center; }
-        .word-info { flex: 1; line-height: 1.6; }
-        .lang-label { color: #005293; font-weight: bold; font-size: 0.8em; margin-right: 5px; }
-        .level-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
-        .lvl-0 { background: #ccc; } .lvl-1 { background: #ffcc00; } .lvl-2 { background: #28a745; } .lvl-3 { background: #005293; box-shadow: 0 0 5px #005293; }
-        #timer { font-size: 1.5em; color: #d9534f; font-weight: bold; margin-bottom: 10px; display: none; }
-        .speaker-btn { background: #eee; border: none; font-size: 18px; cursor: pointer; border-radius: 50%; width: 35px; height: 35px; margin-left: 5px; }
-        #loader { color: #005293; font-weight: bold; text-align: center; display: none; margin-bottom: 10px; }
+        :root {
+            --se-blue: #005293;
+            --se-yellow: #FECC00;
+            --bg-gray: #f4f7f9;
+            --text-dark: #1a2b3c;
+            --card-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            background: var(--bg-gray); 
+            padding: 15px; 
+            color: var(--text-dark); 
+            margin: 0; 
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 480px; margin: auto; flex: 1; width: 100%; }
+
+        /* Header Badges */
+        .header-info { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 20px; 
+        }
+
+        .badge {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85em;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-streak { color: #e67e22; border: 1px solid #ffeaa7; }
+        .badge-count { color: var(--se-blue); border: 1px solid #d1dce5; }
+
+        /* Navigation */
+        .nav { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 25px; 
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .nav button { 
+            background: #d1dce5; 
+            flex: 1; 
+            padding: 12px 8px; 
+            font-size: 12px; 
+            color: #4a627a; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-weight: 800; 
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .nav button.active { 
+            background: var(--se-blue); 
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 82, 147, 0.3);
+        }
+
+        /* Cards */
+        .card { 
+            background: white; 
+            padding: 24px; 
+            border-radius: 20px; 
+            box-shadow: var(--card-shadow); 
+            margin-bottom: 20px; 
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        h2 { 
+            color: var(--se-blue); 
+            margin-top: 0; 
+            font-size: 1.3em; 
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        /* Inputs & Buttons */
+        label { 
+            display: block; 
+            font-size: 0.75em; 
+            font-weight: 700; 
+            color: #7f8c8d; 
+            margin: 12px 0 4px 4px; 
+            text-transform: uppercase;
+        }
+
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            background: #f8fafc;
+            border: 2px solid #edf2f7; 
+            border-radius: 14px; 
+            box-sizing: border-box; 
+            font-size: 16px; 
+            transition: all 0.2s;
+        }
+
+        input:focus { 
+            border-color: var(--se-blue); 
+            background: white;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(0, 82, 147, 0.1);
+        }
+
+        .action-btn { 
+            width: 100%; 
+            padding: 16px; 
+            background: var(--se-blue); 
+            color: white; 
+            border: none; 
+            border-radius: 14px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 16px; 
+            margin-top: 10px;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .action-btn:active { transform: scale(0.98); }
+
+        /* Quiz Box */
+        .quiz-box { 
+            background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
+            padding: 25px; 
+            border-radius: 18px; 
+            text-align: center; 
+        }
+
+        #qDe { 
+            font-size: 2.2em; 
+            margin: 10px 0; 
+            color: var(--se-blue);
+            letter-spacing: -1px;
+        }
+
+        /* Result Colors */
+        .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; color: #234e52; }
+        .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; color: #742a2a; }
+
+        /* List Items */
+        .word-item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 16px; 
+            border-bottom: 1px solid #f1f5f9; 
+            align-items: center; 
+        }
+
+        .level-dot { 
+            display: inline-block; 
+            width: 10px; 
+            height: 10px; 
+            border-radius: 50%; 
+            margin-right: 8px; 
+        }
+
+        .lvl-0 { background: #cbd5e0; }
+        .lvl-1 { background: var(--se-yellow); }
+        .lvl-2 { background: #48bb78; }
+        .lvl-3 { background: var(--se-blue); box-shadow: 0 0 8px var(--se-blue); }
+
+        .speaker-btn { 
+            background: white; 
+            border: 1px solid #e2e8f0; 
+            font-size: 16px; 
+            cursor: pointer; 
+            border-radius: 10px; 
+            padding: 6px;
+            margin-left: 8px;
+            transition: all 0.2s;
+        }
+
+        .speaker-btn:hover { background: #edf2f7; }
+
+        #timer { 
+            font-size: 1.8em; 
+            color: #e53e3e; 
+            font-weight: 800; 
+            background: white;
+            display: inline-block;
+            padding: 4px 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
+        }
+
+        /* Versionsanzeige */
+        .version-info {
+            text-align: center;
+            font-size: 0.7em;
+            color: #a0aec0;
+            padding: 20px 0 10px 0;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header-info">
-        <span id="streakDisplay">🔥 Streak: 0</span>
-        <span id="wordCount">Bestand: ...</span>
+        <div class="badge badge-streak" id="streakDisplay">🔥 Streak: 0</div>
+        <div class="badge badge-count" id="wordCount">Bestand: ...</div>
     </div>
 
     <div class="nav">
@@ -49,45 +236,46 @@
     </div>
 
     <div id="tabAdd" class="card">
-        <h2 id="addTitle">Vokabel hinzufügen</h2>
-        <div id="loader">Wird übersetzt... ⏳</div>
+        <h2>Neuzugang</h2>
+        <div id="loader" style="color:var(--se-blue); font-weight:700; text-align:center; display:none; margin-bottom:10px;">Suche Übersetzung...</div>
         <input type="hidden" id="editId">
-        <label>DEUTSCH:</label>
-        <input type="text" id="inDe" placeholder="z.B. Haus">
-        <label>ENGLISCH:</label>
-        <input type="text" id="inEn" placeholder="z.B. house">
-        <label>SCHWEDISCH:</label>
-        <input type="text" id="inSv" placeholder="z.B. hus">
+        <label>Deutsch</label>
+        <input type="text" id="inDe" placeholder="Wort eingeben...">
+        <label>Englisch</label>
+        <input type="text" id="inEn">
+        <label>Schwedisch</label>
+        <input type="text" id="inSv">
         <button class="action-btn" onclick="handleSmartTranslate()">Übersetzen & Speichern</button>
-        <button class="action-btn" style="background:#28a745" onclick="manualSave()">Nur Speichern</button>
-        <button id="cancelEdit" class="action-btn" style="background:#666; display:none;" onclick="resetForm()">Abbrechen</button>
+        <button class="action-btn" style="background:#48bb78" onclick="manualSave()">Nur Speichern</button>
+        <button id="cancelEdit" class="action-btn" style="background:#718096; display:none;" onclick="resetForm()">Abbrechen</button>
     </div>
 
     <div id="tabQuiz" class="card" style="display:none">
-        <h2>Vokabel-Trainer</h2>
         <div class="quiz-box">
-            <div id="timer">60s</div>
-            <p>Übersetze dieses Wort:</p>
+            <div id="timer" style="display:none">60s</div>
+            <p style="font-size:0.8em; font-weight:700; color:#718096; margin:0;">WAS HEISST...?</p>
             <div style="display:flex; align-items:center; justify-content:center;">
-                <h1 id="qDe" style="margin:5px 0;">---</h1>
+                <h1 id="qDe">---</h1>
                 <button class="speaker-btn" onclick="speak(document.getElementById('qDe').innerText, 'de-DE')">🔊</button>
             </div>
-            <label>ENGLISCH:</label>
-            <input type="text" id="qAnsEn" autocomplete="off">
-            <label>SCHWEDISCH:</label>
-            <input type="text" id="qAnsSv" autocomplete="off" onkeypress="if(event.key==='Enter') checkAns()">
-            <button class="action-btn" onclick="checkAns()" id="checkBtn">Prüfen</button>
+            <label>Englisch</label>
+            <input type="text" id="qAnsEn" placeholder="...">
+            <label>Schwedisch</label>
+            <input type="text" id="qAnsSv" placeholder="..." onkeypress="if(event.key==='Enter') checkAns()">
+            <button class="action-btn" onclick="checkAns()" id="checkBtn">PRÜFEN</button>
             <div id="qFeed"></div>
-            <button class="action-btn" style="background:#666; margin-top:10px; display:none;" id="nextBtn" onclick="nextQ()">Nächstes Wort ➡️</button>
-            <button class="action-btn" style="background:#d9534f; margin-top:10px; display:none;" id="stopChallengeBtn" onclick="stopChallenge()">Challenge beenden</button>
+            <button class="action-btn" style="background:#718096; margin-top:15px; display:none;" id="nextBtn" onclick="nextQ()">NÄCHSTES WORT ➡️</button>
+            <button class="action-btn" style="background:#e53e3e; margin-top:15px; display:none;" id="stopChallengeBtn" onclick="stopChallenge()">CHALLENGE STOPPEN</button>
         </div>
     </div>
 
     <div id="tabList" class="card" style="display:none">
-        <h2>Dein Vokabelheft</h2>
+        <h2>Vokabelheft</h2>
         <div id="listCont"></div>
     </div>
 </div>
+
+<div class="version-info">SVENSKA TRAINER PRO v1.5.0</div>
 
 <script>
     const firebaseConfig = {
@@ -152,35 +340,24 @@
 
     async function handleSmartTranslate() {
         const de = document.getElementById('inDe').value.trim();
-        if (!de) return;
-        
-        // Prüfen ob Wort schon existiert
-        if (checkDuplicate(de)) return;
-
+        if (!de || checkDuplicate(de)) return;
         document.getElementById('loader').style.display = "block";
         try {
-            const enInput = document.getElementById('inEn');
-            const svInput = document.getElementById('inSv');
-            
             const rEn = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|en`);
             const dEn = await rEn.json();
-            enInput.value = dEn.responseData.translatedText;
-
+            document.getElementById('inEn').value = dEn.responseData.translatedText;
             const rSv = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|sv`);
             const dSv = await rSv.json();
-            svInput.value = dSv.responseData.translatedText;
-
+            document.getElementById('inSv').value = dSv.responseData.translatedText;
             manualSave();
-        } catch(e) { alert("Übersetzungsfehler"); }
+        } catch(e) { alert("Fehler"); }
         finally { document.getElementById('loader').style.display = "none"; }
     }
 
     function checkDuplicate(de) {
         const editId = document.getElementById('editId').value;
-        const exists = allWords.some(w => w.de.toLowerCase() === de.toLowerCase() && w.id !== editId);
-        if (exists) {
-            alert("Wort ist schon in der Liste eingetragen!");
-            return true;
+        if (allWords.some(w => w.de.toLowerCase() === de.toLowerCase() && w.id !== editId)) {
+            alert("Wort bereits vorhanden!"); return true;
         }
         return false;
     }
@@ -188,10 +365,7 @@
     function manualSave() {
         const de = document.getElementById('inDe').value.trim(), en = document.getElementById('inEn').value.trim(), sv = document.getElementById('inSv').value.trim();
         const editId = document.getElementById('editId').value;
-        if(!de || !sv) return;
-
-        if (checkDuplicate(de)) return;
-
+        if(!de || !sv || checkDuplicate(de)) return;
         const data = { de, en, sv, level: (editId ? allWords.find(x=>x.id===editId).level : 0), ts: firebase.firestore.FieldValue.serverTimestamp() };
         const op = editId ? db.collection("words").doc(editId).update(data) : db.collection("words").add(data);
         op.then(() => { resetForm(); if(editId) showTab('list'); });
@@ -209,7 +383,7 @@
     function resetForm() {
         document.getElementById('editId').value = "";
         document.getElementById('inDe').value = ""; document.getElementById('inEn').value = ""; document.getElementById('inSv').value = "";
-        document.getElementById('addTitle').innerText = "Vokabel hinzufügen";
+        document.getElementById('addTitle').innerText = "Neuzugang";
         document.getElementById('cancelEdit').style.display = "none";
         refreshData();
     }
@@ -217,7 +391,7 @@
     async function refreshData() {
         const s = await db.collection("words").orderBy("ts", "desc").get();
         allWords = s.docs.map(d => ({id: d.id, ...d.data()}));
-        document.getElementById('wordCount').innerText = "Bestand: " + allWords.length;
+        document.getElementById('wordCount').innerText = "📚 " + allWords.length;
         updateStreak();
     }
 
@@ -227,13 +401,13 @@
             const lvl = w.level || 0;
             h += `<div class="word-item">
                 <div class="word-info">
-                    <div><span class="level-dot lvl-${lvl}"></span><span class="lang-label">DE:</span>${w.de} <button class="speaker-btn" style="width:25px; height:25px; font-size:12px;" onclick="speak('${w.de}', 'de-DE')">🔊</button></div>
-                    <div><span class="lang-label">SV:</span>${w.sv} <button class="speaker-btn" style="width:25px; height:25px; font-size:12px;" onclick="speak('${w.sv}', 'sv-SE')">🔊</button></div>
-                    <div><span class="lang-label">EN:</span>${w.en || '-'} <button class="speaker-btn" style="width:25px; height:25px; font-size:12px;" onclick="speak('${w.en}', 'en-US')">🔊</button></div>
+                    <div><span class="level-dot lvl-${lvl}"></span><b>${w.de}</b> <button class="speaker-btn" onclick="speak('${w.de}', 'de-DE')">🔊</button></div>
+                    <div style="font-size:0.9em; color:#4a5568;">SV: ${w.sv} <button class="speaker-btn" style="padding:2px; font-size:12px;" onclick="speak('${w.sv}', 'sv-SE')">🔊</button></div>
+                    <div style="font-size:0.8em; color:#718096;">EN: ${w.en || '-'}</div>
                 </div>
                 <div class="word-actions">
                     <button class="edit-btn" onclick="editWord('${w.id}')">✎</button>
-                    <button class="del-btn" onclick="del('${w.id}')">X</button>
+                    <button class="del-btn" style="background:#fed7d7; color:#c53030; border:none; padding:6px 10px; border-radius:8px;" onclick="del('${w.id}')">X</button>
                 </div>
             </div>`;
         });
@@ -262,17 +436,17 @@
         const rE = e.value.toLowerCase().trim() === curWord.en.toLowerCase().trim();
         const rS = s.value.toLowerCase().trim() === curWord.sv.toLowerCase().trim();
         e.className = rE ? "correct" : "wrong"; s.className = rS ? "correct" : "wrong";
-        
         if(rE && rS) {
-            document.getElementById('qFeed').innerHTML = "<span style='color:green'>Richtig! ✨</span>";
-            updateLevel(curWord.id, true);
-            speak(curWord.sv, 'sv-SE');
+            document.getElementById('qFeed').innerHTML = "<div style='color:#38b2ac; margin-top:10px; font-weight:800;'>UTMÄRKT! ✨</div>";
+            updateLevel(curWord.id, true); speak(curWord.sv, 'sv-SE');
             if(isChallenge) { challengeScore++; setTimeout(nextQ, 800); } 
             else { document.getElementById('nextBtn').style.display = "block"; document.getElementById('checkBtn').style.display = "none"; }
         } else {
-            document.getElementById('qFeed').innerHTML = `<span style='color:red'>Korrektur:</span><br>
-                <small>SV: ${curWord.sv} <button class="speaker-btn" style="width:20px; height:20px; font-size:10px;" onclick="speak('${curWord.sv}', 'sv-SE')">🔊</button></small><br>
-                <small>EN: ${curWord.en} <button class="speaker-btn" style="width:20px; height:20px; font-size:10px;" onclick="speak('${curWord.en}', 'en-US')">🔊</button></small>`;
+            document.getElementById('qFeed').innerHTML = `<div style='text-align:left; background:white; padding:10px; border-radius:12px; margin-top:10px; border:1px solid #fed7d7;'>
+                <div style='color:#e53e3e; font-weight:800; font-size:0.8em;'>KORREKTUR:</div>
+                <div style='font-size:0.9em;'>SV: <b>${curWord.sv}</b></div>
+                <div style='font-size:0.9em;'>EN: <b>${curWord.en}</b></div>
+            </div>`;
             updateLevel(curWord.id, false);
             if(!isChallenge) { document.getElementById('nextBtn').style.display = "block"; document.getElementById('checkBtn').style.display = "none"; }
         }
@@ -280,31 +454,24 @@
 
     function updateLevel(id, correct) {
         const w = allWords.find(x => x.id === id);
-        let newLvl = w.level || 0;
-        if(correct) { newLvl = Math.min(3, newLvl + 1); } else { newLvl = Math.max(0, newLvl - 1); }
-        db.collection("words").doc(id).update({ level: newLvl });
+        let nl = Math.max(0, Math.min(3, (w.level || 0) + (correct ? 1 : -1)));
+        db.collection("words").doc(id).update({ level: nl });
     }
 
     function startChallenge() {
-        isChallenge = true; challengeScore = 0;
-        let timeLeft = 60;
-        document.getElementById('timer').style.display = "block";
-        document.getElementById('timer').innerText = timeLeft + "s";
+        isChallenge = true; challengeScore = 0; let tl = 60;
+        document.getElementById('timer').style.display = "inline-block";
         document.getElementById('stopChallengeBtn').style.display = "block";
-        resetQuizUI();
-        nextQ();
+        resetQuizUI(); nextQ();
         challengeTimer = setInterval(() => {
-            timeLeft--;
-            document.getElementById('timer').innerText = timeLeft + "s";
-            if(timeLeft <= 0) { stopChallenge(); }
+            tl--; document.getElementById('timer').innerText = tl + "s";
+            if(tl <= 0) stopChallenge();
         }, 1000);
     }
 
     function stopChallenge() {
-        clearInterval(challengeTimer);
-        isChallenge = false;
-        alert("Zeit abgelaufen! Dein Score: " + challengeScore + " Wörter");
-        showTab('quiz');
+        clearInterval(challengeTimer); isChallenge = false;
+        alert("Bravo! Score: " + challengeScore); showTab('quiz');
     }
 
     function resetQuizUI() {
