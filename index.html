@@ -62,7 +62,9 @@
         .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--se-yellow); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--se-blue); box-shadow: 0 0 8px var(--se-blue); }
 
         .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 16px; cursor: pointer; border-radius: 10px; padding: 8px; transition: all 0.2s; }
-        .speaker-btn:hover { background: #edf2f7; }
+        
+        .backup-section { margin-top: 20px; padding-top: 15px; border-top: 2px dashed #edf2f7; display: flex; gap: 10px; }
+        .backup-btn { flex: 1; padding: 10px; font-size: 11px; font-weight: 800; border-radius: 10px; cursor: pointer; border: none; background: #edf2f7; color: #4a627a; }
 
         .word-count-hint { font-size: 0.8em; color: #e67e22; font-weight: 700; margin-top: 5px; display: none; }
         .version-info { text-align: center; font-size: 0.7em; color: #a0aec0; padding: 20px 0 10px 0; font-weight: 600; letter-spacing: 1px; }
@@ -130,10 +132,16 @@
     <div id="tabList" class="card" style="display:none">
         <h2>Vokabelheft</h2>
         <div id="listCont"></div>
+        
+        <div class="backup-section">
+            <button class="backup-btn" onclick="exportData()">💾 DATEN SICHERN</button>
+            <button class="backup-btn" onclick="document.getElementById('importFile').click()">📂 LADEN</button>
+            <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+        </div>
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.5.6</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.6.0</div>
 
 <script>
     const firebaseConfig = {
@@ -156,9 +164,7 @@
     let challengeScore = 0;
     let voices = [];
 
-    function loadVoices() {
-        voices = window.speechSynthesis.getVoices();
-    }
+    function loadVoices() { voices = window.speechSynthesis.getVoices(); }
     window.speechSynthesis.onvoiceschanged = loadVoices;
     loadVoices();
 
@@ -168,11 +174,9 @@
         const ut = new SpeechSynthesisUtterance(txt);
         let voice = voices.find(v => v.lang === 'sv-SE' && (v.name.includes("Premium") || v.name.includes("Natural")));
         if (!voice) voice = voices.find(v => v.lang === 'sv-SE');
-        if (!voice) voice = voices.find(v => v.lang.startsWith('sv'));
         if (voice) ut.voice = voice;
         ut.lang = lang;
         ut.rate = lang.startsWith('sv') ? 0.75 : 0.85; 
-        ut.pitch = 1.0;
         window.speechSynthesis.speak(ut);
     }
 
@@ -257,9 +261,7 @@
         const w = allWords.find(word => word.id === id);
         if(!w) return;
         document.getElementById('editId').value = w.id;
-        document.getElementById('inDe').value = w.de; 
-        document.getElementById('inEn').value = w.en; 
-        document.getElementById('inSv').value = w.sv;
+        document.getElementById('inDe').value = w.de; document.getElementById('inEn').value = w.en; document.getElementById('inSv').value = w.sv;
         document.getElementById('addTitle').innerText = "Wort bearbeiten";
         document.getElementById('cancelEdit').style.display = "block";
         showTab('add');
@@ -371,6 +373,42 @@
         document.getElementById('stopChallengeBtn').style.display = "none";
         document.getElementById('nextBtn').style.display = "none";
         document.getElementById('checkBtn').style.display = "block";
+    }
+
+    // --- NEUE EXPORT/IMPORT FUNKTIONEN ---
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allWords));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "svenska_backup_" + new Date().toLocaleDateString() + ".json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const importedWords = JSON.parse(e.target.result);
+                if(confirm(importedWords.length + " Vokabeln importieren? (Duplikate werden übersprungen)")) {
+                    for(let w of importedWords) {
+                        const exists = allWords.some(x => x.de.toLowerCase() === w.de.toLowerCase());
+                        if(!exists) {
+                            await db.collection("words").add({
+                                de: w.de, en: w.en, sv: w.sv, level: w.level || 0,
+                                ts: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        }
+                    }
+                    alert("Import abgeschlossen!");
+                    refreshData();
+                }
+            } catch(err) { alert("Fehler beim Lesen der Datei!"); }
+        };
+        reader.readAsText(file);
     }
 
     refreshData();
