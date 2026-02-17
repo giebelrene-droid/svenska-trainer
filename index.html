@@ -7,60 +7,62 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+        body { font-family: sans-serif; background: #f0f2f5; padding: 15px; margin: 0; }
         .container { max-width: 500px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 5px; }
+        h2 { color: #005293; text-align: center; margin-top: 0; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #005293; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 8px; }
         .nav { display: flex; gap: 5px; margin-bottom: 20px; }
-        .nav button { background: #ccc; flex: 1; }
+        .nav button { background: #888; flex: 1; padding: 10px 5px; font-size: 14px; }
         .nav button.active { background: #005293; }
+        .quiz-box { text-align: center; padding: 15px; background: #e7f3ff; border-radius: 8px; }
         .word-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; align-items: center; }
-        .quiz-box { text-align: center; padding: 20px; background: #e7f3ff; border-radius: 8px; }
-        .feedback { margin-top: 15px; font-weight: bold; }
+        #qFeed { margin-top: 10px; font-weight: bold; min-height: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="wordCount" style="text-align:right; font-size:0.8em; margin-bottom:10px;">Lade...</div>
+    <div id="wordCount" style="text-align:right; font-size:0.8em; margin-bottom:5px;">Bestand wird geladen...</div>
 
     <div class="nav">
-        <button id="t1" class="active" onclick="show('add')">➕ Neu</button>
-        <button id="t2" onclick="show('quiz')">🧠 Üben</button>
-        <button id="t3" onclick="show('list')">📖 Liste</button>
+        <button id="btn1" class="active" onclick="changeTab('add')">➕ NEU</button>
+        <button id="btn2" onclick="changeTab('quiz')">🧠 ÜBEN</button>
+        <button id="btn3" onclick="changeTab('list')">📖 LISTE</button>
     </div>
 
-    <div id="secAdd" class="card">
+    <div id="tabAdd" class="card">
         <h2>Neues Wort</h2>
-        <input type="text" id="inDe" placeholder="Deutsch..." onkeypress="if(event.key==='Enter') autoTr()">
-        <button onclick="autoTr()">Übersetzen & Speichern</button>
-        <hr>
+        <input type="text" id="inDe" placeholder="Deutsch (z.B. Hund)...">
+        <button onclick="handleAuto()">Übersetzen & Speichern</button>
+        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
         <input type="text" id="inEn" placeholder="Englisch">
         <input type="text" id="inSv" placeholder="Schwedisch">
-        <button style="background:#28a745" onclick="manualSave()">Manuell Speichern</button>
+        <button style="background:#28a745" onclick="handleManual()">Nur Speichern</button>
     </div>
 
-    <div id="secQuiz" class="card" style="display:none">
-        <h2>Vokabel-Trainer</h2>
+    <div id="tabQuiz" class="card" style="display:none">
+        <h2>Quiz</h2>
         <div class="quiz-box">
             <p>Was heißt auf Schwedisch?</p>
             <h1 id="qDe">---</h1>
-            <p id="qEn" style="font-style:italic; color: #555;"></p>
+            <p id="qEn" style="font-style:italic; color: #666; font-size: 0.9em;"></p>
             <input type="text" id="qAns" placeholder="Antwort...">
-            <button onclick="checkAns()">Prüfen</button>
-            <div id="qFeed" class="feedback"></div>
-            <button style="background:#666; margin-top:10px" onclick="nextQ()">Nächstes Wort</button>
+            <button onclick="checkResult()">Prüfen</button>
+            <div id="qFeed"></div>
+            <button style="background:#666; margin-top:10px" onclick="nextQuestion()">Nächstes Wort</button>
         </div>
     </div>
 
-    <div id="secList" class="card" style="display:none">
-        <h2>Dein Wortschatz</h2>
+    <div id="tabList" class="card" style="display:none">
+        <h2>Liste</h2>
         <div id="listCont"></div>
     </div>
 </div>
 
 <script>
+    // Firebase Setup
     const firebaseConfig = {
         apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
         authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
@@ -73,96 +75,107 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    let wordsArr = [];
-    let curWord = null;
+    let currentWords = [];
+    let activeWord = null;
 
-    function show(name) {
-        document.getElementById('secAdd').style.display = name === 'add' ? 'block' : 'none';
-        document.getElementById('secQuiz').style.display = name === 'quiz' ? 'block' : 'none';
-        document.getElementById('secList').style.display = name === 'list' ? 'block' : 'none';
-        document.getElementById('t1').className = name === 'add' ? 'active' : '';
-        document.getElementById('t2').className = name === 'quiz' ? 'active' : '';
-        document.getElementById('t3').className = name === 'list' ? 'active' : '';
-        if(name === 'list') renderList();
-        if(name === 'quiz') prepareQuiz();
+    // Tabs umschalten
+    function changeTab(name) {
+        document.getElementById('tabAdd').style.display = (name === 'add') ? 'block' : 'none';
+        document.getElementById('tabQuiz').style.display = (name === 'quiz') ? 'block' : 'none';
+        document.getElementById('tabList').style.display = (name === 'list') ? 'block' : 'none';
+        
+        document.getElementById('btn1').className = (name === 'add') ? 'active' : '';
+        document.getElementById('btn2').className = (name === 'quiz') ? 'active' : '';
+        document.getElementById('btn3').className = (name === 'list') ? 'active' : '';
+
+        if(name === 'list') getList();
+        if(name === 'quiz') startQuiz();
     }
 
-    async function autoTr() {
-        const de = document.getElementById('inDe').value;
-        if(!de) return;
+    // Automatik
+    async function handleAuto() {
+        const text = document.getElementById('inDe').value;
+        if(!text) return;
         try {
-            const rEn = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|en`);
+            const rEn = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=de|en`);
             const dEn = await rEn.json();
-            const rSv = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(de)}&langpair=de|sv`);
+            const rSv = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=de|sv`);
             const dSv = await rSv.json();
+            
             document.getElementById('inEn').value = dEn.responseData.translatedText;
             document.getElementById('inSv').value = dSv.responseData.translatedText;
-            manualSave();
-        } catch(e) { alert("Übersetzungsfehler"); }
+            handleManual();
+        } catch(e) { alert("Fehler beim Übersetzen."); }
     }
 
-    function manualSave() {
+    function handleManual() {
         const de = document.getElementById('inDe').value;
         const en = document.getElementById('inEn').value;
         const sv = document.getElementById('inSv').value;
         if(!de || !sv) return;
+        
         db.collection("words").add({ de, en, sv, ts: firebase.firestore.FieldValue.serverTimestamp() })
         .then(() => {
             document.getElementById('inDe').value = "";
             document.getElementById('inEn').value = "";
             document.getElementById('inSv').value = "";
-            updateCount();
+            refreshCount();
         });
     }
 
-    function updateCount() {
+    function refreshCount() {
         db.collection("words").get().then(s => {
             document.getElementById('wordCount').innerText = "Bestand: " + s.size + " Wörter";
-            wordsArr = s.docs.map(d => d.data());
+            currentWords = s.docs.map(d => d.data());
         });
     }
 
-    function renderList() {
+    function getList() {
         db.collection("words").orderBy("ts", "desc").get().then(s => {
             let h = "";
             s.forEach(doc => {
                 const w = doc.data();
-                h += `<div class="word-item"><span><b>${w.de}</b>: ${w.sv} (${w.en})</span><button style="width:auto;background:red" onclick="delW('${doc.id}')">X</button></div>`;
+                h += `<div class="word-item"><span><b>${w.de}</b>: ${w.sv}</span><button style="width:auto;background:red;margin:0" onclick="removeW('${doc.id}')">X</button></div>`;
             });
-            document.getElementById('listCont').innerHTML = h;
+            document.getElementById('listCont').innerHTML = h || "Keine Wörter vorhanden.";
         });
     }
 
-    function delW(id) { if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(() => renderList()); }
+    function removeW(id) {
+        if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(() => getList());
+    }
 
-    function prepareQuiz() {
+    // Quiz Logik
+    function startQuiz() {
         db.collection("words").get().then(s => {
-            wordsArr = s.docs.map(d => d.data());
-            nextQ();
+            currentWords = s.docs.map(d => d.data());
+            nextQuestion();
         });
     }
 
-    function nextQ() {
-        if(wordsArr.length === 0) return alert("Keine Wörter zum Üben da!");
-        curWord = wordsArr[Math.floor(Math.random() * wordsArr.length)];
-        document.getElementById('qDe').innerText = curWord.de;
-        document.getElementById('qEn').innerText = "Hilfe (Englisch): " + (curWord.en || "---");
-        document.getElementById('qAns').value = curWord.sv.charAt(0); // Erster Buchstabe als Tipp
+    function nextQuestion() {
+        if(currentWords.length === 0) return alert("Füge erst Wörter hinzu!");
+        activeWord = currentWords[Math.floor(Math.random() * currentWords.length)];
+        document.getElementById('qDe').innerText = activeWord.de;
+        document.getElementById('qEn').innerText = "Englisch: " + (activeWord.en || "---");
+        document.getElementById('qAns').value = activeWord.sv.charAt(0);
         document.getElementById('qFeed').innerText = "";
     }
 
-    function checkAns() {
+    function checkResult() {
         const input = document.getElementById('qAns').value.toLowerCase().trim();
-        const correct = curWord.sv.toLowerCase().trim();
-        const feed = document.getElementById('qFeed');
+        const correct = activeWord.sv.toLowerCase().trim();
+        const f = document.getElementById('qFeed');
         if(input === correct) {
-            feed.innerHTML = "<span style='color:green'>Richtig! ✨</span>";
+            f.innerHTML = "<span style='color:green'>Richtig! ✨</span>";
         } else {
-            feed.innerHTML = `<span style='color:red'>Falsch.</span> Richtig: ${curWord.sv}`;
+            f.innerHTML = `<span style='color:red'>Falsch.</span> Richtig: ${activeWord.sv}`;
         }
     }
 
-    updateCount();
+    // Beim Start laden
+    refreshCount();
 </script>
+
 </body>
 </html>
