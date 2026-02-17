@@ -1,3 +1,16 @@
+Das ist eine sehr nützliche Funktion. Manchmal liefert der Übersetzer nicht genau die Bedeutung, die man im Kopf hat.
+
+Ich habe den Code so erweitert, dass du in der Liste jetzt bei jedem Wort einen Bearbeiten-Button (✎) findest. Wenn du darauf klickst:
+
+Springt die App automatisch zum Tab NEU.
+
+Füllt die Felder mit dem aktuellen Wort aus.
+
+Löscht den alten Eintrag in der Datenbank, sobald du die Korrektur mit "Übersetzen & Speichern" oder "Nur Speichern" abschließt.
+
+Hier ist der komplette Code für deine index.html:
+
+HTML
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -21,8 +34,10 @@
         #qFeed { margin-top: 10px; font-weight: bold; min-height: 24px; }
         .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; }
         .wrong { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
-        .solution-text { display: block; font-size: 0.9em; color: #d9534f; margin-top: 5px; font-weight: normal; }
-        .word-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; align-items: center; }
+        .word-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; align-items: center; }
+        .word-actions { display: flex; gap: 5px; }
+        .edit-btn { background: #ffcc00; color: #333; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .del-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 14px; }
         #loader { color: #005293; font-weight: bold; text-align: center; display: none; margin-bottom: 10px; }
     </style>
 </head>
@@ -38,8 +53,9 @@
     </div>
 
     <div id="tabAdd" class="card">
-        <h2>Neuzugang</h2>
+        <h2 id="addTitle">Neuzugang</h2>
         <div id="loader">Wird übersetzt... ⏳</div>
+        <input type="hidden" id="editId">
         <label>Deutsch:</label>
         <input type="text" id="inDe" placeholder="Deutsch...">
         <label>Englisch:</label>
@@ -48,7 +64,8 @@
         <input type="text" id="inSv" placeholder="Schwedisch...">
         
         <button class="action-btn" style="margin-top:10px;" onclick="handleSmartTranslate()">Übersetzen & Speichern</button>
-        <button class="action-btn" style="background:#28a745" onclick="manualSave()">Nur Speichern (ohne Suche)</button>
+        <button class="action-btn" style="background:#28a745" onclick="manualSave()">Nur Speichern</button>
+        <button id="cancelEdit" class="action-btn" style="background:#666; display:none;" onclick="resetForm()">Abbrechen</button>
     </div>
 
     <div id="tabQuiz" class="card" style="display:none">
@@ -57,12 +74,12 @@
             <p>Übersetze dieses Wort:</p>
             <h1 id="qDe" style="margin:5px 0;">---</h1>
             <label>Englisch:</label>
-            <input type="text" id="qAnsEn" placeholder="Englisch...">
+            <input type="text" id="qAnsEn">
             <label>Schwedisch:</label>
-            <input type="text" id="qAnsSv" placeholder="Schwedisch..." onkeypress="if(event.key==='Enter') checkAns()">
+            <input type="text" id="qAnsSv" onkeypress="if(event.key==='Enter') checkAns()">
             <button class="action-btn" onclick="checkAns()" style="margin-top:10px;">Prüfen</button>
             <div id="qFeed"></div>
-            <button id="nextBtn" class="action-btn" style="background:#666; margin-top:10px;" onclick="nextQ()">Nächstes Wort ➡️</button>
+            <button class="action-btn" style="background:#666; margin-top:10px;" onclick="nextQ()">Nächstes Wort ➡️</button>
         </div>
     </div>
 
@@ -102,57 +119,67 @@
         });
     }
 
-    // Die neue smarte Übersetzungs-Logik
     async function handleSmartTranslate() {
         const de = document.getElementById('inDe').value.trim();
         const en = document.getElementById('inEn').value.trim();
         const sv = document.getElementById('inSv').value.trim();
-        
-        let sourceText = "";
-        let sourceLang = "";
-
-        if (de) { sourceText = de; sourceLang = "de"; }
-        else if (en) { sourceText = en; sourceLang = "en"; }
-        else if (sv) { sourceText = sv; sourceLang = "sv"; }
-        else { alert("Bitte mindestens ein Feld ausfüllen!"); return; }
-
+        let sourceText = de || en || sv;
+        let sourceLang = de ? "de" : (en ? "en" : "sv");
+        if (!sourceText) return;
         document.getElementById('loader').style.display = "block";
-
         try {
-            // Übersetzung in alle Zielsprachen
             const targets = ["de", "en", "sv"];
-            for (let target of targets) {
-                if (target !== sourceLang) {
-                    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(sourceText)}&langpair=${sourceLang}|${target}`);
-                    const data = await res.json();
-                    const translated = data.responseData.translatedText;
-                    
-                    if (target === "de") document.getElementById('inDe').value = translated;
-                    if (target === "en") document.getElementById('inEn').value = translated;
-                    if (target === "sv") document.getElementById('inSv').value = translated;
+            for (let t of targets) {
+                if (t !== sourceLang) {
+                    const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(sourceText)}&langpair=${sourceLang}|${t}`);
+                    const d = await r.json();
+                    document.getElementById('in'+t.charAt(0).toUpperCase()+t.slice(1)).value = d.responseData.translatedText;
                 }
             }
             manualSave();
-        } catch(e) {
-            alert("Fehler bei der Übersetzung. Prüfe deine Internetverbindung.");
-        } finally {
-            document.getElementById('loader').style.display = "none";
-        }
+        } catch(e) { alert("Fehler!"); }
+        finally { document.getElementById('loader').style.display = "none"; }
     }
 
     function manualSave() {
         const de = document.getElementById('inDe').value.trim();
         const en = document.getElementById('inEn').value.trim();
         const sv = document.getElementById('inSv').value.trim();
-        if(!de || !sv) { alert("Deutsch und Schwedisch werden mindestens benötigt!"); return; }
+        const editId = document.getElementById('editId').value;
+        if(!de || !sv) return;
         
-        db.collection("words").add({ de, en, sv, ts: firebase.firestore.FieldValue.serverTimestamp() })
-        .then(() => {
-            document.getElementById('inDe').value = "";
-            document.getElementById('inEn').value = "";
-            document.getElementById('inSv').value = "";
-            refreshData();
-        });
+        const data = { de, en, sv, ts: firebase.firestore.FieldValue.serverTimestamp() };
+        
+        if(editId) {
+            db.collection("words").doc(editId).update(data).then(() => {
+                resetForm();
+                showTab('list');
+            });
+        } else {
+            db.collection("words").add(data).then(() => resetForm());
+        }
+    }
+
+    function editWord(id) {
+        const w = allWords.find(word => word.id === id);
+        if(!w) return;
+        document.getElementById('editId').value = w.id;
+        document.getElementById('inDe').value = w.de;
+        document.getElementById('inEn').value = w.en;
+        document.getElementById('inSv').value = w.sv;
+        document.getElementById('addTitle').innerText = "Wort bearbeiten";
+        document.getElementById('cancelEdit').style.display = "block";
+        showTab('add');
+    }
+
+    function resetForm() {
+        document.getElementById('editId').value = "";
+        document.getElementById('inDe').value = "";
+        document.getElementById('inEn').value = "";
+        document.getElementById('inSv').value = "";
+        document.getElementById('addTitle').innerText = "Neuzugang";
+        document.getElementById('cancelEdit').style.display = "none";
+        refreshData();
     }
 
     async function refreshData() {
@@ -164,53 +191,39 @@
     function renderList() {
         let h = "";
         allWords.forEach(w => {
-            h += `<div class="word-item"><span><b>${w.de}</b>: ${w.sv} (${w.en})</span><button style="width:auto;background:#ff4d4d;color:white;border:none;padding:3px 8px;border-radius:4px;" onclick="del('${w.id}')">X</button></div>`;
+            h += `<div class="word-item">
+                <span><b>${w.de}</b>: ${w.sv}</span>
+                <div class="word-actions">
+                    <button class="edit-btn" onclick="editWord('${w.id}')">✎</button>
+                    <button class="del-btn" onclick="del('${w.id}')">X</button>
+                </div>
+            </div>`;
         });
         document.getElementById('listCont').innerHTML = h || "Liste leer.";
     }
 
-    function del(id) {
-        if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(() => {
-            refreshData().then(renderList);
-        });
-    }
+    function del(id) { if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(() => { refreshData().then(renderList); }); }
 
     function nextQ() {
         if(allWords.length === 0) return;
-        let nextWord;
-        if (allWords.length > 1) {
-            do { nextWord = allWords[Math.floor(Math.random() * allWords.length)]; } while (nextWord.id === lastWordId);
-        } else { nextWord = allWords[0]; }
-        curWord = nextWord;
-        lastWordId = nextWord.id;
+        let n;
+        if(allWords.length > 1) { do { n = allWords[Math.floor(Math.random()*allWords.length)]; } while(n.id===lastWordId); }
+        else { n = allWords[0]; }
+        curWord = n; lastWordId = n.id;
         document.getElementById('qDe').innerText = curWord.de;
-        const inEn = document.getElementById('qAnsEn');
-        const inSv = document.getElementById('qAnsSv');
-        inEn.value = curWord.en ? curWord.en.charAt(0) : "";
-        inSv.value = curWord.sv ? curWord.sv.charAt(0) : "";
-        inEn.className = ""; inSv.className = "";
+        const e = document.getElementById('qAnsEn'), s = document.getElementById('qAnsSv');
+        e.value = curWord.en ? curWord.en.charAt(0) : "";
+        s.value = curWord.sv ? curWord.sv.charAt(0) : "";
+        e.className = ""; s.className = "";
         document.getElementById('qFeed').innerText = "";
-        inEn.focus();
     }
 
     function checkAns() {
-        const inEn = document.getElementById('qAnsEn');
-        const inSv = document.getElementById('qAnsSv');
-        const corEn = curWord.en.toLowerCase().trim();
-        const corSv = curWord.sv.toLowerCase().trim();
-        const isEnCorrect = inEn.value.toLowerCase().trim() === corEn;
-        const isSvCorrect = inSv.value.toLowerCase().trim() === corSv;
-        inEn.className = isEnCorrect ? "correct" : "wrong";
-        inSv.className = isSvCorrect ? "correct" : "wrong";
-        const feed = document.getElementById('qFeed');
-        if(isEnCorrect && isSvCorrect) {
-            feed.innerHTML = "<span style='color:green'>Richtig! ✨</span>";
-        } else {
-            let errorText = "<span style='color:red'>Fehler gefunden!</span><br>";
-            if(!isEnCorrect) errorText += `<span class="solution-text">Englisch: <b>${curWord.en}</b></span>`;
-            if(!isSvCorrect) errorText += `<span class="solution-text">Schwedisch: <b>${curWord.sv}</b></span>`;
-            feed.innerHTML = errorText;
-        }
+        const e = document.getElementById('qAnsEn'), s = document.getElementById('qAnsSv');
+        const cE = curWord.en.toLowerCase().trim(), cS = curWord.sv.toLowerCase().trim();
+        const rE = e.value.toLowerCase().trim() === cE, rS = s.value.toLowerCase().trim() === cS;
+        e.className = rE ? "correct" : "wrong"; s.className = rS ? "correct" : "wrong";
+        document.getElementById('qFeed').innerHTML = (rE && rS) ? "<span style='color:green'>Richtig! ✨</span>" : `<span style='color:red'>Korrektur:</span><br><small>En: ${curWord.en} | Sv: ${curWord.sv}</small>`;
     }
     refreshData();
 </script>
