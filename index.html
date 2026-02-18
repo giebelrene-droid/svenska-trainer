@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -43,7 +43,6 @@
         /* VERB SECTION */
         .verb-section { background: #edf2f7; padding: 12px; border-radius: 12px; margin-top: 15px; display: none; }
         .verb-lang-group { margin-bottom: 12px; border-bottom: 1px solid #dce4ea; padding-bottom: 8px; }
-        .verb-lang-title { font-size: 0.75em; font-weight: 800; color: var(--primary); margin-bottom: 4px; text-transform: uppercase; }
         .verb-row { display: flex; gap: 8px; }
         .verb-row input { font-size: 0.85em; padding: 8px; }
         
@@ -90,7 +89,7 @@
 <div class="header-row">
     <div class="badge">🔥 <span id="streakDisplay">0</span></div>
     <div class="badge">📚 <span id="wordCount">0</span> Wörter</div>
-    <div class="badge" style="color: var(--primary);">🚀 v<span id="versionDisplay"></span></div>
+    <div class="badge" style="color: var(--primary);"><span id="versionDisplay"></span></div>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
 </div>
 
@@ -161,7 +160,8 @@
 </div>
 
 <script>
-    const VERSION = "4.0.3";
+    // --- ZEITSTEMPEL VERSION ---
+    const VERSION = "18.02.2026 - 14:35";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -232,7 +232,7 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- SMART VERB LOGIC ---
+    // --- NEUE SMART VERB LOGIC ---
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
@@ -241,15 +241,15 @@
         document.getElementById('loader').style.display = "block";
         
         try {
-            // Wir fragen nach kompletten Sätzen für die Vergangenheit
+            // Wir fragen die KI nach ganzen Sätzen
             const rawEnPast = await translate(`Yesterday he ${baseEn}`, 'en', 'en');
             const rawDePast = await translate(`Gestern ist er ${baseDe}`, 'de', 'de');
             const rawSvPast = await translate(`Yesterday he ${baseEn}`, 'en', 'sv');
 
-            // Der intelligente Cleaner für nackte Verben mit Pronomen
+            // Der intelligente Cleaner für das nackte Verb + Pronomen
             const smartClean = (t, prefix) => {
                 if(!t) return prefix + " ...";
-                // Entfernt Zeitwörter und überschüssige Pronomen
+                // Löscht Zeitwörter und überschüssige Pronomen am Satzanfang
                 let c = t.replace(/\b(Yesterday|Gestern|Igår|He|Er|Han|She|Sie|Hon|It|Es|Det)\b/gi, "").trim();
                 return prefix + " " + c;
             };
