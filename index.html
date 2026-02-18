@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 2.7.2</title>
+    <title>Family Trainer 2.7.3</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>⚡</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>⚡</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🚦</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🚦</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -31,6 +31,10 @@
         input, select { flex: 1; padding: 14px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 14px; font-size: 16px; width: 100%; box-sizing: border-box; }
         input:focus, select:focus { border-color: var(--primary); background: white; outline: none; }
         
+        /* FEEDBACK COLORS (WIEDER DA!) */
+        .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
+        .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
+
         /* BUTTONS */
         .action-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 14px; cursor: pointer; font-weight: 700; font-size: 16px; margin-top: 10px; }
         .speaker-btn, .mic-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; }
@@ -166,7 +170,7 @@
     </div>
 </div>
 
-<div class="version-info">FAMILY TRAINER v2.7.2 (Instant Update)</div>
+<div class="version-info">FAMILY TRAINER v2.7.3 (Visual Fix)</div>
 
 <script>
     // --- SETUP ---
@@ -260,14 +264,8 @@
             });
             const res = await Promise.all(p);
             
-            const cleanPast = (t) => {
-                if(!t || t.toUpperCase().includes("PLEASE SELECT")) return "";
-                return t.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did)\b\s?/gi, "").trim();
-            };
-            const cleanFut = (t) => {
-                if(!t || t.toUpperCase().includes("PLEASE SELECT")) return "";
-                return t.replace(/\b(Ich|I|jag|Du|Han|Hon|Er|Sie)\b\s?/gi, "").trim();
-            };
+            const cleanPast = (t) => t ? t.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did)\b\s?/gi, "").trim() : "";
+            const cleanFut = (t) => t ? t.replace(/\b(Ich|I|jag|Du|Han|Hon|Er|Sie)\b\s?/gi, "").trim() : "";
 
             document.getElementById('inDePast').value = cleanPast(res[0].responseData.translatedText);
             document.getElementById('inSvPast').value = cleanPast(res[1].responseData.translatedText);
@@ -285,7 +283,7 @@
         } catch(e) { console.error(e); } finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- MANUAL SAVE + INSTANT REFRESH ---
+    // --- MANUAL SAVE ---
     function manualSave() {
         const vData = { deP: document.getElementById('inDePast').value, enP: document.getElementById('inEnPast').value, svP: document.getElementById('inSvPast').value, deF: document.getElementById('inDeFut').value, enF: document.getElementById('inEnFut').value, svF: document.getElementById('inSvFut').value };
         const data = { de: document.getElementById('inDe').value, en: document.getElementById('inEn').value, sv: document.getElementById('inSv').value, ex: document.getElementById('inEx').value, ...vData, ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0 };
@@ -297,17 +295,14 @@
 
         const eid = document.getElementById('editId').value; 
         const coll = COLLECTIONS[currentCollIndex];
-        
         const op = eid ? db.collection(coll).doc(eid).update(data) : db.collection(coll).add(data);
         
         op.then(() => { 
-            refreshData(); // <--- DIESE ZEILE HAT GEFEHLT! JETZT UPDATED ER SOFORT!
+            refreshData(); 
             clearInputs(); 
             if(eid) showTab('list'); 
             else alert("Wort erfolgreich gespeichert! ✅"); 
-        }).catch(err => {
-            alert("FEHLER beim Speichern: " + err.message);
-        });
+        }).catch(err => { alert("FEHLER beim Speichern: " + err.message); });
     }
 
     async function nukeDatabase() { if(!confirm(`WARNUNG: Möchtest du wirklich ALLE Wörter von Benutzer "${userNames[currentCollIndex]}" löschen?`)) return; if(!confirm("Bist du ganz sicher?")) return; const coll = COLLECTIONS[currentCollIndex]; const snapshot = await db.collection(coll).get(); const batch = db.batch(); snapshot.docs.forEach(doc => batch.delete(doc.ref)); await batch.commit(); refreshData(); alert("Liste geleert."); }
@@ -317,8 +312,78 @@
     function toggleVerbSection() { const el=document.getElementById('verbSection'); el.style.display = (el.style.display==="block")?"none":"block"; }
     function showTab(n) { document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); document.getElementById('tabAdd').style.display=(n==='add')?'block':'none'; document.getElementById('tabQuiz').style.display=(n==='quiz'||n==='challenge')?'block':'none'; document.getElementById('tabList').style.display=(n==='list')?'block':'none'; if(n==='quiz') nextQ(); if(n==='list') renderList(); }
     
-    function nextQ() { if(allWords.length === 0) return; let pool = []; allWords.forEach(w => { let wt = (w.level<2)?3:1; for(let i=0;i<wt;i++) pool.push(w); }); curWord = pool[Math.floor(Math.random()*pool.length)]; quizQ = Math.random() > 0.5 ? 1 : 2; const qTxt = quizQ === 1 ? curWord.de : curWord.en; const qLang = quizQ === 1 ? conf.l1 : conf.l2; document.getElementById('qMainText').innerText = audioMode ? "???" : qTxt; document.getElementById('spkMain').onclick = () => speak(qTxt, qLang); if(quizQ === 1) { document.getElementById('lblAns1').innerText = LANGS[conf.l2].name; document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; document.getElementById('micAns1').onclick = function(){ listen(2, 'qAns1', this) }; document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; document.getElementById('spkAns1').onclick = () => speak(curWord.en, conf.l2); document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); } else { document.getElementById('lblAns1').innerText = LANGS[conf.l1].name; document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; document.getElementById('micAns1').onclick = function(){ listen(1, 'qAns1', this) }; document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; document.getElementById('spkAns1').onclick = () => speak(curWord.de, conf.l1); document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); } document.getElementById('qAns1').value = ""; document.getElementById('qAns2').value = ""; document.getElementById('qFeed').innerHTML = ""; document.getElementById('nextBtn').style.display="none"; document.getElementById('checkBtn').style.display="block"; if(audioMode) speak(curWord.sv, conf.l3); }
-    function checkAns() { const i1 = document.getElementById('qAns1').value.trim().toLowerCase(); const i2 = document.getElementById('qAns2').value.trim().toLowerCase(); let r1, r2; if(quizQ === 1) { r1 = i1 === curWord.en.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } else { r1 = i1 === curWord.de.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } document.getElementById('qMainText').innerText = quizQ===1 ? curWord.de : curWord.en; const vL2 = (curWord.enP) ? `<span class="fb-sub">🕒 ${curWord.enP} | 🔮 ${curWord.enF}</span>` : ""; const vL3 = (curWord.svP) ? `<span class="fb-sub">🕒 ${curWord.svP} | 🔮 ${curWord.svF}</span>` : ""; const html = `<div class="feedback-card" style="background:${(r1&&r2)?'#f0fff4':'#fff5f5'}"><div class="fb-row"><span class="lang-tag">${LANGS[conf.l1].flag}</span> <b>${curWord.de}</b></div><div class="fb-row"><span class="lang-tag">${LANGS[conf.l2].flag}</span> <b>${curWord.en}</b> ${vL2}</div><div class="fb-row"><span class="lang-tag">${LANGS[conf.l3].flag}</span> <b>${curWord.sv}</b> ${vL3}</div></div>`; document.getElementById('qFeed').innerHTML = html; document.getElementById('nextBtn').style.display="block"; document.getElementById('checkBtn').style.display="none"; if(r1 && r2) { updateLevel(curWord.id, true); speak(curWord.sv, conf.l3); } else { updateLevel(curWord.id, false); } }
+    // --- QUIZ LOGIC WITH HINTS ---
+    function nextQ() {
+        if(allWords.length === 0) return; 
+        let pool = []; allWords.forEach(w => { let wt = (w.level<2)?3:1; for(let i=0;i<wt;i++) pool.push(w); }); 
+        curWord = pool[Math.floor(Math.random()*pool.length)]; 
+        quizQ = Math.random() > 0.5 ? 1 : 2; 
+        
+        const qTxt = quizQ === 1 ? curWord.de : curWord.en; 
+        const qLang = quizQ === 1 ? conf.l1 : conf.l2; 
+        
+        document.getElementById('qMainText').innerText = audioMode ? "???" : qTxt; 
+        document.getElementById('spkMain').onclick = () => speak(qTxt, qLang);
+        
+        // HINTS & FIRST LETTER
+        let h1, h2;
+        if(quizQ === 1) { // Asking L1 (De) -> Want L2 & L3
+            document.getElementById('lblAns1').innerText = LANGS[conf.l2].name; 
+            document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; 
+            h1 = curWord.en ? curWord.en.charAt(0) : "";
+            h2 = curWord.sv ? curWord.sv.charAt(0) : "";
+            document.getElementById('micAns1').onclick = function(){ listen(2, 'qAns1', this) }; 
+            document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; 
+            document.getElementById('spkAns1').onclick = () => speak(curWord.en, conf.l2); 
+            document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); 
+        } else { // Asking L2 (En) -> Want L1 & L3
+            document.getElementById('lblAns1').innerText = LANGS[conf.l1].name; 
+            document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; 
+            h1 = curWord.de ? curWord.de.charAt(0) : "";
+            h2 = curWord.sv ? curWord.sv.charAt(0) : "";
+            document.getElementById('micAns1').onclick = function(){ listen(1, 'qAns1', this) }; 
+            document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; 
+            document.getElementById('spkAns1').onclick = () => speak(curWord.de, conf.l1); 
+            document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); 
+        }
+        
+        // SET HINTS
+        document.getElementById('qAns1').value = h1; 
+        document.getElementById('qAns2').value = h2;
+        
+        // RESET COLORS
+        document.getElementById('qAns1').className = ""; 
+        document.getElementById('qAns2').className = "";
+        
+        document.getElementById('qFeed').innerHTML = ""; 
+        document.getElementById('nextBtn').style.display="none"; 
+        document.getElementById('checkBtn').style.display="block"; 
+        
+        if(audioMode) speak(curWord.sv, conf.l3);
+    }
+
+    function checkAns() { 
+        const i1 = document.getElementById('qAns1').value.trim().toLowerCase(); 
+        const i2 = document.getElementById('qAns2').value.trim().toLowerCase(); 
+        let r1, r2; 
+        if(quizQ === 1) { r1 = i1 === curWord.en.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } 
+        else { r1 = i1 === curWord.de.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } 
+        
+        document.getElementById('qMainText').innerText = quizQ===1 ? curWord.de : curWord.en; 
+        
+        // SET COLORS
+        document.getElementById('qAns1').className = r1 ? "correct" : "wrong";
+        document.getElementById('qAns2').className = r2 ? "correct" : "wrong";
+
+        const vL2 = (curWord.enP) ? `<span class="fb-sub">🕒 ${curWord.enP} | 🔮 ${curWord.enF}</span>` : ""; 
+        const vL3 = (curWord.svP) ? `<span class="fb-sub">🕒 ${curWord.svP} | 🔮 ${curWord.svF}</span>` : ""; 
+        const html = `<div class="feedback-card" style="background:${(r1&&r2)?'#f0fff4':'#fff5f5'}"><div class="fb-row"><span class="lang-tag">${LANGS[conf.l1].flag}</span> <b>${curWord.de}</b></div><div class="fb-row"><span class="lang-tag">${LANGS[conf.l2].flag}</span> <b>${curWord.en}</b> ${vL2}</div><div class="fb-row"><span class="lang-tag">${LANGS[conf.l3].flag}</span> <b>${curWord.sv}</b> ${vL3}</div></div>`; 
+        document.getElementById('qFeed').innerHTML = html; 
+        document.getElementById('nextBtn').style.display="block"; 
+        document.getElementById('checkBtn').style.display="none"; 
+        if(r1 && r2) { updateLevel(curWord.id, true); speak(curWord.sv, conf.l3); } else { updateLevel(curWord.id, false); } 
+    }
+
     function updateLevel(id, correct) { db.collection(COLLECTIONS[currentCollIndex]).doc(id).update({ level: Math.max(0, Math.min(3, (curWord.level||0) + (correct?1:-1))) }); }
     function editWord(id) { const w = allWords.find(x=>x.id===id); document.getElementById('editId').value=w.id; document.getElementById('inDe').value=w.de; document.getElementById('inEn').value=w.en; document.getElementById('inSv').value=w.sv; document.getElementById('inEx').value=w.ex||""; document.getElementById('inDePast').value=w.deP||""; document.getElementById('inDeFut').value=w.deF||""; document.getElementById('inEnPast').value=w.enP||""; document.getElementById('inEnFut').value=w.enF||""; document.getElementById('inSvPast').value=w.svP||""; document.getElementById('inSvFut').value=w.svF||""; document.getElementById('addTitle').innerText="Bearbeiten"; document.getElementById('cancelEdit').style.display="block"; if(w.svP) document.getElementById('verbSection').style.display="block"; showTab('add'); }
     function del(id) { if(confirm("Löschen?")) db.collection(COLLECTIONS[currentCollIndex]).doc(id).delete().then(refreshData); }
