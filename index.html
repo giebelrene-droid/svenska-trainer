@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 2.3</title>
+    <title>Family Trainer 2.3.1</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🧨</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🧨</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🛠️</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🛠️</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -58,7 +58,6 @@
         .lang-tag { font-size: 0.7em; font-weight: 800; color: var(--primary); margin-right: 5px; display: inline-block; width: 25px; }
         .version-info { text-align: center; font-size: 0.7em; color: #a0aec0; padding: 20px; font-weight: 600; }
         
-        /* Neuer Delete Button Style */
         .danger-btn { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; margin-top: 10px; }
     </style>
 </head>
@@ -104,7 +103,7 @@
 
     <div id="tabAdd" class="card">
         <h2 id="addTitle">Neuzugang</h2>
-        <div id="loader" style="color:var(--primary); font-weight:700; text-align:center; display:none;">KI übersetzt... 🪄</div>
+        <div id="loader" style="color:var(--primary); font-weight:700; text-align:center; display:none;">KI arbeitet... 🪄</div>
         <input type="hidden" id="editId">
         
         <label id="lblIn1">L1</label>
@@ -124,7 +123,7 @@
         <div id="verbSection" class="verb-section">
             <div class="verb-lang-group">
                 <div class="verb-lang-title" id="vt1">L1</div>
-                <div class="verb-row"><input type="text" id="inDePast" placeholder="Past"><input type="text" id="inDeFut" placeholder="Future"></div>
+                <div class="verb-row"><input type="text" id="inDePast" placeholder="Vergangenheit"><input type="text" id="inDeFut" placeholder="Zukunft"></div>
             </div>
             <div class="verb-lang-group">
                 <div class="verb-lang-title" id="vt2">L2</div>
@@ -175,7 +174,7 @@
     </div>
 </div>
 
-<div class="version-info">FAMILY TRAINER v2.3</div>
+<div class="version-info">FAMILY TRAINER v2.3.1 (Fix)</div>
 
 <script>
     const firebaseConfig = {
@@ -337,24 +336,28 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
+    // --- REPARIERTE VERB FUNKTION ---
     async function fetchVerbForms() {
-        const base = document.getElementById('inEn').value.trim(); 
-        if(!base) { alert("Bitte Wort in Slot 2 eingeben."); return; }
+        const base = document.getElementById('inEn').value.trim(); // Basis-Wort aus Feld 2 (meist Englisch)
+        if(!base) { alert("Bitte Wort in Slot 2 eingeben (z.B. 'keep' oder 'run')."); return; }
         document.getElementById('loader').style.display = "block";
         try {
             const p = [];
-            ['Yesterday I ran', 'I will run'].forEach(phrase => {
+            // Hier nutzen wir jetzt dynamsich das eingetippte Wort!
+            [`Yesterday I ${base}`, `I will ${base}`].forEach(phrase => {
                 [conf.l1, conf.l2, conf.l3].forEach(l => p.push(fetch(`https://api.mymemory.translated.net/get?q=${phrase}&langpair=en|${l}`).then(r=>r.json())));
             });
             const res = await Promise.all(p);
+            // Index 0-2 ist Vergangenheit (Yesterday I...), 3-5 ist Zukunft (I will...)
             document.getElementById('inDePast').value = res[0].responseData.translatedText;
             document.getElementById('inEnPast').value = res[1].responseData.translatedText;
             document.getElementById('inSvPast').value = res[2].responseData.translatedText;
             document.getElementById('inDeFut').value = res[3].responseData.translatedText;
             document.getElementById('inEnFut').value = res[4].responseData.translatedText;
             document.getElementById('inSvFut').value = res[5].responseData.translatedText;
-            alert("Vorschläge geladen. Bitte anpassen!");
-        } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
+            alert("Vorschläge geladen. Bitte prüfen!");
+        } catch(e) { console.error(e); alert("Fehler beim Laden."); } 
+        finally { document.getElementById('loader').style.display = "none"; }
     }
 
     function manualSave() {
@@ -373,17 +376,14 @@
         op.then(() => { clearInputs(); if(eid) showTab('list'); else alert("Gespeichert!"); });
     }
 
-    // --- NUKE DATABASE FUNCTION ---
     async function nukeDatabase() {
         if(!confirm(`WARNUNG: Möchtest du wirklich ALLE Wörter von Benutzer "${userNames[currentCollIndex]}" löschen?`)) return;
         if(!confirm("Bist du ganz sicher? Die Daten sind unwiderruflich weg!")) return;
-        
         const coll = COLLECTIONS[currentCollIndex];
         const snapshot = await db.collection(coll).get();
         const batch = db.batch();
         snapshot.docs.forEach(doc => batch.delete(doc.ref));
         await batch.commit();
-        
         refreshData();
         alert("Liste erfolgreich geleert. Ein Neuanfang! 🌱");
     }
