@@ -1,39 +1,46 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 3.7 (Logic Update)</title>
+    <title>Family Trainer 4.1 (Synonym Master)</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🧠</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>✨</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
         :root { --primary: #005293; --accent: #FECC00; --bg: #f4f7f9; --text: #1a2b3c; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; color: var(--text); max-width: 500px; margin: 0 auto; }
+        
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .badge { background: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .settings-btn { background: white; border: none; font-size: 1.2em; cursor: pointer; padding: 5px 10px; border-radius: 50%; }
+        
         .nav { display: flex; gap: 5px; margin-bottom: 20px; overflow-x: auto; }
         .nav button { background: #d1dce5; flex: 1; padding: 10px; font-size: 11px; color: #4a627a; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
         .nav button.active { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 82, 147, 0.3); }
+        
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; }
         h2 { color: var(--primary); margin-top: 0; font-size: 1.2em; font-weight: 800; }
         label { display: block; font-size: 0.7em; font-weight: 700; color: #7f8c8d; margin: 10px 0 3px 3px; text-transform: uppercase; }
+        
         .input-row { display: flex; align-items: center; gap: 5px; width: 100%; margin-bottom: 5px; }
         input, select { flex: 1; padding: 12px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 12px; font-size: 16px; width: 100%; box-sizing: border-box; }
         input:focus { border-color: var(--primary); background: white; outline: none; }
+        
         .action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
         .mic-btn, .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; min-width: 35px; }
         .mic-active { background: #feb2b2 !important; border-color: #e53e3e !important; animation: pulse 1s infinite; }
         .list-btn { background: #edf2f7; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-left: 5px; font-size: 12px; }
         .danger-btn { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; margin-top: 10px; }
+        
         .verb-section { background: #edf2f7; padding: 12px; border-radius: 12px; margin-top: 15px; display: none; }
         .verb-lang-group { margin-bottom: 12px; border-bottom: 1px solid #dce4ea; padding-bottom: 8px; }
         .verb-lang-title { font-size: 0.75em; font-weight: 800; color: var(--primary); margin-bottom: 4px; text-transform: uppercase; }
         .verb-row { display: flex; gap: 8px; }
         .verb-row input { font-size: 0.85em; padding: 8px; }
+        
         .feedback-card { text-align: left; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #e2e8f0; }
         .word-item { padding: 16px; border-bottom: 1px solid #f1f5f9; position: relative; }
         .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
@@ -42,10 +49,11 @@
         .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
         .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
         .challenge-mode { border: 2px solid #e53e3e; }
-        .api-input { font-family: monospace; font-size: 0.8em; border: 1px solid #cbd5e0; background: #fff; width: 100%; padding: 10px; border-radius: 8px; box-sizing: border-box; }
+        
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; }
         .settings-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; }
         .rename-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
+        .api-input { font-family: monospace; font-size: 0.8em; border: 1px solid #cbd5e0; background: #fff; width: 100%; padding: 10px; border-radius: 8px; box-sizing: border-box; }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .st-ok { background: #48bb78; box-shadow: 0 0 5px #48bb78; }
         .st-warn { background: #ed8936; }
@@ -165,6 +173,7 @@
         document.getElementById('deeplKey').value = apiKeys.deepl || "";
         const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx);
         if(isNaN(currentCollIndex) || currentCollIndex < 0 || currentCollIndex > 3) currentCollIndex = 0;
+        
         renderRenameInputs(); updateUserDropdown(); loadUserConfig(); loadVoices(); updateInterface(); refreshData(); checkDeepL();
     }
 
@@ -174,7 +183,7 @@
         try { const url = `https://api-free.deepl.com/v2/usage?auth_key=${apiKeys.deepl}`; const res = await fetch(url);
             if(res.ok) { useDeepL = true; indicator.className = "status-dot st-ok"; statusText.innerText = "DeepL Aktiv"; statusText.style.color = "#48bb78"; } 
             else { throw new Error("Invalid"); }
-        } catch(e) { useDeepL = false; indicator.className = "status-dot st-warn"; statusText.innerText = "Standard Modus (Key ungültig/CORS)"; statusText.style.color = "#e53e3e"; }
+        } catch(e) { useDeepL = false; indicator.className = "status-dot st-warn"; statusText.innerText = "Standard Modus (CORS/Key)"; statusText.style.color = "#e53e3e"; }
     }
 
     function renderRenameInputs() { let html = ''; userNames.forEach((name, i) => { html += `<div class="rename-row"><span>${i+1}.</span><input type="text" id="name${i}" value="${name}" onchange="saveName(${i})"></div>`; }); document.getElementById('renameContainer').innerHTML = html; }
@@ -195,22 +204,46 @@
 
     function cleanResult(txt) {
         if(!txt) return ""; let c = txt.trim();
-        // REMOVE NOISE
         c = c.replace(/^(to\s|I\s|He\s|She\s|We\s|You\s)/i, ""); 
         c = c.replace(/^(a\s|an\s|the\s)/i, ""); 
         c = c.replace(/^(ein\s|eine\s|der\s|die\s|das\s)/i, "");
-        if(c.toUpperCase().includes("PLEASE SELECT") || c.toUpperCase().includes("SELECT TWO")) return ""; 
         return c;
     }
 
-    async function translate(txt, src, tgt) {
+    // --- SYNONYM FINDER (MULTI-MATCH) ---
+    async function translateWithSynonyms(txt, src, tgt) {
         if(useDeepL) {
             try {
                 const url = `https://api-free.deepl.com/v2/translate?auth_key=${apiKeys.deepl}&text=${encodeURIComponent(txt)}&source_lang=${src.toUpperCase()}&target_lang=${tgt.toUpperCase()}`;
                 const res = await fetch(url); const data = await res.json();
                 if(data.translations && data.translations.length > 0) return data.translations[0].text;
-            } catch(e) { console.log("DeepL Call Failed"); }
+            } catch(e) { console.log("DeepL Fallback"); }
         }
+        
+        // MyMemory Logic
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
+        const res = await fetch(url); const data = await res.json();
+        
+        // Versuche Synonyme zu finden
+        let main = cleanResult(data.responseData.translatedText);
+        if(data.matches && data.matches.length > 1) {
+            const alts = new Set([main.toLowerCase()]);
+            let count = 0;
+            for(let m of data.matches) {
+                if(count >= 1) break; // Max 1 Synonym dazu (Insgesamt 2)
+                let t = cleanResult(m.translation).toLowerCase();
+                if(t && !alts.has(t) && t.split(' ').length === 1) { // Nur Einzelwörter
+                    alts.add(t);
+                    main += " / " + t;
+                    count++;
+                }
+            }
+        }
+        return main;
+    }
+
+    async function translateSingle(txt, src, tgt) {
+        // Simple translation for conjugation logic (no synonyms)
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
         const res = await fetch(url); const data = await res.json();
         return cleanResult(data.responseData.translatedText);
@@ -223,65 +256,68 @@
         document.getElementById('loader').style.display = "block";
         try {
             const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
-            const tasks = targets.filter(t => t.l !== src).map(async t => { const tr = await translate(txt, src, t.l); return {id: t.id, t: tr}; });
+            // Use translateWithSynonyms only for main fields
+            const tasks = targets.filter(t => t.l !== src).map(async t => { 
+                const tr = await translateWithSynonyms(txt, src, t.l); 
+                return {id: t.id, t: tr}; 
+            });
             const res = await Promise.all(tasks);
             res.forEach(r => { document.getElementById(r.id).value = r.t; });
-            const l1Word = document.getElementById('inDe').value;
-            if(l1Word) { const sentence = `Das ist ${l1Word}`; const exTr = await translate(sentence, conf.l1, conf.l3); document.getElementById('inEx').value = `... ${exTr} ...`; }
+            
+            const l1Word = document.getElementById('inDe').value.split('/')[0].trim();
+            if(l1Word) {
+                const exTr = await translateSingle(`Das ist ${l1Word}`, conf.l1, conf.l3);
+                document.getElementById('inEx').value = `... ${exTr} ...`;
+            }
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- LOGIC BASED VERB FORMS ---
+    // --- SPLITTER LOGIC FOR VERBS ---
     async function fetchVerbForms() {
-        const deBase = document.getElementById('inDe').value.trim();
-        const enBase = document.getElementById('inEn').value.trim();
-        const svBase = document.getElementById('inSv').value.trim();
+        const deBase = document.getElementById('inDe').value;
+        const enBase = document.getElementById('inEn').value;
         
         if(!enBase && !deBase) { alert("Bitte erst ein Wort eingeben."); return; }
-        
-        const base = enBase || deBase;
-        
         document.getElementById('loader').style.display = "block";
         
-        // 1. ZUKUNFT (AUTOMATISCH GENERIERT)
-        // Wir bauen die Zukunft manuell, das ist sicherer als jede KI.
-        if(deBase) document.getElementById('inDeFut').value = "wird " + deBase;
-        if(enBase) document.getElementById('inEnFut').value = "will " + enBase;
-        if(svBase) document.getElementById('inSvFut').value = "ska " + svBase;
+        // Helper to process multiple words "put / give"
+        const processMulti = async (inputStr, templateFn, src, tgt) => {
+            if(!inputStr) return "";
+            const parts = inputStr.split('/').map(s => s.trim()).slice(0,2); // Max 2 words
+            const results = [];
+            for(let part of parts) {
+                const sentence = templateFn(part);
+                let res = await translateSingle(sentence, src, tgt);
+                // Clean result
+                res = res.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did|He|Er|Han|’ve|’s|’d|has|have|had)\b\s?/gi, "").trim();
+                results.push(res);
+            }
+            return results.join(' / ');
+        };
 
-        // 2. VERGANGENHEIT (PER API MIT MÜLL-FILTER)
+        // ZUKUNFT (AUTO)
+        const autoFut = (str, pre) => str.split('/').map(s => `${pre} ${s.trim()}`).join(' / ');
+        if(document.getElementById('inDe').value) document.getElementById('inDeFut').value = autoFut(document.getElementById('inDe').value, "wird");
+        if(document.getElementById('inEn').value) document.getElementById('inEnFut').value = autoFut(document.getElementById('inEn').value, "will");
+        if(document.getElementById('inSv').value) document.getElementById('inSvFut').value = autoFut(document.getElementById('inSv').value, "ska");
+
+        // VERGANGENHEIT (API)
         try {
-            const p = [];
-            // Deutsch Past: "Gestern [verb] ich"
-            // Englisch Past: "Yesterday I [verb]"
-            // Schwedisch Past: "Igår [verb] jag"
-            
-            // Abfrage Deutsch Past (wenn wir EN haben)
-            if(!document.getElementById('inDePast').value && enBase) {
-                p.push(translate(`Yesterday I ${enBase}`, 'en', conf.l1).then(r => ({id: 'inDePast', t: r})));
+            // EN -> DE Past
+            if(enBase) {
+                const deP = await processMulti(enBase, (w) => `Yesterday I ${w}`, 'en', conf.l1);
+                document.getElementById('inDePast').value = deP;
             }
-            // Abfrage Schwedisch Past (wenn wir EN haben)
-            if(!document.getElementById('inSvPast').value && enBase) {
-                p.push(translate(`Yesterday I ${enBase}`, 'en', conf.l3).then(r => ({id: 'inSvPast', t: r})));
+            // EN -> SV Past
+            if(enBase) {
+                const svP = await processMulti(enBase, (w) => `Yesterday I ${w}`, 'en', conf.l3);
+                document.getElementById('inSvPast').value = svP;
             }
-            // Abfrage Englisch Past (wenn wir DE haben)
-            if(!document.getElementById('inEnPast').value && deBase) {
-                p.push(translate(`Gestern ${deBase} ich`, 'de', 'en').then(r => ({id: 'inEnPast', t: r})));
+            // DE -> EN Past
+            if(deBase) {
+                const enP = await processMulti(deBase, (w) => `Gestern ${w} ich`, 'de', 'en');
+                document.getElementById('inEnPast').value = enP;
             }
-
-            const results = await Promise.all(p);
-            
-            // CLEANER FUNCTION (Strict)
-            const clean = (txt) => {
-                if(!txt || txt.split(' ').length > 3) return ""; // Zu lang? Weg damit!
-                return txt.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did|He|Er|Han|’ve|’s|’d|has|have|had)\b\s?/gi, "").trim();
-            };
-
-            results.forEach(res => {
-                const el = document.getElementById(res.id);
-                if(el) el.value = clean(res.t);
-            });
-
         } catch(e) { console.error(e); } 
         finally { document.getElementById('loader').style.display = "none"; }
     }
@@ -382,8 +418,13 @@
         const i1 = document.getElementById('qAns1').value.trim().toLowerCase(); 
         const i2 = document.getElementById('qAns2').value.trim().toLowerCase(); 
         let r1, r2; 
-        if(quizQ === 1) { r1 = i1 === curWord.en.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } 
-        else { r1 = i1 === curWord.de.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); }
+        if(quizQ === 1) { 
+            r1 = curWord.en.toLowerCase().includes(i1) && i1.length > 1; // Flexible check for multi-words
+            r2 = curWord.sv.toLowerCase().includes(i2) && i2.length > 1;
+        } else { 
+            r1 = curWord.de.toLowerCase().includes(i1) && i1.length > 1;
+            r2 = curWord.sv.toLowerCase().includes(i2) && i2.length > 1;
+        }
         
         document.getElementById('qAns1').className = r1 ? "correct" : "wrong"; 
         document.getElementById('qAns2').className = r2 ? "correct" : "wrong";
