@@ -1,9 +1,9 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.0.5 (Bumerang-Logik)</title>
+    <title>Family Trainer 4.0.6 (Clean UI)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👑</text></svg>">
     
@@ -58,12 +58,12 @@
         .challenge-mode { border: 2px solid #e53e3e; }
 
         /* SETTINGS OVERLAY */
-        #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; }
-        .settings-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; }
+        #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; overflow-y: auto; }
+        .settings-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; max-height: 90vh; overflow-y: auto; }
         .rename-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
 
         /* DIAGNOSE BOX STYLING */
-        #debugBox { background: #1a202c; color: #48bb78; padding: 12px; border-radius: 12px; font-family: monospace; font-size: 11px; margin-bottom: 15px; display: none; border: 1px solid #2d3748; white-space: pre-wrap; }
+        #debugBox { background: #1a202c; color: #48bb78; padding: 12px; border-radius: 12px; font-family: monospace; font-size: 11px; margin-bottom: 15px; display: none; border: 1px solid #2d3748; white-space: pre-wrap; margin-top: 15px;}
     </style>
 </head>
 <body>
@@ -85,6 +85,10 @@
             <select id="selL2" onchange="saveSettings()"></select>
             <select id="selL3" onchange="saveSettings()"></select>
         </div>
+
+        <label style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">🔧 KI-Diagnose</label>
+        <div id="debugBox"></div>
+
         <button class="action-btn" onclick="closeSettings()">Fertig</button>
     </div>
 </div>
@@ -102,8 +106,6 @@
     <button id="btn4" onclick="showTab('challenge')">⏱️ CHALLENGE</button>
     <button id="btn3" onclick="showTab('list')">📖 LISTE</button>
 </div>
-
-<div id="debugBox"></div>
 
 <div id="tabAdd" class="card">
     <h2 id="addTitle">Neues Wort</h2>
@@ -166,7 +168,7 @@
 
 <script>
     // --- ZEITSTEMPEL VERSION ---
-    const VERSION = "18.02.2026 - 17:25 (Bumerang-Logik)";
+    const VERSION = "18.02.2026 - 17:35 (Clean UI)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -231,7 +233,7 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- NEUE BUMERANG-LOGIK (Doppelte Übersetzung für Deutsch) ---
+    // --- BUMERANG-LOGIK ---
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
@@ -239,28 +241,22 @@
         
         if(!baseDe || !baseEn) return alert("Bitte erst Deutsch und Englisch ausfüllen.");
         
+        // Anzeige aktivieren (im Settings-Overlay sichtbar, falls offen)
         debug.style.display = "block";
         debug.innerHTML = "⏳ KI wird abgefragt...";
         document.getElementById('loader').style.display = "block";
         
         try {
-            // SCHRITT 1: Mit "He did..." (EN->DE) die temporäre Form finden.
-            // Das liefert oft "Er hat geschwommen" (was wir NICHT wollen), 
-            // aber es ist ein Zwischenschritt.
+            // SCHRITT 1: "He did..." (EN -> DE) als Zwischenschritt
             let tempDE = await translate(`He did ${baseEn}`, 'en', 'de');
 
-            // SCHRITT 2: Rückübersetzen (DE->EN), um sauberes Englisch zu bekommen.
-            // "Er hat geschwommen" -> "He swam".
-            // "Er ging" -> "He went".
+            // SCHRITT 2: Rückübersetzung (DE -> EN) für sauberes Englisch
             let finalEnPast = await translate(tempDE, 'de', 'en');
 
-            // SCHRITT 3: BUMERANG! Wir nehmen das saubere Englisch ("He swam")
-            // und übersetzen es zurück ins Deutsche.
-            // "He swam" -> "Er schwamm" (oder "Er ist geschwommen").
-            // Das korrigiert oft das falsche "haben" aus Schritt 1.
+            // SCHRITT 3: Bumerang (EN -> DE) für sauberes Deutsch
             let finalDePast = await translate(finalEnPast, 'en', 'de');
 
-            // SCHRITT 4: Schwedisch aus dem sauberen Englisch
+            // SCHRITT 4: Schwedisch aus sauberem Englisch
             let finalSvPast = await translate(finalEnPast, 'en', 'sv');
 
             debug.innerHTML = "<b>KI BUMERANG-LOGIK:</b>\n" + 
@@ -274,7 +270,6 @@
                 const lowerText = rawText.toLowerCase();
                 const lowerPronoun = pronoun.toLowerCase();
                 const index = lowerText.indexOf(lowerPronoun);
-                
                 if (index !== -1) {
                     return rawText.substring(index).trim().replace(/[.!]$/, "");
                 } else {
@@ -282,12 +277,10 @@
                 }
             };
 
-            // Ergebnisse eintragen
             document.getElementById('inEnPast').value = anchorClean(finalEnPast, "He");
             document.getElementById('inDePast').value = anchorClean(finalDePast, "Er");
             document.getElementById('inSvPast').value = anchorClean(finalSvPast, "Han");
 
-            // Zukunft bleibt einfach
             document.getElementById('inDeFut').value = "Er wird " + baseDe;
             document.getElementById('inEnFut').value = "He will " + baseEn;
             
