@@ -44,14 +44,20 @@
         .backup-btn { flex: 1; padding: 10px; font-size: 10px; font-weight: 800; border-radius: 10px; border: none; background: #edf2f7; cursor: pointer; }
         .lang-tag { font-size: 0.7em; font-weight: 800; color: var(--se-blue); margin-right: 5px; display: inline-block; width: 25px; }
         
-        /* Verb Section Layout Neu */
         .verb-section { background: #edf2f7; padding: 15px; border-radius: 12px; margin-top: 15px; display: none; border: 1px solid #cbd5e0; }
         .verb-lang-group { margin-bottom: 12px; border-bottom: 1px solid #dce4ea; padding-bottom: 8px; }
         .verb-lang-group:last-child { border-bottom: none; }
         .verb-lang-title { font-size: 0.75em; font-weight: 800; color: var(--se-blue); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
         .verb-row { display: flex; gap: 8px; }
         .verb-row input { font-size: 0.85em; padding: 10px; width: 50%; }
-        .grammar-hint-box { margin-top: 15px; background: white; padding: 10px; border-radius: 10px; border: 1px dashed #cbd5e0; text-align: left; font-size: 0.85em; }
+        
+        /* New Feedback Styles */
+        .feedback-card { text-align: left; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #e2e8f0; }
+        .fb-row { margin-bottom: 10px; }
+        .fb-row:last-child { margin-bottom: 0; }
+        .fb-main { font-weight: 800; font-size: 1.1em; color: #2d3748; }
+        .fb-sub { font-size: 0.8em; color: #718096; margin-top: 2px; font-family: 'Courier New', monospace; }
+        .fb-label { font-size: 0.7em; font-weight: 700; color: #cbd5e0; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -158,7 +164,7 @@
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.9.2</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.9.3</div>
 
 <script>
     const firebaseConfig = {
@@ -364,20 +370,27 @@
         i1.className = r1 ? "correct" : "wrong"; i2.className = r2 ? "correct" : "wrong";
         document.getElementById('qMainText').innerText = quizMode === "DE" ? curWord.de : curWord.en;
 
-        let extraInfo = "";
-        if(curWord.svP || curWord.svF) {
-            extraInfo = `<div class="grammar-hint-box">
-                <b>🕒 Ver:</b> ${curWord.deP||'-'} | ${curWord.enP||'-'} | ${curWord.svP||'-'}<br>
-                <b>🔮 Zuk:</b> ${curWord.deF||'-'} | ${curWord.enF||'-'} | ${curWord.svF||'-'}
-            </div>`;
-        }
+        const vEn = (curWord.enP) ? `<br><span class="fb-sub">🕒 ${curWord.enP} | 🔮 ${curWord.enF}</span>` : "";
+        const vSv = (curWord.svP) ? `<br><span class="fb-sub">🕒 ${curWord.svP} | 🔮 ${curWord.svF}</span>` : "";
 
         if(r1 && r2) {
-            document.getElementById('qFeed').innerHTML = `<div style="color:#38b2ac;font-weight:bold;margin-top:10px;">RICHTIG! ✨</div><div class="example-box">${curWord.ex || ""}</div>${extraInfo}`;
+            document.getElementById('qFeed').innerHTML = `
+                <div style="color:#38b2ac;font-weight:bold;margin-top:10px;">RICHTIG! ✨</div>
+                <div class="example-box">${curWord.ex || ""}</div>
+                <div class="feedback-card" style="border-color:#38b2ac; background:#f0fff4;">
+                    <div class="fb-row"><span class="lang-tag">🇬🇧</span> <span class="fb-main">${curWord.en}</span>${vEn}</div>
+                    <div class="fb-row"><span class="lang-tag">🇸🇪</span> <span class="fb-main">${curWord.sv}</span>${vSv}</div>
+                </div>`;
             updateLevel(curWord.id, true); speak(curWord.sv, 'sv-SE');
             if(isChallenge) setTimeout(nextQ, 2000); else { document.getElementById('nextBtn').style.display="block"; document.getElementById('checkBtn').style.display="none"; }
         } else {
-            document.getElementById('qFeed').innerHTML = `<div style="color:#e53e3e;font-size:0.9em;margin-top:10px;">DE: <b>${curWord.de}</b> | EN: <b>${curWord.en}</b><br>SV: <b>${curWord.sv}</b></div>${extraInfo}`;
+            document.getElementById('qFeed').innerHTML = `
+                <div style="color:#e53e3e;font-size:0.9em;margin-top:10px;">LÖSUNG:</div>
+                <div class="feedback-card" style="border-color:#feb2b2; background:#fff5f5;">
+                    <div class="fb-row"><span class="lang-tag">🇩🇪</span> <b>${curWord.de}</b></div>
+                    <div class="fb-row"><span class="lang-tag">🇬🇧</span> <b>${curWord.en}</b>${vEn}</div>
+                    <div class="fb-row"><span class="lang-tag">🇸🇪</span> <b>${curWord.sv}</b>${vSv}</div>
+                </div>`;
             updateLevel(curWord.id, false);
             document.getElementById('nextBtn').style.display="block"; document.getElementById('checkBtn').style.display="none";
         }
