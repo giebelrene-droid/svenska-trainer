@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Trainer 2.1</title>
+    <title>Family Trainer 2.2</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👥</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👥</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👨‍👩‍👧‍👦</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👨‍👩‍👧‍👦</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -38,7 +38,9 @@
 
         /* Settings Modal */
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 1000; justify-content: center; align-items: center; }
-        .settings-box { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 350px; }
+        .settings-box { background: white; padding: 20px; border-radius: 20px; width: 90%; max-width: 350px; max-height: 90vh; overflow-y: auto; }
+        .rename-row { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; }
+        .rename-row span { font-size: 0.8em; color: #7f8c8d; width: 20px; }
         
         /* Verb Section */
         .verb-section { background: #edf2f7; padding: 15px; border-radius: 12px; margin-top: 15px; display: none; border: 1px solid #cbd5e0; }
@@ -53,7 +55,6 @@
         .word-item { padding: 16px; border-bottom: 1px solid #f1f5f9; position: relative; }
         .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
         .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--accent); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--primary); }
-        .example-box { font-size: 0.85em; color: #4a5568; font-style: italic; margin-top: 5px; padding: 10px; background: #f1f5f9; border-radius: 10px; border-left: 4px solid var(--primary); }
         .lang-tag { font-size: 0.7em; font-weight: 800; color: var(--primary); margin-right: 5px; display: inline-block; width: 25px; }
         .version-info { text-align: center; font-size: 0.7em; color: #a0aec0; padding: 20px; font-weight: 600; }
     </style>
@@ -62,26 +63,25 @@
 
 <div id="settingsOverlay">
     <div class="settings-box">
-        <h2>👥 Profil & Sprachen</h2>
+        <h2 style="margin-bottom:5px;">👤 Wer lernt gerade?</h2>
+        <select id="selUser" onchange="switchUser()" style="background:#e6fffa; border-color:#38b2ac; font-weight:800; padding:12px; font-size:1.1em; margin-bottom:15px;"></select>
         
-        <label>Aktiver Benutzer</label>
-        <select id="selUser" onchange="switchUser()" style="background:#e6fffa; border-color:#38b2ac; font-weight:bold;">
-            <option value="words">👤 Hauptprofil (Du)</option>
-            <option value="words_partner">👤 Profil 2 (Partner)</option>
-        </select>
+        <div style="background:#f7fafc; padding:15px; border-radius:10px; border:1px solid #edf2f7; margin-bottom:15px;">
+            <p style="font-size:0.7em; font-weight:800; color:#7f8c8d; margin-top:0;">NAMEN ÄNDERN</p>
+            <div class="rename-row"><span>1.</span><input type="text" id="name0" onchange="saveName(0)"></div>
+            <div class="rename-row"><span>2.</span><input type="text" id="name1" onchange="saveName(1)"></div>
+            <div class="rename-row"><span>3.</span><input type="text" id="name2" onchange="saveName(2)"></div>
+            <div class="rename-row"><span>4.</span><input type="text" id="name3" onchange="saveName(3)"></div>
+        </div>
+
+        <label>Sprachen für dieses Profil</label>
+        <div style="display:flex; gap:5px; margin-bottom:5px;">
+            <select id="selL1" onchange="saveSettings()" style="font-size:0.8em;"></select>
+            <select id="selL2" onchange="saveSettings()" style="font-size:0.8em;"></select>
+            <select id="selL3" onchange="saveSettings()" style="font-size:0.8em;"></select>
+        </div>
         
-        <hr style="border:0; border-top:1px solid #edf2f7; margin:15px 0;">
-        
-        <label>Slot 1 (Basis)</label>
-        <select id="selL1" onchange="saveSettings()"></select>
-        
-        <label>Slot 2 (Zweitsprache)</label>
-        <select id="selL2" onchange="saveSettings()"></select>
-        
-        <label>Slot 3 (Zielsprache)</label>
-        <select id="selL3" onchange="saveSettings()"></select>
-        
-        <button class="action-btn" onclick="closeSettings()" style="margin-top:20px;">Fertig</button>
+        <button class="action-btn" onclick="closeSettings()">Schließen</button>
     </div>
 </div>
 
@@ -104,13 +104,13 @@
         <div id="loader" style="color:var(--primary); font-weight:700; text-align:center; display:none;">KI übersetzt... 🪄</div>
         <input type="hidden" id="editId">
         
-        <label id="lblIn1">Sprache 1</label>
+        <label id="lblIn1">L1</label>
         <div class="input-row"><input type="text" id="inDe"><button class="mic-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
         
-        <label id="lblIn2">Sprache 2</label>
+        <label id="lblIn2">L2</label>
         <div class="input-row"><input type="text" id="inEn"><button class="mic-btn" onclick="listen(2, 'inEn', this)">🎤</button></div>
         
-        <label id="lblIn3">Sprache 3</label>
+        <label id="lblIn3">L3</label>
         <div class="input-row"><input type="text" id="inSv"><button class="mic-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
         
         <label>Beispielsatz</label>
@@ -171,7 +171,7 @@
     </div>
 </div>
 
-<div class="version-info">GLOBAL TRAINER v2.1 (Multi-User)</div>
+<div class="version-info">FAMILY TRAINER v2.2 (4-User Edition)</div>
 
 <script>
     const firebaseConfig = {
@@ -196,36 +196,54 @@
         'it': { name: 'Italienisch', tts: 'it-IT', flag: '🇮🇹' }
     };
 
-    // STANDARD-KONFIGURATION
+    // USER CONFIGURATION
+    const COLLECTIONS = ['words', 'words_u2', 'words_u3', 'words_u4']; // Feste DB Namen
+    let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; // Standard-Anzeige
+    let currentCollIndex = 0;
+    
     let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
-    let currentColl = "words"; // Standard Sammlung
     let allWords = [], curWord = null, isChallenge = false, audioMode = false, voices = [], quizQ = 1;
 
     function init() {
-        // Lade letzten Benutzer
-        const savedColl = localStorage.getItem('trainerUser');
-        if(savedColl) currentColl = savedColl;
-        document.getElementById('selUser').value = currentColl;
+        // Lade Namen
+        const storedNames = localStorage.getItem('trainerUserNames');
+        if(storedNames) userNames = JSON.parse(storedNames);
+        
+        // Input Felder füllen
+        userNames.forEach((n, i) => document.getElementById('name'+i).value = n);
 
-        // Lade Sprachen für diesen Benutzer
-        loadUserConfig();
+        // Lade letzten User Index
+        const savedIdx = localStorage.getItem('trainerUserIdx');
+        if(savedIdx) currentCollIndex = parseInt(savedIdx);
         
-        // Fülle Select-Boxen
-        const opts = Object.keys(LANGS).map(k => `<option value="${k}">${LANGS[k].flag} ${LANGS[k].name}</option>`).join('');
-        ['selL1', 'selL2', 'selL3'].forEach(id => document.getElementById(id).innerHTML = opts);
-        
+        loadUserConfig(); // Sprachen laden
+        updateUserDropdown(); // Dropdown bauen
         loadVoices();
         updateInterface();
         refreshData();
     }
 
+    function updateUserDropdown() {
+        const sel = document.getElementById('selUser');
+        sel.innerHTML = userNames.map((n, i) => `<option value="${i}" ${i===currentCollIndex?'selected':''}>👤 ${n}</option>`).join('');
+    }
+
+    function saveName(idx) {
+        const val = document.getElementById('name'+idx).value.trim();
+        if(val) {
+            userNames[idx] = val;
+            localStorage.setItem('trainerUserNames', JSON.stringify(userNames));
+            updateUserDropdown();
+        }
+    }
+
     function switchUser() {
-        // Speichere aktuelle Sprachen für den ALTEN User
-        localStorage.setItem('trainerLangs_' + currentColl, JSON.stringify(conf));
+        // Speichere Sprachen des alten Users
+        localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf));
         
         // Wechseln
-        currentColl = document.getElementById('selUser').value;
-        localStorage.setItem('trainerUser', currentColl);
+        currentCollIndex = parseInt(document.getElementById('selUser').value);
+        localStorage.setItem('trainerUserIdx', currentCollIndex);
         
         loadUserConfig();
         updateInterface();
@@ -233,13 +251,15 @@
     }
 
     function loadUserConfig() {
-        const savedLangs = localStorage.getItem('trainerLangs_' + currentColl);
-        if(savedLangs) {
-            conf = JSON.parse(savedLangs);
-        } else {
-            // Default falls neu
-            conf = { l1: 'de', l2: 'en', l3: 'sv' };
-        }
+        const savedLangs = localStorage.getItem('trainerLangs_' + currentCollIndex);
+        if(savedLangs) conf = JSON.parse(savedLangs);
+        else conf = { l1: 'de', l2: 'en', l3: 'sv' }; // Default
+        
+        // Sprachen Selects aktualisieren
+        const opts = Object.keys(LANGS).map(k => `<option value="${k}">${LANGS[k].flag} ${LANGS[k].name}</option>`).join('');
+        ['selL1', 'selL2', 'selL3'].forEach(id => {
+            document.getElementById(id).innerHTML = opts;
+        });
         document.getElementById('selL1').value = conf.l1;
         document.getElementById('selL2').value = conf.l2;
         document.getElementById('selL3').value = conf.l3;
@@ -252,7 +272,7 @@
         conf.l1 = document.getElementById('selL1').value;
         conf.l2 = document.getElementById('selL2').value;
         conf.l3 = document.getElementById('selL3').value;
-        localStorage.setItem('trainerLangs_' + currentColl, JSON.stringify(conf));
+        localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf));
         updateInterface();
         refreshData();
     }
@@ -261,7 +281,6 @@
         document.getElementById('lblIn1').innerText = `${LANGS[conf.l1].flag} ${LANGS[conf.l1].name}`;
         document.getElementById('lblIn2').innerText = `${LANGS[conf.l2].flag} ${LANGS[conf.l2].name}`;
         document.getElementById('lblIn3').innerText = `${LANGS[conf.l3].flag} ${LANGS[conf.l3].name}`;
-        
         document.getElementById('vt1').innerText = `${LANGS[conf.l1].flag} ${LANGS[conf.l1].name}`;
         document.getElementById('vt2').innerText = `${LANGS[conf.l2].flag} ${LANGS[conf.l2].name}`;
         document.getElementById('vt3').innerText = `${LANGS[conf.l3].flag} ${LANGS[conf.l3].name}`;
@@ -313,7 +332,6 @@
         
         if(!txt) { alert("Bitte Wort eingeben!"); return; }
         document.getElementById('loader').style.display = "block";
-        
         try {
             const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
             const tasks = targets.filter(t => t.l !== src).map(t => 
@@ -338,7 +356,6 @@
                 [conf.l1, conf.l2, conf.l3].forEach(l => p.push(fetch(`https://api.mymemory.translated.net/get?q=${phrase}&langpair=en|${l}`).then(r=>r.json())));
             });
             const res = await Promise.all(p);
-            // Simple mapping (Index 0-2 = Past, 3-5 = Future)
             document.getElementById('inDePast').value = res[0].responseData.translatedText;
             document.getElementById('inEnPast').value = res[1].responseData.translatedText;
             document.getElementById('inSvPast').value = res[2].responseData.translatedText;
@@ -355,25 +372,19 @@
             deF: document.getElementById('inDeFut').value, enF: document.getElementById('inEnFut').value, svF: document.getElementById('inSvFut').value
         };
         const data = {
-            de: document.getElementById('inDe').value, 
-            en: document.getElementById('inEn').value, 
-            sv: document.getElementById('inSv').value, 
-            ex: document.getElementById('inEx').value,
-            ...vData,
-            ts: firebase.firestore.FieldValue.serverTimestamp(),
-            level: 0
+            de: document.getElementById('inDe').value, en: document.getElementById('inEn').value, sv: document.getElementById('inSv').value, ex: document.getElementById('inEx').value,
+            ...vData, ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0
         };
         if(!data.de || !data.sv) return;
-        
         const eid = document.getElementById('editId').value;
-        const op = eid ? db.collection(currentColl).doc(eid).update(data) : db.collection(currentColl).add(data);
+        const coll = COLLECTIONS[currentCollIndex];
+        const op = eid ? db.collection(coll).doc(eid).update(data) : db.collection(coll).add(data);
         op.then(() => { clearInputs(); if(eid) showTab('list'); else alert("Gespeichert!"); });
     }
 
-    // --- DATENBANK MIT DYAMISCHER COLLECTION ---
     async function refreshData() {
-        // HIER IST DER TRICK: db.collection(currentColl)
-        const s = await db.collection(currentColl).orderBy("ts", "desc").get();
+        const coll = COLLECTIONS[currentCollIndex];
+        const s = await db.collection(coll).orderBy("ts", "desc").get();
         allWords = s.docs.map(d => ({id: d.id, ...d.data()}));
         document.getElementById('wordCount').innerText = allWords.length;
         renderStats();
@@ -427,14 +438,8 @@
         const i1 = document.getElementById('qAns1').value.trim().toLowerCase();
         const i2 = document.getElementById('qAns2').value.trim().toLowerCase();
         let r1, r2;
-        
-        if(quizQ === 1) { 
-            r1 = i1 === curWord.en.trim().toLowerCase();
-            r2 = i2 === curWord.sv.trim().toLowerCase();
-        } else { 
-            r1 = i1 === curWord.de.trim().toLowerCase();
-            r2 = i2 === curWord.sv.trim().toLowerCase();
-        }
+        if(quizQ === 1) { r1 = i1 === curWord.en.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } 
+        else { r1 = i1 === curWord.de.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); }
         
         document.getElementById('qMainText').innerText = quizQ===1 ? curWord.de : curWord.en;
         const vL2 = (curWord.enP) ? `<span class="fb-sub">🕒 ${curWord.enP} | 🔮 ${curWord.enF}</span>` : "";
@@ -446,18 +451,17 @@
                 <div class="fb-row"><span class="lang-tag">${LANGS[conf.l2].flag}</span> <b>${curWord.en}</b> ${vL2}</div>
                 <div class="fb-row"><span class="lang-tag">${LANGS[conf.l3].flag}</span> <b>${curWord.sv}</b> ${vL3}</div>
             </div>`;
-            
         document.getElementById('qFeed').innerHTML = html;
         document.getElementById('nextBtn').style.display="block"; document.getElementById('checkBtn').style.display="none";
         
         if(r1 && r2) { updateLevel(curWord.id, true); speak(curWord.sv, conf.l3); } else { updateLevel(curWord.id, false); }
     }
 
-    function updateLevel(id, correct) { db.collection(currentColl).doc(id).update({ level: Math.max(0, Math.min(3, (curWord.level||0) + (correct?1:-1))) }); }
+    function updateLevel(id, correct) { db.collection(COLLECTIONS[currentCollIndex]).doc(id).update({ level: Math.max(0, Math.min(3, (curWord.level||0) + (correct?1:-1))) }); }
     function editWord(id) { const w = allWords.find(x=>x.id===id); document.getElementById('editId').value=w.id; document.getElementById('inDe').value=w.de; document.getElementById('inEn').value=w.en; document.getElementById('inSv').value=w.sv; document.getElementById('inEx').value=w.ex||""; document.getElementById('inDePast').value=w.deP||""; document.getElementById('inDeFut').value=w.deF||""; document.getElementById('inEnPast').value=w.enP||""; document.getElementById('inEnFut').value=w.enF||""; document.getElementById('inSvPast').value=w.svP||""; document.getElementById('inSvFut').value=w.svF||""; document.getElementById('addTitle').innerText="Bearbeiten"; document.getElementById('cancelEdit').style.display="block"; if(w.svP) document.getElementById('verbSection').style.display="block"; showTab('add'); }
-    function del(id) { if(confirm("Löschen?")) db.collection(currentColl).doc(id).delete().then(refreshData); }
+    function del(id) { if(confirm("Löschen?")) db.collection(COLLECTIONS[currentCollIndex]).doc(id).delete().then(refreshData); }
     function exportData() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allWords)); const a = document.createElement('a'); a.href = d; a.download = "backup.json"; a.click(); }
-    function importData(e) { const f = e.target.files[0]; const r = new FileReader(); r.onload = async (ev) => { const data = JSON.parse(ev.target.result); for(let w of data) { if(!allWords.some(x => x.de === w.de)) await db.collection(currentColl).add({...w, ts: firebase.firestore.FieldValue.serverTimestamp()}); } refreshData(); }; r.readAsText(f); }
+    function importData(e) { const f = e.target.files[0]; const r = new FileReader(); r.onload = async (ev) => { const data = JSON.parse(ev.target.result); for(let w of data) { if(!allWords.some(x => x.de === w.de)) await db.collection(COLLECTIONS[currentCollIndex]).add({...w, ts: firebase.firestore.FieldValue.serverTimestamp()}); } refreshData(); }; r.readAsText(f); }
     
     function renderList() {
         document.getElementById('listCont').innerHTML = allWords.map(w => `
