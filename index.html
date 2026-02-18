@@ -1,11 +1,11 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 3.5 (Full Features)</title>
+    <title>Family Trainer 3.6 (Status)</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🌟</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>📡</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -13,6 +13,7 @@
         :root { --primary: #005293; --accent: #FECC00; --bg: #f4f7f9; --text: #1a2b3c; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; color: var(--text); max-width: 500px; margin: 0 auto; }
         
+        /* HEADER & NAV */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .badge { background: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .settings-btn { background: white; border: none; font-size: 1.2em; cursor: pointer; padding: 5px 10px; border-radius: 50%; }
@@ -21,6 +22,7 @@
         .nav button { background: #d1dce5; flex: 1; padding: 10px; font-size: 11px; color: #4a627a; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
         .nav button.active { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 82, 147, 0.3); }
         
+        /* CARDS & INPUTS */
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; }
         h2 { color: var(--primary); margin-top: 0; font-size: 1.2em; font-weight: 800; }
         label { display: block; font-size: 0.7em; font-weight: 700; color: #7f8c8d; margin: 10px 0 3px 3px; text-transform: uppercase; }
@@ -51,6 +53,11 @@
         .api-input { font-family: monospace; font-size: 0.8em; border: 1px solid #cbd5e0; background: #fff; width: 100%; padding: 10px; border-radius: 8px; box-sizing: border-box; }
         
         .challenge-mode { border: 2px solid #e53e3e; }
+        
+        /* STATUS DOT */
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .st-ok { background: #48bb78; box-shadow: 0 0 5px #48bb78; }
+        .st-warn { background: #ed8936; }
     </style>
 </head>
 <body>
@@ -59,25 +66,28 @@
     <div class="settings-box">
         <h2>⚙️ Einstellungen</h2>
         <label>👤 Aktiver Benutzer</label>
-        <select id="selUser" onchange="switchUser()"></select>
+        <select id="selUser" onchange="switchUser()" style="background:#e6fffa; border-color:#38b2ac; font-weight:800; padding:12px; font-size:1.1em; margin-bottom:15px; width:100%;"></select>
+        
         <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         <label>🔑 DeepL API Key</label>
         <input type="text" id="deeplKey" class="api-input" placeholder="Key hier..." onchange="saveApiKeys()">
+        <div id="apiKeyStatus" style="font-size:0.7em; margin-top:5px; font-weight:bold;">Status: Prüfe...</div>
+        
         <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         <label>Namen ändern</label>
         <div id="renameContainer"></div>
         <label style="margin-top:15px;">Sprachen</label>
         <div style="display:flex; gap:5px;">
-            <select id="selL1" onchange="saveSettings()"></select>
-            <select id="selL2" onchange="saveSettings()"></select>
-            <select id="selL3" onchange="saveSettings()"></select>
+            <select id="selL1" onchange="saveSettings()" style="font-size:0.8em;"></select>
+            <select id="selL2" onchange="saveSettings()" style="font-size:0.8em;"></select>
+            <select id="selL3" onchange="saveSettings()" style="font-size:0.8em;"></select>
         </div>
         <button class="action-btn" onclick="closeSettings()">Fertig</button>
     </div>
 </div>
 
 <div class="header-row">
-    <div class="badge">🔥 <span id="streakDisplay">0</span></div>
+    <div class="badge"><span id="apiIndicator" class="status-dot st-warn"></span>🔥 <span id="streakDisplay">0</span></div>
     <div class="badge">📚 <span id="wordCount">0</span> Wörter</div>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
 </div>
@@ -161,6 +171,7 @@
     let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
     let apiKeys = { deepl: '' };
     let allWords = [], curWord = null, isChallenge = false, audioMode = false, voices = [], quizQ = 1;
+    let useDeepL = false;
 
     function init() {
         const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames);
@@ -170,13 +181,43 @@
         const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx);
         if(isNaN(currentCollIndex) || currentCollIndex < 0 || currentCollIndex > 3) currentCollIndex = 0;
         
-        renderRenameInputs(); updateUserDropdown(); loadUserConfig(); loadVoices(); updateInterface(); refreshData();
+        renderRenameInputs(); updateUserDropdown(); loadUserConfig(); loadVoices(); updateInterface(); refreshData(); checkDeepL();
+    }
+
+    // --- DEEPL CHECK ---
+    async function checkDeepL() {
+        const indicator = document.getElementById('apiIndicator');
+        const statusText = document.getElementById('apiKeyStatus');
+        if(!apiKeys.deepl) {
+            useDeepL = false;
+            indicator.className = "status-dot st-warn";
+            statusText.innerText = "Status: Kein Key (Nutze Standard-Übersetzer ☁️)";
+            statusText.style.color = "#ed8936";
+            return;
+        }
+        try {
+            const url = `https://api-free.deepl.com/v2/usage?auth_key=${apiKeys.deepl}`;
+            const res = await fetch(url);
+            if(res.ok) {
+                useDeepL = true;
+                indicator.className = "status-dot st-ok";
+                statusText.innerText = "Status: DeepL Aktiv! ✨";
+                statusText.style.color = "#48bb78";
+            } else {
+                throw new Error("Invalid Key");
+            }
+        } catch(e) {
+            useDeepL = false;
+            indicator.className = "status-dot st-warn";
+            statusText.innerText = "Status: Key ungültig (Nutze Standard ☁️)";
+            statusText.style.color = "#e53e3e";
+        }
     }
 
     function renderRenameInputs() { let html = ''; userNames.forEach((name, i) => { html += `<div class="rename-row"><span>${i+1}.</span><input type="text" id="name${i}" value="${name}" onchange="saveName(${i})"></div>`; }); document.getElementById('renameContainer').innerHTML = html; }
     function updateUserDropdown() { document.getElementById('selUser').innerHTML = userNames.map((n, i) => `<option value="${i}" ${i===currentCollIndex?'selected':''}>👤 ${n}</option>`).join(''); }
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
-    function saveApiKeys() { apiKeys.deepl = document.getElementById('deeplKey').value.trim(); localStorage.setItem('trainerApiKeys', JSON.stringify(apiKeys)); }
+    function saveApiKeys() { apiKeys.deepl = document.getElementById('deeplKey').value.trim(); localStorage.setItem('trainerApiKeys', JSON.stringify(apiKeys)); checkDeepL(); }
     function switchUser() { localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf)); currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserConfig(); updateInterface(); refreshData(); }
     function loadUserConfig() { const savedLangs = localStorage.getItem('trainerLangs_' + currentCollIndex); if(savedLangs) conf = JSON.parse(savedLangs); else conf = { l1: 'de', l2: 'en', l3: 'sv' }; const opts = Object.keys(LANGS).map(k => `<option value="${k}">${LANGS[k].flag} ${LANGS[k].name}</option>`).join(''); ['selL1', 'selL2', 'selL3'].forEach(id => { document.getElementById(id).innerHTML = opts; }); document.getElementById('selL1').value = conf.l1; document.getElementById('selL2').value = conf.l2; document.getElementById('selL3').value = conf.l3; }
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
@@ -199,12 +240,12 @@
     }
 
     async function translate(txt, src, tgt) {
-        if(apiKeys.deepl) {
+        if(useDeepL) {
             try {
                 const url = `https://api-free.deepl.com/v2/translate?auth_key=${apiKeys.deepl}&text=${encodeURIComponent(txt)}&source_lang=${src.toUpperCase()}&target_lang=${tgt.toUpperCase()}`;
                 const res = await fetch(url); const data = await res.json();
                 if(data.translations && data.translations.length > 0) return data.translations[0].text;
-            } catch(e) { console.log("DeepL Error, fallback"); }
+            } catch(e) { console.log("DeepL Call Failed"); }
         }
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
         const res = await fetch(url); const data = await res.json();
@@ -217,16 +258,13 @@
         if(!txt) { alert("Bitte Wort eingeben!"); return; }
         document.getElementById('loader').style.display = "block";
         try {
-            // 1. Grundübersetzungen
             const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
             const tasks = targets.filter(t => t.l !== src).map(async t => { const tr = await translate(txt, src, t.l); return {id: t.id, t: tr}; });
             const res = await Promise.all(tasks);
             res.forEach(r => { document.getElementById(r.id).value = r.t; });
             
-            // 2. Beispielsatz erzeugen (warten auf L1)
             const l1Word = document.getElementById('inDe').value;
             if(l1Word) {
-                // Trick: "Das ist [Wort]" von L1 nach L3 übersetzen
                 const sentence = `Das ist ${l1Word}`;
                 const exTr = await translate(sentence, conf.l1, conf.l3);
                 document.getElementById('inEx').value = `... ${exTr} ...`;
@@ -234,18 +272,15 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- KORREKTE VERB-LOGIK (LOOP) ---
     async function fetchVerbForms() {
         const base = document.getElementById('inEn').value.trim() || document.getElementById('inDe').value.trim(); 
         if(!base) { alert("Bitte erst ein Wort eingeben."); return; }
         document.getElementById('loader').style.display = "block";
         try {
             const p = [];
-            // "did" erzwingt Vergangenheit, "will" erzwingt Zukunft. TRICK: "He" nutzen!
             const phrases = [`He did ${base}`, `He will ${base}`];
             const langs = [conf.l1, conf.l3];
             
-            // Loop statt forEach um Async Timing zu garantieren
             for (const phrase of phrases) {
                 for (const l of langs) {
                     p.push(translate(phrase, conf.l2, l));
@@ -261,7 +296,7 @@
             document.getElementById('inDeFut').value = cleanFut(res[2]);
             document.getElementById('inSvFut').value = cleanFut(res[3]);
 
-            if(!apiKeys.deepl) {
+            if(!useDeepL) {
                 const rawDePast = cleanPast(res[0]);
                 if(rawDePast) {
                     const enBack = await translate(rawDePast, conf.l1, conf.l2);
@@ -390,7 +425,6 @@
         
         document.getElementById('qFeed').innerHTML = html; 
         
-        // CHALLENGE LOGIC
         if(isChallenge) {
             document.getElementById('checkBtn').style.display="none";
             setTimeout(nextQ, 2500); 
