@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.0.3 (Anker-Logik Edition)</title>
+    <title>Family Trainer 4.0.3 (Anker-Logik)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👑</text></svg>">
     
@@ -161,7 +161,7 @@
 
 <script>
     // --- ZEITSTEMPEL VERSION ---
-    const VERSION = "18.02.2026 - 14:43";
+    const VERSION = "18.02.2026 - 15:00";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -210,7 +210,7 @@
     async function translate(txt, src, tgt) {
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
         const res = await fetch(url); const data = await res.json();
-        return cleanResult(data.responseData.translatedText);
+        return data.responseData.translatedText;
     }
 
     async function handleSmartTranslate() {
@@ -222,17 +222,11 @@
             const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
             const tasks = targets.filter(t => t.l !== src).map(async t => { const tr = await translate(txt, src, t.l); return {id: t.id, t: tr}; });
             const res = await Promise.all(tasks);
-            res.forEach(r => { document.getElementById(r.id).value = r.t; });
-            const l1Word = document.getElementById('inDe').value;
-            if(l1Word) {
-                const sentence = `Das ist ${l1Word}`;
-                const exTr = await translate(sentence, conf.l1, conf.l3);
-                document.getElementById('inEx').value = `... ${exTr} ...`;
-            }
+            res.forEach(r => { document.getElementById(r.id).value = cleanResult(r.t); });
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- SMART VERB LOGIC MIT ANKER-CLEANER ---
+    // --- NEUE ANKER-LOGIK ---
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
@@ -241,36 +235,27 @@
         document.getElementById('loader').style.display = "block";
         
         try {
-            // Wir fragen die KI nach kompletten Sätzen für die Vergangenheit
             const rawEnPast = await translate(`Yesterday he ${baseEn}`, 'en', 'en');
             const rawDePast = await translate(`Gestern ist er ${baseDe}`, 'de', 'de');
             const rawSvPast = await translate(`Yesterday he ${baseEn}`, 'en', 'sv');
 
-            // Der neue Anker-Cleaner
             const anchorClean = (rawText, pronoun) => {
                 if (!rawText) return pronoun + " ...";
                 const lowerText = rawText.toLowerCase();
                 const lowerPronoun = pronoun.toLowerCase();
-                
-                // Wir suchen die Position des Pronomens (er, he, han)
                 const index = lowerText.indexOf(lowerPronoun);
                 
                 if (index !== -1) {
-                    // Wir schneiden alles ab dem Pronomen aus
-                    let result = rawText.substring(index).trim();
-                    // Wir entfernen Satzzeichen am Ende (wie Punkte oder Ausrufezeichen)
-                    return result.replace(/[.!]$/, "");
+                    return rawText.substring(index).trim().replace(/[.!]$/, "");
+                } else {
+                    return pronoun + " " + rawText.trim().replace(/[.!]$/, "");
                 }
-                // Fallback: Falls der Anker nicht gefunden wird, setzen wir das Pronomen davor
-                return pronoun + " " + rawText;
             };
 
-            // Zuweisung Vergangenheit
             document.getElementById('inEnPast').value = anchorClean(rawEnPast, "He");
             document.getElementById('inDePast').value = anchorClean(rawDePast, "Er");
             document.getElementById('inSvPast').value = anchorClean(rawSvPast, "Han");
 
-            // Zuweisung Zukunft (stabil)
             document.getElementById('inDeFut').value = "Er wird " + baseDe;
             document.getElementById('inEnFut').value = "He will " + baseEn;
             const rawSvFut = await translate(`He will ${baseEn}`, 'en', 'sv');
