@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.0.3 (Anker-Logik)</title>
+    <title>Family Trainer 4.0.3 (Stealth-Mode)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👑</text></svg>">
     
@@ -166,7 +166,7 @@
 
 <script>
     // --- ZEITSTEMPEL VERSION ---
-    const VERSION = "18.02.2026 - 16:50";
+    const VERSION = "18.02.2026 - 17:05 (Stealth Mode)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -231,7 +231,7 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- VERB-LOGIK MIT KREUZ-ABFRAGE GEGEN SAME-LANGUAGE-FEHLER ---
+    // --- VERB-LOGIK MIT "STEALTH MODE" (TARN-KAPPE) ---
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
@@ -244,15 +244,24 @@
         document.getElementById('loader').style.display = "block";
         
         try {
-            // Kreuz-Abfrage: DE->EN und EN->DE um "Same Language"-Fehler zu vermeiden
-            const rawEnPast = await translate(`Gestern ist er ${baseDe}`, 'de', 'en'); 
-            const rawDePast = await translate(`Yesterday he ${baseEn}`, 'en', 'de');
+            // TRICK 17: TARNKAPPEN-MODUS 🕵️‍♂️
+            // Wir schicken den Satz "Yesterday he [verb]" an die KI.
+            // Aber wir sagen der KI, es sei "Deutsch" (de) und sie soll es nach "Englisch" (en) übersetzen.
+            // Da der Satz schon Englisch ist, "korrigiert" die KI oft die Grammatik von "swim" zu "swam".
+            // Gleichzeitig vermeiden wir den Fehler "Same Language".
+            
+            const rawEnPast = await translate(`Yesterday he ${baseEn}`, 'de', 'en'); 
+            
+            // Dasselbe Spiel für Deutsch: Wir schicken deutschen Text, behaupten aber es sei Englisch.
+            const rawDePast = await translate(`Gestern er ${baseDe}`, 'en', 'de');
+            
+            // Schwedisch ist unproblematisch (EN -> SV)
             const rawSvPast = await translate(`Yesterday he ${baseEn}`, 'en', 'sv');
 
             debug.innerHTML = "<b>KI ROH-DATEN:</b>\n" + 
-                              "EN (Past): " + rawEnPast + "\n" +
-                              "DE (Past): " + rawDePast + "\n" +
-                              "SV (Past): " + rawSvPast;
+                              "EN (Stealth): " + rawEnPast + "\n" +
+                              "DE (Stealth): " + rawDePast + "\n" +
+                              "SV: " + rawSvPast;
 
             const anchorClean = (rawText, pronoun) => {
                 if (!rawText) return pronoun + " ...";
