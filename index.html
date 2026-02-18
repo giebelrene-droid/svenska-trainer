@@ -166,7 +166,7 @@
 
 <script>
     // --- ZEITSTEMPEL VERSION ---
-    const VERSION = "18.02.2026 - 15:55";
+    const VERSION = "18.02.2026 - 16:30";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -231,7 +231,7 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- VERB-LOGIK MIT KREUZ-ABFRAGE GEGEN SAME-LANGUAGE-FEHLER ---
+    // --- VERB-LOGIK MIT PFEIL-MUSTER UND KREUZ-ABFRAGE ---
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
@@ -239,18 +239,16 @@
         
         if(!baseDe || !baseEn) return alert("Bitte erst Deutsch und Englisch ausfüllen.");
         
-        // Diagnose aktivieren
         debug.style.display = "block";
         debug.innerHTML = "⏳ KI wird abgefragt...";
         document.getElementById('loader').style.display = "block";
         
         try {
-            // Kreuz-Abfrage: Deutsch -> Englisch und Englisch -> Deutsch um Fehler zu vermeiden
-            const rawEnPast = await translate(`Gestern ist er ${baseDe}`, 'de', 'en'); 
-            const rawDePast = await translate(`Yesterday he ${baseEn}`, 'en', 'de');
-            const rawSvPast = await translate(`Yesterday he ${baseEn}`, 'en', 'sv');
+            // Kreuz-Abfrage mit Pfeil-Muster um "Same-Language" Fehler zu vermeiden und die KI zu führen
+            const rawEnPast = await translate(`Er kauft -> Er kaufte. He buys ->`, 'de', 'en'); 
+            const rawDePast = await translate(`He buys -> He bought. Er kauft ->`, 'en', 'de');
+            const rawSvPast = await translate(`He buys -> Han köpte. He goes -> Han gick. He ${baseEn} ->`, 'en', 'sv');
 
-            // ROH-DATEN IM KASTEN ANZEIGEN
             debug.innerHTML = "<b>KI ROH-DATEN:</b>\n" + 
                               "EN (Past): " + rawEnPast + "\n" +
                               "DE (Past): " + rawDePast + "\n" +
@@ -261,12 +259,10 @@
                 const lowerText = rawText.toLowerCase();
                 const lowerPronoun = pronoun.toLowerCase();
                 const index = lowerText.indexOf(lowerPronoun);
-                
                 if (index !== -1) {
                     return rawText.substring(index).trim().replace(/[.!]$/, "");
-                } else {
-                    return pronoun + " " + rawText.trim().replace(/[.!]$/, "");
                 }
+                return pronoun + " " + rawText.trim().replace(/[.!]$/, "");
             };
 
             document.getElementById('inEnPast').value = anchorClean(rawEnPast, "He");
@@ -275,7 +271,9 @@
 
             document.getElementById('inDeFut').value = "Er wird " + baseDe;
             document.getElementById('inEnFut').value = "He will " + baseEn;
-            const rawSvFut = await translate(`He will ${baseEn}`, 'en', 'sv');
+            
+            // Schwedisch Zukunft ebenfalls mit Muster
+            const rawSvFut = await translate(`He buys -> Han ska köpa. He ${baseEn} ->`, 'en', 'sv');
             document.getElementById('inSvFut').value = anchorClean(rawSvFut, "Han");
 
         } catch(e) { 
