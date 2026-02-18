@@ -166,7 +166,7 @@
 
 <script>
     // --- ZEITSTEMPEL VERSION ---
-    const VERSION = "18.02.2026 - 16:45";
+    const VERSION = "18.02.2026 - 16:50";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -214,7 +214,7 @@
 
     async function translate(txt, src, tgt) {
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
-        const res = await fetch(url); const data = await res.json();
+        const response = await fetch(url); const data = await response.json();
         return data.responseData.translatedText;
     }
 
@@ -231,7 +231,7 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- VERB-LOGIK MIT DIREKT-ABFRAGE OHNE PFEIL-ENDE ---
+    // --- VERB-LOGIK MIT KREUZ-ABFRAGE GEGEN SAME-LANGUAGE-FEHLER ---
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
@@ -244,9 +244,9 @@
         document.getElementById('loader').style.display = "block";
         
         try {
-            // Wir nutzen Kreuz-Abfrage und einfache Strukturen, damit die KI nicht in Mustern hängen bleibt
-            const rawEnPast = await translate(`Past tense of "he ${baseEn}"`, 'en', 'en'); 
-            const rawDePast = await translate(`Vergangenheit von "er ${baseDe}"`, 'de', 'de');
+            // Kreuz-Abfrage: DE->EN und EN->DE um "Same Language"-Fehler zu vermeiden
+            const rawEnPast = await translate(`Gestern ist er ${baseDe}`, 'de', 'en'); 
+            const rawDePast = await translate(`Yesterday he ${baseEn}`, 'en', 'de');
             const rawSvPast = await translate(`Yesterday he ${baseEn}`, 'en', 'sv');
 
             debug.innerHTML = "<b>KI ROH-DATEN:</b>\n" + 
@@ -259,10 +259,12 @@
                 const lowerText = rawText.toLowerCase();
                 const lowerPronoun = pronoun.toLowerCase();
                 const index = lowerText.indexOf(lowerPronoun);
+                
                 if (index !== -1) {
                     return rawText.substring(index).trim().replace(/[.!]$/, "");
+                } else {
+                    return pronoun + " " + rawText.trim().replace(/[.!]$/, "");
                 }
-                return pronoun + " " + rawText.trim().replace(/[.!]$/, "");
             };
 
             document.getElementById('inEnPast').value = anchorClean(rawEnPast, "He");
@@ -271,6 +273,7 @@
 
             document.getElementById('inDeFut').value = "Er wird " + baseDe;
             document.getElementById('inEnFut').value = "He will " + baseEn;
+            
             const rawSvFut = await translate(`He will ${baseEn}`, 'en', 'sv');
             document.getElementById('inSvFut').value = anchorClean(rawSvFut, "Han");
 
