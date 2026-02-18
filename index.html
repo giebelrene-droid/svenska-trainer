@@ -1,67 +1,51 @@
-  <!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.2 (Precision)</title>
+    <title>Family Trainer 4.3 (Consistency)</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🎯</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>⚖️</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
         :root { --primary: #005293; --accent: #FECC00; --bg: #f4f7f9; --text: #1a2b3c; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; color: var(--text); max-width: 500px; margin: 0 auto; }
-        
-        /* HEADER & NAV */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .badge { background: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .settings-btn { background: white; border: none; font-size: 1.2em; cursor: pointer; padding: 5px 10px; border-radius: 50%; }
-        
         .nav { display: flex; gap: 5px; margin-bottom: 20px; overflow-x: auto; }
         .nav button { background: #d1dce5; flex: 1; padding: 10px; font-size: 11px; color: #4a627a; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
         .nav button.active { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 82, 147, 0.3); }
-        
-        /* CARDS & INPUTS */
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; }
         h2 { color: var(--primary); margin-top: 0; font-size: 1.2em; font-weight: 800; }
         label { display: block; font-size: 0.7em; font-weight: 700; color: #7f8c8d; margin: 10px 0 3px 3px; text-transform: uppercase; }
-        
         .input-row { display: flex; align-items: center; gap: 5px; width: 100%; margin-bottom: 5px; }
         input, select { flex: 1; padding: 12px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 12px; font-size: 16px; width: 100%; box-sizing: border-box; }
         input:focus { border-color: var(--primary); background: white; outline: none; }
-        
-        /* BUTTONS */
         .action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
         .mic-btn, .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; min-width: 35px; }
         .mic-active { background: #feb2b2 !important; border-color: #e53e3e !important; animation: pulse 1s infinite; }
         .list-btn { background: #edf2f7; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-left: 5px; font-size: 12px; }
         .danger-btn { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; margin-top: 10px; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-        /* VERB SECTION */
         .verb-section { background: #edf2f7; padding: 12px; border-radius: 12px; margin-top: 15px; display: none; }
         .verb-lang-group { margin-bottom: 12px; border-bottom: 1px solid #dce4ea; padding-bottom: 8px; }
         .verb-lang-title { font-size: 0.75em; font-weight: 800; color: var(--primary); margin-bottom: 4px; text-transform: uppercase; }
         .verb-row { display: flex; gap: 8px; }
         .verb-row input { font-size: 0.85em; padding: 8px; }
-        
-        /* QUIZ & LIST */
         .feedback-card { text-align: left; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #e2e8f0; }
         .word-item { padding: 16px; border-bottom: 1px solid #f1f5f9; position: relative; }
         .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
         .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--accent); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--primary); }
         .lang-tag { font-weight: bold; color: var(--primary); margin-right: 5px; width: 25px; display: inline-block; }
-        
         .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
         .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
         .challenge-mode { border: 2px solid #e53e3e; }
-        
-        /* SETTINGS OVERLAY */
+        .api-input { font-family: monospace; font-size: 0.8em; border: 1px solid #cbd5e0; background: #fff; width: 100%; padding: 10px; border-radius: 8px; box-sizing: border-box; }
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; }
         .settings-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; }
         .rename-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
-        .api-input { font-family: monospace; font-size: 0.8em; border: 1px solid #cbd5e0; background: #fff; width: 100%; padding: 10px; border-radius: 8px; box-sizing: border-box; }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .st-ok { background: #48bb78; box-shadow: 0 0 5px #48bb78; }
         .st-warn { background: #ed8936; }
@@ -74,12 +58,10 @@
         <h2>⚙️ Einstellungen</h2>
         <label>👤 Aktiver Benutzer</label>
         <select id="selUser" onchange="switchUser()" style="width:100%; padding:10px; margin-bottom:15px; font-weight:bold;"></select>
-        
         <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         <label>🔑 DeepL API Key</label>
         <input type="text" id="deeplKey" class="api-input" placeholder="Key hier..." onchange="saveApiKeys()">
         <div id="apiKeyStatus" style="font-size:0.7em; margin-top:5px; font-weight:bold;">Status: Prüfe...</div>
-        
         <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         <label>Namen ändern</label>
         <div id="renameContainer"></div>
@@ -178,13 +160,10 @@
 
     function init() {
         const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames);
-        userNames.forEach((n, i) => { if(document.getElementById('name'+i)) document.getElementById('name'+i).value = n; });
-        const storedKeys = localStorage.getItem('trainerApiKeys'); if(storedKeys) apiKeys = JSON.parse(storedKeys);
-        document.getElementById('deeplKey').value = apiKeys.deepl || "";
+        renderRenameInputs();
         const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx);
         if(isNaN(currentCollIndex) || currentCollIndex < 0 || currentCollIndex > 3) currentCollIndex = 0;
-        
-        renderRenameInputs(); updateUserDropdown(); loadUserConfig(); loadVoices(); updateInterface(); refreshData(); checkDeepL();
+        updateUserDropdown(); loadUserConfig(); loadVoices(); updateInterface(); refreshData(); checkDeepL();
     }
 
     async function checkDeepL() {
@@ -214,6 +193,7 @@
 
     function cleanResult(txt) {
         if(!txt) return ""; let c = txt.trim();
+        // REMOVE NOISE
         c = c.replace(/^(to\s|I\s|He\s|She\s|We\s|You\s)/i, ""); 
         c = c.replace(/^(a\s|an\s|the\s)/i, ""); 
         c = c.replace(/^(ein\s|eine\s|der\s|die\s|das\s)/i, "");
@@ -242,7 +222,8 @@
             for(let m of data.matches) {
                 if(count >= 1) break; 
                 let t = cleanResult(m.translation).toLowerCase();
-                if(t && !alts.has(t) && t.split(' ').length === 1) { 
+                // Filter: nur wenn neu und kurz
+                if(t && !alts.has(t) && t.split(' ').length < 3) { 
                     alts.add(t);
                     main += " / " + t;
                     count++;
@@ -289,20 +270,39 @@
         if(!enBase && !deBase) { alert("Bitte erst ein Wort eingeben."); return; }
         document.getElementById('loader').style.display = "block";
         
-        const processMulti = async (inputStr, templateFn, src, tgt) => {
+        // Helper to process multiple words "put / give" using ROUND TRIP
+        // inputStr: "give", src: 'en', tgt: 'de'. template: "Yesterday I [w]"
+        // Roundtrip: EN->DE (translate) -> EN (translate back)
+        const processRoundTrip = async (inputStr, templateFn, src, intermediateLang, backTemplateFn) => {
             if(!inputStr) return "";
             const parts = inputStr.split('/').map(s => s.trim()).slice(0,2);
             const results = [];
             for(let part of parts) {
+                // 1. Hinweg: "Yesterday I give" -> "Gestern gab ich"
                 const sentence = templateFn(part);
-                let res = await translateSingle(sentence, src, tgt);
+                let trans = await translateSingle(sentence, src, intermediateLang);
+                
+                // 2. Rückweg (wenn möglich) oder einfach das Ergebnis nehmen
+                // Für Past Tense wollen wir das konjugierte Wort in der ZIELSPRACHE.
+                // Wenn wir für EN "gave" wollen, müssen wir wissen, was "gave" auf Deutsch ist? Nein.
+                // Wir wollen die Vergangenheitsform des Worts im Input Feld.
+                
+                // Fall DE Past (Ziel DE):
+                // Input "geben". Template "Gestern geben ich". Translate DE->EN ("Yesterday I gave"). 
+                // Translate EN->DE ("Gestern gab ich"). Clean -> "gab".
+                
+                // Fall EN Past (Ziel EN):
+                // Input "give". Template "Yesterday I give". Translate EN->DE ("Gestern gab ich").
+                // Translate DE->EN ("Yesterday I gave"). Clean -> "gave".
+                
+                let reTrans = await translateSingle(trans, intermediateLang, src);
                 
                 // CLEANER FIX: Erst Wörter entfernen, DANN trimmen
-                res = res.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did|He|Er|Han|’ve|’s|’d|has|have|had)\b\s?/gi, "").trim();
+                let clean = reTrans.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did|He|Er|Han|’ve|’s|’d|has|have|had)\b\s?/gi, "").trim();
                 
                 // Länge Check nach dem Cleanen
-                if(res.split(' ').length > 2) res = part + " (check)"; // Fallback
-                results.push(res);
+                if(clean.split(' ').length > 2) clean = ""; 
+                if(clean) results.push(clean);
             }
             return results.join(' / ');
         };
@@ -313,15 +313,20 @@
         if(document.getElementById('inSv').value) document.getElementById('inSvFut').value = autoFut(document.getElementById('inSv').value, "ska");
 
         try {
-            if(enBase) {
-                const deP = await processMulti(enBase, (w) => `Yesterday I ${w}`, 'en', conf.l1);
-                document.getElementById('inDePast').value = deP;
-                const svP = await processMulti(enBase, (w) => `Yesterday I ${w}`, 'en', conf.l3);
-                document.getElementById('inSvPast').value = svP;
-            }
+            // DE Past (Roundtrip via EN)
             if(deBase) {
-                const enP = await processMulti(deBase, (w) => `Gestern ${w} ich`, 'de', 'en');
+                const deP = await processRoundTrip(deBase, (w) => `Gestern ${w} ich`, 'de', 'en');
+                document.getElementById('inDePast').value = deP;
+            }
+            // EN Past (Roundtrip via DE)
+            if(enBase) {
+                const enP = await processRoundTrip(enBase, (w) => `Yesterday I ${w}`, 'en', 'de');
                 document.getElementById('inEnPast').value = enP;
+            }
+            // SV Past (Roundtrip via EN)
+            if(svBase) {
+                const svP = await processRoundTrip(svBase, (w) => `Igår ${w} jag`, 'sv', 'en');
+                document.getElementById('inSvPast').value = svP;
             }
         } catch(e) { console.error(e); } 
         finally { document.getElementById('loader').style.display = "none"; }
