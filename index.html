@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Trainer 2.0</title>
+    <title>Global Trainer 2.1</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🌍</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🌍</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👥</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👥</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -46,7 +46,6 @@
         .verb-lang-title { font-size: 0.75em; font-weight: 800; color: var(--primary); margin-bottom: 4px; text-transform: uppercase; }
         .verb-row { display: flex; gap: 8px; }
         
-        /* Feedback Card */
         .feedback-card { text-align: left; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #e2e8f0; }
         .fb-row { margin-bottom: 8px; }
         .fb-sub { font-size: 0.8em; color: #718096; font-family: 'Courier New', monospace; display: block; }
@@ -55,16 +54,25 @@
         .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
         .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--accent); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--primary); }
         .example-box { font-size: 0.85em; color: #4a5568; font-style: italic; margin-top: 5px; padding: 10px; background: #f1f5f9; border-radius: 10px; border-left: 4px solid var(--primary); }
+        .lang-tag { font-size: 0.7em; font-weight: 800; color: var(--primary); margin-right: 5px; display: inline-block; width: 25px; }
+        .version-info { text-align: center; font-size: 0.7em; color: #a0aec0; padding: 20px; font-weight: 600; }
     </style>
 </head>
 <body>
 
 <div id="settingsOverlay">
     <div class="settings-box">
-        <h2>🌍 Sprachen wählen</h2>
-        <p style="font-size:0.8em; color:#718096;">Ändere hier deine Lern-Kombination.</p>
+        <h2>👥 Profil & Sprachen</h2>
         
-        <label>Slot 1 (Basis/Heimat)</label>
+        <label>Aktiver Benutzer</label>
+        <select id="selUser" onchange="switchUser()" style="background:#e6fffa; border-color:#38b2ac; font-weight:bold;">
+            <option value="words">👤 Hauptprofil (Du)</option>
+            <option value="words_partner">👤 Profil 2 (Partner)</option>
+        </select>
+        
+        <hr style="border:0; border-top:1px solid #edf2f7; margin:15px 0;">
+        
+        <label>Slot 1 (Basis)</label>
         <select id="selL1" onchange="saveSettings()"></select>
         
         <label>Slot 2 (Zweitsprache)</label>
@@ -73,13 +81,13 @@
         <label>Slot 3 (Zielsprache)</label>
         <select id="selL3" onchange="saveSettings()"></select>
         
-        <button class="action-btn" onclick="closeSettings()">Fertig</button>
+        <button class="action-btn" onclick="closeSettings()" style="margin-top:20px;">Fertig</button>
     </div>
 </div>
 
 <div class="container">
     <div class="header-row">
-        <div class="badge" style="color:#e67e22; border:1px solid #ffeaa7;">🔥 Streak: <span id="streakDisplay">0</span></div>
+        <div class="badge" style="color:#e67e22; border:1px solid #ffeaa7;">🔥 <span id="streakDisplay">0</span></div>
         <div class="badge" style="color:var(--primary); border:1px solid #d1dce5;">📚 <span id="wordCount">0</span></div>
         <button class="settings-btn" onclick="openSettings()">⚙️</button>
     </div>
@@ -127,8 +135,8 @@
         </div>
 
         <button class="action-btn" onclick="handleSmartTranslate()" style="background:#e67e22">1. Smart Übersetzen</button>
-        <button class="action-btn" style="background:#48bb78" onclick="manualSave()">2. Wort speichern</button>
-        <button class="action-btn" style="background:#cbd5e0; color:#2d3748; margin-top:15px;" onclick="clearInputs()">🗑️ Leeren</button>
+        <button class="action-btn" style="background:#48bb78" onclick="manualSave()">2. Wort jetzt speichern</button>
+        <button class="action-btn" style="background:#cbd5e0; color:#2d3748; margin-top:15px;" onclick="clearInputs()">🗑️ Alles leeren</button>
         <button id="cancelEdit" class="action-btn" style="background:#718096; display:none;" onclick="resetForm()">Abbrechen</button>
     </div>
 
@@ -156,17 +164,16 @@
         <h2>Vokabelheft</h2>
         <div id="listCont"></div>
         <div class="backup-section">
-            <button class="backup-btn" onclick="exportData()">💾 BACKUP</button>
-            <button class="backup-btn" onclick="document.getElementById('importFile').click()">📂 IMPORT</button>
+            <button class="backup-btn" onclick="exportData()">💾 DATEN SICHERN</button>
+            <button class="backup-btn" onclick="document.getElementById('importFile').click()">📂 LADEN</button>
             <input type="file" id="importFile" style="display:none" onchange="importData(event)">
         </div>
     </div>
 </div>
 
-<div class="version-info">GLOBAL TRAINER v2.0</div>
+<div class="version-info">GLOBAL TRAINER v2.1 (Multi-User)</div>
 
 <script>
-    // --- KONFIGURATION & DATEN ---
     const firebaseConfig = {
         apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
         authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
@@ -179,7 +186,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // SPRACH-DATENBANK
     const LANGS = {
         'de': { name: 'Deutsch', tts: 'de-DE', flag: '🇩🇪' },
         'en': { name: 'Englisch', tts: 'en-US', flag: '🇬🇧' },
@@ -190,26 +196,53 @@
         'it': { name: 'Italienisch', tts: 'it-IT', flag: '🇮🇹' }
     };
 
-    // AKTUELLE EINSTELLUNG (Standard: DE, EN, SV)
+    // STANDARD-KONFIGURATION
     let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
+    let currentColl = "words"; // Standard Sammlung
     let allWords = [], curWord = null, isChallenge = false, audioMode = false, voices = [], quizQ = 1;
 
-    // --- INIT & SETTINGS ---
     function init() {
-        const saved = localStorage.getItem('trainerLangs');
-        if(saved) conf = JSON.parse(saved);
+        // Lade letzten Benutzer
+        const savedColl = localStorage.getItem('trainerUser');
+        if(savedColl) currentColl = savedColl;
+        document.getElementById('selUser').value = currentColl;
+
+        // Lade Sprachen für diesen Benutzer
+        loadUserConfig();
         
         // Fülle Select-Boxen
         const opts = Object.keys(LANGS).map(k => `<option value="${k}">${LANGS[k].flag} ${LANGS[k].name}</option>`).join('');
         ['selL1', 'selL2', 'selL3'].forEach(id => document.getElementById(id).innerHTML = opts);
         
+        loadVoices();
+        updateInterface();
+        refreshData();
+    }
+
+    function switchUser() {
+        // Speichere aktuelle Sprachen für den ALTEN User
+        localStorage.setItem('trainerLangs_' + currentColl, JSON.stringify(conf));
+        
+        // Wechseln
+        currentColl = document.getElementById('selUser').value;
+        localStorage.setItem('trainerUser', currentColl);
+        
+        loadUserConfig();
+        updateInterface();
+        refreshData();
+    }
+
+    function loadUserConfig() {
+        const savedLangs = localStorage.getItem('trainerLangs_' + currentColl);
+        if(savedLangs) {
+            conf = JSON.parse(savedLangs);
+        } else {
+            // Default falls neu
+            conf = { l1: 'de', l2: 'en', l3: 'sv' };
+        }
         document.getElementById('selL1').value = conf.l1;
         document.getElementById('selL2').value = conf.l2;
         document.getElementById('selL3').value = conf.l3;
-        
-        updateInterface();
-        loadVoices();
-        refreshData();
     }
 
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
@@ -219,13 +252,12 @@
         conf.l1 = document.getElementById('selL1').value;
         conf.l2 = document.getElementById('selL2').value;
         conf.l3 = document.getElementById('selL3').value;
-        localStorage.setItem('trainerLangs', JSON.stringify(conf));
+        localStorage.setItem('trainerLangs_' + currentColl, JSON.stringify(conf));
         updateInterface();
-        refreshData(); // Liste neu rendern mit neuen Flaggen
+        refreshData();
     }
 
     function updateInterface() {
-        // Labels anpassen
         document.getElementById('lblIn1').innerText = `${LANGS[conf.l1].flag} ${LANGS[conf.l1].name}`;
         document.getElementById('lblIn2').innerText = `${LANGS[conf.l2].flag} ${LANGS[conf.l2].name}`;
         document.getElementById('lblIn3').innerText = `${LANGS[conf.l3].flag} ${LANGS[conf.l3].name}`;
@@ -235,11 +267,10 @@
         document.getElementById('vt3').innerText = `${LANGS[conf.l3].flag} ${LANGS[conf.l3].name}`;
     }
 
-    // --- SPRACHE & TEXT ---
     function loadVoices() { voices = window.speechSynthesis.getVoices(); }
     window.speechSynthesis.onvoiceschanged = loadVoices;
 
-    function speak(txt, langCode) { // langCode z.B. 'en' -> lookup 'en-US'
+    function speak(txt, langCode) { 
         if (!txt) return;
         window.speechSynthesis.cancel();
         const ut = new SpeechSynthesisUtterance(txt);
@@ -255,11 +286,8 @@
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; }
         const rec = new SpeechRecognition();
-        
-        // Slot mapping: 1->l1, 2->l2, 3->l3
         const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3);
         rec.lang = LANGS[langKey].tts;
-        
         btn.classList.add('mic-active');
         rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; btn.classList.remove('mic-active'); };
         rec.onend = () => btn.classList.remove('mic-active');
@@ -276,12 +304,10 @@
         return c;
     }
 
-    // --- CORE LOGIC ---
     async function handleSmartTranslate() {
         const i1 = document.getElementById('inDe').value.trim();
         const i2 = document.getElementById('inEn').value.trim();
         const i3 = document.getElementById('inSv').value.trim();
-        
         let txt = i1 || i2 || i3;
         let src = i1 ? conf.l1 : (i2 ? conf.l2 : conf.l3);
         
@@ -289,57 +315,37 @@
         document.getElementById('loader').style.display = "block";
         
         try {
-            // Wir übersetzen in alle Sprachen außer der Quelle
-            const targets = [
-                {id:'inDe', l: conf.l1}, 
-                {id:'inEn', l: conf.l2}, 
-                {id:'inSv', l: conf.l3}
-            ];
-            
+            const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
             const tasks = targets.filter(t => t.l !== src).map(t => 
                 fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${t.l}`)
                 .then(r => r.json())
                 .then(d => ({id: t.id, t: refineText(d.responseData.translatedText, t.l)}))
             );
-            
             const res = await Promise.all(tasks);
             res.forEach(r => { document.getElementById(r.id).value = r.t; });
-            
-            // Beispielsatz nur wenn Zielsprache (Slot 3) da ist
-            if(document.getElementById('inSv').value) {
-                // Simpler Satz, da Generierung komplex wäre. Wir nehmen einfach das Wort.
-                document.getElementById('inEx').value = `... ${document.getElementById('inSv').value} ...`; 
-            }
+            const finalL3 = document.getElementById('inSv').value;
+            if(finalL3) document.getElementById('inEx').value = `... ${finalL3} ...`; 
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
     async function fetchVerbForms() {
-        const base = document.getElementById('inEn').value.trim(); // Wir nehmen Slot 2 als Basis für die Suche, meist Englisch
+        const base = document.getElementById('inEn').value.trim(); 
         if(!base) { alert("Bitte Wort in Slot 2 eingeben."); return; }
         document.getElementById('loader').style.display = "block";
-        
-        // Wir nutzen "Yesterday I..." und "I will..." Logik, mappen sie auf die aktuellen Sprachen
         try {
-            const p1 = fetch(`https://api.mymemory.translated.net/get?q=Yesterday%20I%20ran&langpair=en|${conf.l1}`).then(r=>r.json());
-            const p2 = fetch(`https://api.mymemory.translated.net/get?q=Yesterday%20I%20ran&langpair=en|${conf.l2}`).then(r=>r.json());
-            const p3 = fetch(`https://api.mymemory.translated.net/get?q=Yesterday%20I%20ran&langpair=en|${conf.l3}`).then(r=>r.json());
-            const p4 = fetch(`https://api.mymemory.translated.net/get?q=I%20will%20run&langpair=en|${conf.l1}`).then(r=>r.json());
-            const p5 = fetch(`https://api.mymemory.translated.net/get?q=I%20will%20run&langpair=en|${conf.l2}`).then(r=>r.json());
-            const p6 = fetch(`https://api.mymemory.translated.net/get?q=I%20will%20run&langpair=en|${conf.l3}`).then(r=>r.json());
-
-            const res = await Promise.all([p1, p2, p3, p4, p5, p6]);
-            // Dies ist ein "Blind-Versuch", da wir nicht wissen, welches Wort der User eingegeben hat.
-            // Der User muss hier definitiv korrigieren, aber es füllt die Felder.
+            const p = [];
+            ['Yesterday I ran', 'I will run'].forEach(phrase => {
+                [conf.l1, conf.l2, conf.l3].forEach(l => p.push(fetch(`https://api.mymemory.translated.net/get?q=${phrase}&langpair=en|${l}`).then(r=>r.json())));
+            });
+            const res = await Promise.all(p);
+            // Simple mapping (Index 0-2 = Past, 3-5 = Future)
             document.getElementById('inDePast').value = res[0].responseData.translatedText;
             document.getElementById('inEnPast').value = res[1].responseData.translatedText;
             document.getElementById('inSvPast').value = res[2].responseData.translatedText;
-            
             document.getElementById('inDeFut').value = res[3].responseData.translatedText;
             document.getElementById('inEnFut').value = res[4].responseData.translatedText;
             document.getElementById('inSvFut').value = res[5].responseData.translatedText;
-            
-            alert("Vorschläge geladen. Bitte an das aktuelle Verb anpassen!");
-
+            alert("Vorschläge geladen. Bitte anpassen!");
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
@@ -349,9 +355,9 @@
             deF: document.getElementById('inDeFut').value, enF: document.getElementById('inEnFut').value, svF: document.getElementById('inSvFut').value
         };
         const data = {
-            de: document.getElementById('inDe').value, // Slot 1
-            en: document.getElementById('inEn').value, // Slot 2
-            sv: document.getElementById('inSv').value, // Slot 3
+            de: document.getElementById('inDe').value, 
+            en: document.getElementById('inEn').value, 
+            sv: document.getElementById('inSv').value, 
             ex: document.getElementById('inEx').value,
             ...vData,
             ts: firebase.firestore.FieldValue.serverTimestamp(),
@@ -360,41 +366,53 @@
         if(!data.de || !data.sv) return;
         
         const eid = document.getElementById('editId').value;
-        const op = eid ? db.collection("words").doc(eid).update(data) : db.collection("words").add(data);
+        const op = eid ? db.collection(currentColl).doc(eid).update(data) : db.collection(currentColl).add(data);
         op.then(() => { clearInputs(); if(eid) showTab('list'); else alert("Gespeichert!"); });
     }
 
-    // --- QUIZ ---
+    // --- DATENBANK MIT DYAMISCHER COLLECTION ---
+    async function refreshData() {
+        // HIER IST DER TRICK: db.collection(currentColl)
+        const s = await db.collection(currentColl).orderBy("ts", "desc").get();
+        allWords = s.docs.map(d => ({id: d.id, ...d.data()}));
+        document.getElementById('wordCount').innerText = allWords.length;
+        renderStats();
+    }
+
+    function renderStats() {
+        const lvls = [0,0,0,0];
+        allWords.forEach(w => lvls[w.level || 0]++);
+        document.getElementById('statsGrid').innerHTML = lvls.map((v, i) => `<div class="stat-card"><div class="stat-val">${v}</div><div style="font-size:8px;font-weight:bold;">LVL ${i}</div></div>`).join('');
+    }
+
+    function clearInputs() { ['inDe','inEn','inSv','inEx','editId','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inSvFut'].forEach(id=>document.getElementById(id).value=""); document.getElementById('addTitle').innerText="Neuzugang"; document.getElementById('cancelEdit').style.display="none"; document.getElementById('verbSection').style.display="none"; }
+    function toggleVerbSection() { const el=document.getElementById('verbSection'); el.style.display = (el.style.display==="block")?"none":"block"; }
+    function showTab(n) { document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); document.getElementById('tabAdd').style.display=(n==='add')?'block':'none'; document.getElementById('tabQuiz').style.display=(n==='quiz'||n==='challenge')?'block':'none'; document.getElementById('tabList').style.display=(n==='list')?'block':'none'; if(n==='quiz') nextQ(); if(n==='list') renderList(); }
+    
     function nextQ() {
         if(allWords.length === 0) return;
         let pool = []; allWords.forEach(w => { let wt = (w.level<2)?3:1; for(let i=0;i<wt;i++) pool.push(w); });
         curWord = pool[Math.floor(Math.random()*pool.length)];
         
-        // Randomize: Question is either L1 or L2
         quizQ = Math.random() > 0.5 ? 1 : 2; 
-        
-        const qTxt = quizQ === 1 ? curWord.de : curWord.en; // de=Slot1, en=Slot2
+        const qTxt = quizQ === 1 ? curWord.de : curWord.en; 
         const qLang = quizQ === 1 ? conf.l1 : conf.l2;
         
         document.getElementById('qMainText').innerText = audioMode ? "???" : qTxt;
         document.getElementById('spkMain').onclick = () => speak(qTxt, qLang);
         
-        if(quizQ === 1) { // Frage L1 -> Antw L2 & L3
+        if(quizQ === 1) { 
             document.getElementById('lblAns1').innerText = LANGS[conf.l2].name;
             document.getElementById('lblAns2').innerText = LANGS[conf.l3].name;
-            // Setup Mics
             document.getElementById('micAns1').onclick = function(){ listen(2, 'qAns1', this) };
             document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) };
-            // Setup Speakers
             document.getElementById('spkAns1').onclick = () => speak(curWord.en, conf.l2);
             document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3);
-        } else { // Frage L2 -> Antw L1 & L3
+        } else { 
             document.getElementById('lblAns1').innerText = LANGS[conf.l1].name;
             document.getElementById('lblAns2').innerText = LANGS[conf.l3].name;
-            // Setup Mics
             document.getElementById('micAns1').onclick = function(){ listen(1, 'qAns1', this) };
             document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) };
-            // Setup Speakers
             document.getElementById('spkAns1').onclick = () => speak(curWord.de, conf.l1);
             document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3);
         }
@@ -402,7 +420,6 @@
         document.getElementById('qAns1').value = ""; document.getElementById('qAns2').value = "";
         document.getElementById('qFeed').innerHTML = "";
         document.getElementById('nextBtn').style.display="none"; document.getElementById('checkBtn').style.display="block";
-        
         if(audioMode) speak(curWord.sv, conf.l3);
     }
 
@@ -411,17 +428,15 @@
         const i2 = document.getElementById('qAns2').value.trim().toLowerCase();
         let r1, r2;
         
-        if(quizQ === 1) { // L1 gefragt, prüfe L2 und L3
+        if(quizQ === 1) { 
             r1 = i1 === curWord.en.trim().toLowerCase();
             r2 = i2 === curWord.sv.trim().toLowerCase();
-        } else { // L2 gefragt, prüfe L1 und L3
+        } else { 
             r1 = i1 === curWord.de.trim().toLowerCase();
             r2 = i2 === curWord.sv.trim().toLowerCase();
         }
         
         document.getElementById('qMainText').innerText = quizQ===1 ? curWord.de : curWord.en;
-        
-        // Show Feedback
         const vL2 = (curWord.enP) ? `<span class="fb-sub">🕒 ${curWord.enP} | 🔮 ${curWord.enF}</span>` : "";
         const vL3 = (curWord.svP) ? `<span class="fb-sub">🕒 ${curWord.svP} | 🔮 ${curWord.svF}</span>` : "";
         
@@ -435,23 +450,14 @@
         document.getElementById('qFeed').innerHTML = html;
         document.getElementById('nextBtn').style.display="block"; document.getElementById('checkBtn').style.display="none";
         
-        if(r1 && r2) {
-            updateLevel(curWord.id, true);
-            speak(curWord.sv, conf.l3); // Lese Zielsprache vor
-        } else {
-            updateLevel(curWord.id, false);
-        }
+        if(r1 && r2) { updateLevel(curWord.id, true); speak(curWord.sv, conf.l3); } else { updateLevel(curWord.id, false); }
     }
 
-    // --- STANDARD FUNKTIONEN ---
-    function updateLevel(id, correct) { db.collection("words").doc(id).update({ level: Math.max(0, Math.min(3, (curWord.level||0) + (correct?1:-1))) }); }
-    function clearInputs() { ['inDe','inEn','inSv','inEx','editId','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inSvFut'].forEach(id=>document.getElementById(id).value=""); document.getElementById('addTitle').innerText="Neuzugang"; document.getElementById('cancelEdit').style.display="none"; document.getElementById('verbSection').style.display="none"; }
-    function toggleVerbSection() { const el=document.getElementById('verbSection'); el.style.display = (el.style.display==="block")?"none":"block"; }
-    function showTab(n) { document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); document.getElementById('tabAdd').style.display=(n==='add')?'block':'none'; document.getElementById('tabQuiz').style.display=(n==='quiz'||n==='challenge')?'block':'none'; document.getElementById('tabList').style.display=(n==='list')?'block':'none'; if(n==='quiz') nextQ(); if(n==='list') renderList(); }
-    function editWord(id) { const w = allWords.find(x=>x.id===id); document.getElementById('editId').value=w.id; document.getElementById('inDe').value=w.de; document.getElementById('inEn').value=w.en; document.getElementById('inSv').value=w.sv; document.getElementById('inEx').value=w.ex||""; document.getElementById('inDePast').value=w.deP||""; document.getElementById('inDeFut').value=w.deF||""; document.getElementById('inEnPast').value=w.enP||""; document.getElementById('inEnFut').value=w.enF||""; document.getElementById('inSvPast').value=w.svP||""; document.getElementById('inSvFut').value=w.svF||""; document.getElementById('addTitle').innerText="Bearbeiten"; document.getElementById('cancelEdit').style.display="block"; showTab('add'); }
-    function del(id) { if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(refreshData); }
+    function updateLevel(id, correct) { db.collection(currentColl).doc(id).update({ level: Math.max(0, Math.min(3, (curWord.level||0) + (correct?1:-1))) }); }
+    function editWord(id) { const w = allWords.find(x=>x.id===id); document.getElementById('editId').value=w.id; document.getElementById('inDe').value=w.de; document.getElementById('inEn').value=w.en; document.getElementById('inSv').value=w.sv; document.getElementById('inEx').value=w.ex||""; document.getElementById('inDePast').value=w.deP||""; document.getElementById('inDeFut').value=w.deF||""; document.getElementById('inEnPast').value=w.enP||""; document.getElementById('inEnFut').value=w.enF||""; document.getElementById('inSvPast').value=w.svP||""; document.getElementById('inSvFut').value=w.svF||""; document.getElementById('addTitle').innerText="Bearbeiten"; document.getElementById('cancelEdit').style.display="block"; if(w.svP) document.getElementById('verbSection').style.display="block"; showTab('add'); }
+    function del(id) { if(confirm("Löschen?")) db.collection(currentColl).doc(id).delete().then(refreshData); }
     function exportData() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allWords)); const a = document.createElement('a'); a.href = d; a.download = "backup.json"; a.click(); }
-    function importData(e) { const f = e.target.files[0]; const r = new FileReader(); r.onload = async (ev) => { const data = JSON.parse(ev.target.result); for(let w of data) { if(!allWords.some(x => x.de === w.de)) await db.collection("words").add({...w, ts: firebase.firestore.FieldValue.serverTimestamp()}); } refreshData(); }; r.readAsText(f); }
+    function importData(e) { const f = e.target.files[0]; const r = new FileReader(); r.onload = async (ev) => { const data = JSON.parse(ev.target.result); for(let w of data) { if(!allWords.some(x => x.de === w.de)) await db.collection(currentColl).add({...w, ts: firebase.firestore.FieldValue.serverTimestamp()}); } refreshData(); }; r.readAsText(f); }
     
     function renderList() {
         document.getElementById('listCont').innerHTML = allWords.map(w => `
@@ -462,10 +468,8 @@
                 <div><span class="lang-tag">${LANGS[conf.l2].flag}</span> ${w.en} <button class="speaker-btn" onclick="speak('${w.en}','${conf.l2}')">🔊</button></div>
                 <div style="position:absolute; right:10px; top:10px;"><button onclick="editWord('${w.id}')">✎</button> <button onclick="del('${w.id}')">X</button></div>
             </div>`).join('');
-        document.getElementById('wordCount').innerText = allWords.length;
     }
     
-    // START
     window.onload = init;
 </script>
 </body>
