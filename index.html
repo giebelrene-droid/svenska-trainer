@@ -13,14 +13,17 @@
         :root { --primary: #005293; --accent: #FECC00; --bg: #f4f7f9; --text: #1a2b3c; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; color: var(--text); max-width: 500px; margin: 0 auto; }
         
+        /* HEADER */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .badge { background: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .settings-btn { background: white; border: none; font-size: 1.2em; cursor: pointer; padding: 5px 10px; border-radius: 50%; }
         
+        /* NAV */
         .nav { display: flex; gap: 5px; margin-bottom: 20px; overflow-x: auto; }
         .nav button { background: #d1dce5; flex: 1; padding: 10px; font-size: 11px; color: #4a627a; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
         .nav button.active { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 82, 147, 0.3); }
         
+        /* CARDS */
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; }
         h2 { color: var(--primary); margin-top: 0; font-size: 1.2em; font-weight: 800; }
         label { display: block; font-size: 0.7em; font-weight: 700; color: #7f8c8d; margin: 10px 0 3px 3px; text-transform: uppercase; }
@@ -29,6 +32,7 @@
         input, select { flex: 1; padding: 12px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 12px; font-size: 16px; width: 100%; box-sizing: border-box; }
         input:focus { border-color: var(--primary); background: white; outline: none; }
         
+        /* BUTTONS */
         .action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
         .mic-btn, .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; min-width: 35px; }
         .mic-active { background: #feb2b2 !important; border-color: #e53e3e !important; animation: pulse 1s infinite; }
@@ -36,20 +40,27 @@
         .danger-btn { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; margin-top: 10px; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
+        /* VERB SECTION */
         .verb-section { background: #edf2f7; padding: 12px; border-radius: 12px; margin-top: 15px; display: none; }
         .verb-lang-group { margin-bottom: 12px; border-bottom: 1px solid #dce4ea; padding-bottom: 8px; }
         .verb-row { display: flex; gap: 8px; }
         .verb-row input { font-size: 0.85em; padding: 8px; }
         
+        /* QUIZ & LIST */
+        .feedback-card { text-align: left; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; border: solid 1px #e2e8f0; }
         .word-item { padding: 16px; border-bottom: 1px solid #f1f5f9; position: relative; }
+        .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+        .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--accent); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--primary); }
         .lang-tag { font-weight: bold; color: var(--primary); margin-right: 5px; width: 25px; display: inline-block; }
         
         .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
         .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
         .challenge-mode { border: 2px solid #e53e3e; }
 
+        /* SETTINGS OVERLAY */
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; }
         .settings-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; }
+        .rename-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
     </style>
 </head>
 <body>
@@ -59,7 +70,18 @@
         <h2>⚙️ Einstellungen</h2>
         <label>👤 Aktiver Benutzer</label>
         <select id="selUser" onchange="switchUser()" style="width:100%; padding:10px; margin-bottom:15px; font-weight:bold;"></select>
-        <div id="renameContainer"></div>
+        
+        <div style="background:#f7fafc; padding:15px; border-radius:10px; border:1px solid #edf2f7; margin-bottom:15px;">
+            <p style="font-size:0.7em; font-weight:800; color:#7f8c8d; margin-top:0;">BENUTZER UMBENENNEN</p>
+            <div id="renameContainer"></div>
+        </div>
+        
+        <label>Sprachen</label>
+        <div style="display:flex; gap:5px;">
+            <select id="selL1" onchange="saveSettings()"></select>
+            <select id="selL2" onchange="saveSettings()"></select>
+            <select id="selL3" onchange="saveSettings()"></select>
+        </div>
         <button class="action-btn" onclick="closeSettings()">Fertig</button>
     </div>
 </div>
@@ -90,6 +112,9 @@
     <label id="lblIn3">L3</label>
     <div class="input-row"><input type="text" id="inSv"><button class="mic-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
     
+    <label>Beispielsatz</label>
+    <input type="text" id="inEx" placeholder="...">
+    
     <button class="action-btn" style="background:#4a5568; font-size:0.8em; padding:10px;" onclick="toggleVerbSection()">📝 Verb-Details</button>
     
     <div id="verbSection" class="verb-section">
@@ -102,17 +127,22 @@
     <button class="action-btn" onclick="handleSmartTranslate()" style="background:#e67e22; margin-top:15px;">1. Übersetzen</button>
     <button class="action-btn" style="background:#48bb78" onclick="manualSave()">2. Speichern</button>
     <button class="action-btn" style="background:#cbd5e0; color:#333; margin-top:15px;" onclick="clearInputs()">Leeren</button>
+    <button id="cancelEdit" class="action-btn" style="background:#718096; display:none;" onclick="resetForm()">Abbrechen</button>
 </div>
 
-<div id="tabQuiz" class="card" style="display:none">
+<div id="tabQuiz" class="card">
     <div style="text-align:center;">
-        <h1 id="qMainText">---</h1>
+        <div id="audioModeToggle" style="font-size:0.8em; font-weight:bold; color:var(--primary); cursor:pointer; margin-bottom:10px;" onclick="toggleAudioMode()">🔈 AUDIO: AUS</div>
+        <div id="timer" style="display:none; font-size:1.5em; font-weight:bold; color:#e53e3e;">⚡ CHALLENGE</div>
+        <p style="color:#888; font-size:0.8em; margin:0;">WAS HEISST...?</p>
+        <h1 id="qMainText" style="margin:5px 0; color:var(--primary);">---</h1>
         <button class="speaker-btn" id="spkMain">🔊</button>
     </div>
     <label id="lblAns1">ANTWORT 1</label>
-    <div class="input-row"><input type="text" id="qAns1"></div>
+    <div class="input-row"><input type="text" id="qAns1"><button class="mic-btn" id="micAns1">🎤</button><button class="speaker-btn" id="spkAns1">🔊</button></div>
     <label id="lblAns2">ANTWORT 2</label>
-    <div class="input-row"><input type="text" id="qAns2"></div>
+    <div class="input-row"><input type="text" id="qAns2" onkeypress="if(event.key==='Enter') checkAns()"><button class="mic-btn" id="micAns2">🎤</button><button class="speaker-btn" id="spkAns2">🔊</button></div>
+    
     <button class="action-btn" onclick="checkAns()" id="checkBtn">PRÜFEN</button>
     <div id="qFeed"></div>
     <button class="action-btn" style="background:#718096; display:none;" id="nextBtn" onclick="nextQ()">WEITER ➡️</button>
@@ -121,40 +151,92 @@
 <div id="tabList" class="card" style="display:none">
     <h2>Vokabelheft</h2>
     <div id="listCont"></div>
+    <div style="margin-top:20px; display:flex; gap:10px;">
+        <button class="action-btn" style="font-size:0.8em; background:#718096;" onclick="exportData()">💾 Backup</button>
+        <button class="action-btn" style="font-size:0.8em; background:#718096;" onclick="document.getElementById('importFile').click()">📂 Laden</button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+    </div>
+    <button class="action-btn danger-btn" onclick="nukeDatabase()">⚠️ ALLES LÖSCHEN</button>
 </div>
 
 <script>
     const VERSION = "4.0.2";
 
-    const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde" };
+    const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const LANGS = { 'de':{name:'Deutsch',tts:'de-DE',flag:'🇩🇪'}, 'en':{name:'Englisch',tts:'en-US',flag:'🇬🇧'}, 'sv':{name:'Schwedisch',tts:'sv-SE',flag:'🇸🇪'} };
+    const LANGS = { 'de':{name:'Deutsch',tts:'de-DE',flag:'🇩🇪'}, 'en':{name:'Englisch',tts:'en-US',flag:'🇬🇧'}, 'sv':{name:'Schwedisch',tts:'sv-SE',flag:'🇸🇪'}, 'fr':{name:'Französisch',tts:'fr-FR',flag:'🇫🇷'}, 'no':{name:'Norwegisch',tts:'nb-NO',flag:'🇳🇴'}, 'es':{name:'Spanisch',tts:'es-ES',flag:'🇪🇸'}, 'it':{name:'Italienisch',tts:'it-IT',flag:'🇮🇹'} };
     const COLLECTIONS = ['words', 'words_u2', 'words_u3', 'words_u4']; 
+    let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; 
     let currentCollIndex = 0;
     let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
-    let allWords = [];
+    let allWords = [], curWord = null, isChallenge = false, audioMode = false, voices = [], quizQ = 1;
 
     function init() {
         document.getElementById('versionDisplay').innerText = VERSION;
+        const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames);
+        renderRenameInputs();
         const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx);
-        updateUserDropdown(); updateInterface(); refreshData();
+        if(isNaN(currentCollIndex) || currentCollIndex < 0 || currentCollIndex > 3) currentCollIndex = 0;
+        updateUserDropdown(); loadUserConfig(); loadVoices(); updateInterface(); refreshData();
+    }
+
+    function renderRenameInputs() { let html = ''; userNames.forEach((name, i) => { html += `<div class="rename-row"><span>${i+1}.</span><input type="text" id="name${i}" value="${name}" onchange="saveName(${i})"></div>`; }); document.getElementById('renameContainer').innerHTML = html; }
+    function updateUserDropdown() { document.getElementById('selUser').innerHTML = userNames.map((n, i) => `<option value="${i}" ${i===currentCollIndex?'selected':''}>👤 ${n}</option>`).join(''); }
+    function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
+    function switchUser() { localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf)); currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserConfig(); updateInterface(); refreshData(); }
+    function loadUserConfig() { const savedLangs = localStorage.getItem('trainerLangs_' + currentCollIndex); if(savedLangs) conf = JSON.parse(savedLangs); else conf = { l1: 'de', l2: 'en', l3: 'sv' }; const opts = Object.keys(LANGS).map(k => `<option value="${k}">${LANGS[k].flag} ${LANGS[k].name}</option>`).join(''); ['selL1', 'selL2', 'selL3'].forEach(id => { document.getElementById(id).innerHTML = opts; }); document.getElementById('selL1').value = conf.l1; document.getElementById('selL2').value = conf.l2; document.getElementById('selL3').value = conf.l3; }
+    function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
+    function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
+    function saveSettings() { conf.l1 = document.getElementById('selL1').value; conf.l2 = document.getElementById('selL2').value; conf.l3 = document.getElementById('selL3').value; localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf)); updateInterface(); refreshData(); }
+    function updateInterface() { document.getElementById('lblIn1').innerText = `${LANGS[conf.l1].flag} ${LANGS[conf.l1].name}`; document.getElementById('lblIn2').innerText = `${LANGS[conf.l2].flag} ${LANGS[conf.l2].name}`; document.getElementById('lblIn3').innerText = `${LANGS[conf.l3].flag} ${LANGS[conf.l3].name}`; document.getElementById('vt1').innerText = `${LANGS[conf.l1].flag} ${LANGS[conf.l1].name}`; document.getElementById('vt2').innerText = `${LANGS[conf.l2].flag} ${LANGS[conf.l2].name}`; document.getElementById('vt3').innerText = `${LANGS[conf.l3].flag} ${LANGS[conf.l3].name}`; }
+    function loadVoices() { voices = window.speechSynthesis.getVoices(); }
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    function speak(txt, langCode) { if (!txt) return; window.speechSynthesis.cancel(); const ut = new SpeechSynthesisUtterance(txt); const ttsCode = LANGS[langCode] ? LANGS[langCode].tts : 'en-US'; let v = voices.find(v => v.lang === ttsCode && (v.name.includes("Premium") || v.name.includes("Natural"))); if(!v) v = voices.find(v => v.lang.startsWith(ttsCode.split('-')[0])); if(v) ut.voice = v; ut.lang = ttsCode; ut.rate = 0.85; window.speechSynthesis.speak(ut); }
+    function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; } const rec = new SpeechRecognition(); const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3); rec.lang = LANGS[langKey].tts; btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; btn.classList.remove('mic-active'); }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
+    function toggleAudioMode() { audioMode = !audioMode; document.getElementById('audioModeToggle').innerText = audioMode ? "🔊 AUDIO: AN" : "🔈 AUDIO: AUS"; }
+
+    function cleanResult(txt) {
+        if(!txt) return ""; let c = txt.trim();
+        c = c.replace(/^(to\s|I\s|He\s|She\s|We\s|You\s)/i, ""); 
+        c = c.replace(/^(a\s|an\s|the\s)/i, ""); 
+        c = c.replace(/^(ein\s|eine\s|der\s|die\s|das\s)/i, "");
+        if(c.toUpperCase().includes("PLEASE SELECT") || c.toUpperCase().includes("SELECT TWO")) return ""; 
+        return c;
     }
 
     async function translate(txt, src, tgt) {
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
         const res = await fetch(url); const data = await res.json();
-        return data.responseData.translatedText;
+        return cleanResult(data.responseData.translatedText);
     }
 
+    async function handleSmartTranslate() {
+        const i1 = document.getElementById('inDe').value.trim(), i2 = document.getElementById('inEn').value.trim(), i3 = document.getElementById('inSv').value.trim();
+        let txt = i1 || i2 || i3; let src = i1 ? conf.l1 : (i2 ? conf.l2 : conf.l3);
+        if(!txt) { alert("Bitte Wort eingeben!"); return; }
+        document.getElementById('loader').style.display = "block";
+        try {
+            const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
+            const tasks = targets.filter(t => t.l !== src).map(async t => { const tr = await translate(txt, src, t.l); return {id: t.id, t: tr}; });
+            const res = await Promise.all(tasks);
+            res.forEach(r => { document.getElementById(r.id).value = r.t; });
+            const l1Word = document.getElementById('inDe').value;
+            if(l1Word) {
+                const sentence = `Das ist ${l1Word}`;
+                const exTr = await translate(sentence, conf.l1, conf.l3);
+                document.getElementById('inEx').value = `... ${exTr} ...`;
+            }
+        } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
+    }
+
+    // --- SMART VERB LOGIC ---
     async function fetchVerbForms() {
         const base = document.getElementById('inEn').value.trim() || document.getElementById('inDe').value.trim(); 
-        if(!base) return alert("Bitte erst ein Wort eingeben.");
+        if(!base) { alert("Bitte erst ein Wort eingeben."); return; }
         document.getElementById('loader').style.display = "block";
-        
         try {
-            // Abfragen
             const rawEnPast = await translate(`Yesterday he ${base}`, conf.l2, conf.l2);
             const enFut = `will ${base}`;
             const rawSvPast = await translate(`Yesterday he ${base}`, conf.l2, conf.l3);
@@ -162,16 +244,15 @@
             const rawDePast = await translate(`Gestern ist er ${base}`, conf.l1, conf.l1);
             const rawDeFut = await translate(`He ${enFut}`, conf.l2, conf.l1); 
 
-            // Angepasster Cleaner: Er löscht die Hilfswörter, lässt Pronomen aber als Platzhalter
+            // PRONOMEN-CLEANER: Setzt das gewünschte Pronomen fest davor
             const clean = (t, prefix) => {
                 if(!t) return prefix;
-                let c = t.replace(/\b(Yesterday|Gestern|She|It|Sie|Es|I|Ich|jag|did|is|ist|was|war|bin|habe|has|have|had)\b/gi, "").trim();
-                // Pronomen vereinheitlichen
-                c = c.replace(/\b(He|Han|Er)\b/gi, "").trim();
+                // Entfernt alle typischen Füllwörter und Pronomen der KI
+                let c = t.replace(/\b(Yesterday|Gestern|She|It|Sie|Es|I|Ich|jag|did|is|ist|was|war|bin|habe|has|have|had|He|Han|Er)\b/gi, "").trim();
                 return prefix + " " + c;
             };
             
-            // Werte in die Felder schreiben
+            // Werte schreiben
             document.getElementById('inEnPast').value = clean(rawEnPast, "He");
             document.getElementById('inEnFut').value = "He " + enFut;
             document.getElementById('inSvPast').value = clean(rawSvPast, "Han");
@@ -185,14 +266,126 @@
         finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // Standardfunktionen (Tabs, Save, List)
-    function showTab(n) { document.querySelectorAll('.card').forEach(c=>c.style.display='none'); document.getElementById('tab'+n.charAt(0).toUpperCase()+n.slice(1)).style.display='block'; }
-    function updateUserDropdown() { document.getElementById('selUser').innerHTML = COLLECTIONS.map((c,i)=>`<option value="${i}">Benutzer ${i+1}</option>`).join(''); }
-    function updateInterface() { document.getElementById('lblIn1').innerText=LANGS[conf.l1].name; document.getElementById('lblIn2').innerText=LANGS[conf.l2].name; document.getElementById('lblIn3').innerText=LANGS[conf.l3].name; }
-    function toggleVerbSection() { const s=document.getElementById('verbSection').style; s.display=s.display==='block'?'none':'block'; }
-    async function refreshData() { const s=await db.collection(COLLECTIONS[currentCollIndex]).get(); allWords=s.docs.map(d=>d.data()); document.getElementById('wordCount').innerText=allWords.length; }
-    function clearInputs() { ['inDe','inEn','inSv','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inSvFut'].forEach(id=>{ document.getElementById(id).value=""; }); }
+    function manualSave() {
+        const vData = { deP: document.getElementById('inDePast').value, enP: document.getElementById('inEnPast').value, svP: document.getElementById('inSvPast').value, deF: document.getElementById('inDeFut').value, enF: document.getElementById('inEnFut').value, svF: document.getElementById('inSvFut').value };
+        const data = { de: document.getElementById('inDe').value, en: document.getElementById('inEn').value, sv: document.getElementById('inSv').value, ex: document.getElementById('inEx').value, ...vData, ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0 };
+        if(!data.de || !data.sv) { alert(`Bitte Wörter eingeben.`); return; }
+        const eid = document.getElementById('editId').value; const coll = COLLECTIONS[currentCollIndex];
+        const op = eid ? db.collection(coll).doc(eid).update(data) : db.collection(coll).add(data);
+        op.then(() => { refreshData(); clearInputs(); if(eid) showTab('list'); else alert("Gespeichert!"); }).catch(e => alert("Fehler: "+e.message));
+    }
 
+    async function nukeDatabase() { if(!confirm(`ALLES LÖSCHEN?`)) return; if(!confirm("Sicher?")) return; const coll = COLLECTIONS[currentCollIndex]; const s = await db.collection(coll).get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); alert("Gelöscht."); }
+    async function refreshData() { const coll = COLLECTIONS[currentCollIndex]; const s = await db.collection(coll).orderBy("ts", "desc").get(); allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderList(); }
+    
+    function renderList() {
+        document.getElementById('listCont').innerHTML = allWords.map(w => `
+            <div class="word-item">
+                <span class="level-dot lvl-${w.level||0}"></span> 
+                <b>${w.de}</b>
+                <div><span class="lang-tag">${LANGS[conf.l3].flag}</span> ${w.sv} <button class="speaker-btn" onclick="speak('${w.sv}','${conf.l3}')">🔊</button></div>
+                <div><span class="lang-tag">${LANGS[conf.l2].flag}</span> ${w.en} <button class="speaker-btn" onclick="speak('${w.en}','${conf.l2}')">🔊</button></div>
+                <div style="position:absolute; right:10px; top:10px;">
+                    <button class="list-btn" onclick="editWord('${w.id}')">✎</button> 
+                    <button class="list-btn" onclick="del('${w.id}')">X</button>
+                </div>
+            </div>`).join('');
+    }
+
+    function clearInputs() { ['inDe','inEn','inSv','inEx','editId','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inSvFut'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=""; }); document.getElementById('addTitle').innerText="Neues Wort"; document.getElementById('cancelEdit').style.display="none"; document.getElementById('verbSection').style.display="none"; }
+    function toggleVerbSection() { const el=document.getElementById('verbSection'); el.style.display = (el.style.display==="block")?"none":"block"; }
+    function showTab(n) { 
+        document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); 
+        document.getElementById('tabAdd').style.display=(n==='add')?'block':'none'; 
+        document.getElementById('tabQuiz').style.display=(n==='quiz'||n==='challenge')?'block':'none'; 
+        document.getElementById('tabList').style.display=(n==='list')?'block':'none';
+        document.getElementById('tabQuiz').classList.remove('challenge-mode');
+        document.getElementById('timer').style.display = "none";
+        document.getElementById('nextBtn').style.display = "none";
+        isChallenge = (n === 'challenge');
+        if(n === 'quiz') document.getElementById('btn2').classList.add('active');
+        if(n === 'challenge') {
+            document.getElementById('btn4').classList.add('active');
+            document.getElementById('tabQuiz').style.display = 'block';
+            document.getElementById('tabQuiz').classList.add('challenge-mode');
+            document.getElementById('timer').style.display = "block";
+        }
+        if(n === 'list') { document.getElementById('btn3').classList.add('active'); renderList(); }
+        if(n === 'add') document.getElementById('btn1').classList.add('active');
+        if(n === 'quiz' || n === 'challenge') nextQ();
+    }
+    
+    function nextQ() { 
+        if(allWords.length === 0) return; 
+        let pool = []; allWords.forEach(w => { let wt = (w.level<2)?3:1; for(let i=0;i<wt;i++) pool.push(w); }); 
+        curWord = pool[Math.floor(Math.random()*pool.length)]; 
+        quizQ = Math.random() > 0.5 ? 1 : 2; 
+        const qTxt = quizQ === 1 ? curWord.de : curWord.en; 
+        const qLang = quizQ === 1 ? conf.l1 : conf.l2; 
+        document.getElementById('qMainText').innerText = audioMode ? "???" : qTxt; 
+        document.getElementById('spkMain').onclick = () => speak(qTxt, qLang);
+        let h1, h2;
+        if(quizQ === 1) { 
+            document.getElementById('lblAns1').innerText = LANGS[conf.l2].name; 
+            document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; 
+            h1 = curWord.en ? curWord.en.charAt(0) : ""; h2 = curWord.sv ? curWord.sv.charAt(0) : "";
+            document.getElementById('micAns1').onclick = function(){ listen(2, 'qAns1', this) }; 
+            document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; 
+            document.getElementById('spkAns1').onclick = () => speak(curWord.en, conf.l2); 
+            document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); 
+        } else { 
+            document.getElementById('lblAns1').innerText = LANGS[conf.l1].name; 
+            document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; 
+            h1 = curWord.de ? curWord.de.charAt(0) : ""; h2 = curWord.sv ? curWord.sv.charAt(0) : "";
+            document.getElementById('micAns1').onclick = function(){ listen(1, 'qAns1', this) }; 
+            document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; 
+            document.getElementById('spkAns1').onclick = () => speak(curWord.de, conf.l1); 
+            document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); 
+        }
+        document.getElementById('qAns1').value = h1; 
+        document.getElementById('qAns2').value = h2;
+        document.getElementById('qAns1').className = ""; 
+        document.getElementById('qAns2').className = ""; 
+        document.getElementById('qFeed').innerHTML = ""; 
+        document.getElementById('nextBtn').style.display="none"; 
+        document.getElementById('checkBtn').style.display="block"; 
+        if(audioMode) speak(curWord.sv, conf.l3); 
+    }
+
+    function checkAns() { 
+        const i1 = document.getElementById('qAns1').value.trim().toLowerCase(); 
+        const i2 = document.getElementById('qAns2').value.trim().toLowerCase(); 
+        let r1, r2; 
+        if(quizQ === 1) { r1 = i1 === curWord.en.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } 
+        else { r1 = i1 === curWord.de.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); }
+        document.getElementById('qAns1').className = r1 ? "correct" : "wrong"; 
+        document.getElementById('qAns2').className = r2 ? "correct" : "wrong";
+        document.getElementById('qMainText').innerText = quizQ===1 ? curWord.de : curWord.en; 
+        const vL2 = (curWord.enP) ? `<br><span style="font-size:0.8em; color:#666">🕒 ${curWord.enP} | 🔮 ${curWord.enF}</span>` : ""; 
+        const vL3 = (curWord.svP) ? `<br><span style="font-size:0.8em; color:#666">🕒 ${curWord.svP} | 🔮 ${curWord.svF}</span>` : ""; 
+        const html = `<div class="feedback-card" style="background:${(r1&&r2)?'#f0fff4':'#fff5f5'}">
+            <div class="fb-row"><span class="lang-tag">${LANGS[conf.l1].flag}</span> <b>${curWord.de}</b></div>
+            <div class="fb-row"><span class="lang-tag">${LANGS[conf.l2].flag}</span> <b>${curWord.en}</b> ${vL2}</div>
+            <div class="fb-row"><span class="lang-tag">${LANGS[conf.l3].flag}</span> <b>${curWord.sv}</b> ${vL3}</div>
+        </div>`; 
+        document.getElementById('qFeed').innerHTML = html; 
+        if(isChallenge) {
+            document.getElementById('checkBtn').style.display="none";
+            setTimeout(nextQ, 2500); 
+        } else {
+            document.getElementById('nextBtn').style.display="block"; 
+            document.getElementById('checkBtn').style.display="none"; 
+        }
+        if(r1 && r2) { updateLevel(curWord.id, true); speak(curWord.sv, conf.l3); } 
+        else { updateLevel(curWord.id, false); } 
+    }
+
+    function updateLevel(id, correct) { db.collection(COLLECTIONS[currentCollIndex]).doc(id).update({ level: Math.max(0, Math.min(3, (curWord.level||0) + (correct?1:-1))) }); }
+    function editWord(id) { const w = allWords.find(x=>x.id===id); document.getElementById('editId').value=w.id; document.getElementById('inDe').value=w.de; document.getElementById('inEn').value=w.en; document.getElementById('inSv').value=w.sv; document.getElementById('inEx').value=w.ex||""; document.getElementById('inDePast').value=w.deP||""; document.getElementById('inDeFut').value=w.deF||""; document.getElementById('inEnPast').value=w.enP||""; document.getElementById('inEnFut').value=w.enF||""; document.getElementById('inSvPast').value=w.svP||""; document.getElementById('inSvFut').value=w.svF||""; document.getElementById('addTitle').innerText="Bearbeiten"; document.getElementById('cancelEdit').style.display="block"; if(w.svP) document.getElementById('verbSection').style.display="block"; showTab('add'); }
+    function del(id) { if(confirm("Löschen?")) db.collection(COLLECTIONS[currentCollIndex]).doc(id).delete().then(refreshData); }
+    function exportData() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allWords)); const a = document.createElement('a'); a.href = d; a.download = "backup.json"; a.click(); }
+    function importData(e) { const f = e.target.files[0]; const r = new FileReader(); r.onload = async (ev) => { const data = JSON.parse(ev.target.result); for(let w of data) { if(!allWords.some(x => x.de === w.de)) await db.collection(COLLECTIONS[currentCollIndex]).add({...w, ts: firebase.firestore.FieldValue.serverTimestamp()}); } refreshData(); }; r.readAsText(f); }
+    
     window.onload = init;
 </script>
 </body>
