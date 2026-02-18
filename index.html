@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.0.4 (Did-Chain)</title>
+    <title>Family Trainer 4.0.5 (Bumerang-Logik)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👑</text></svg>">
     
@@ -166,7 +166,7 @@
 
 <script>
     // --- ZEITSTEMPEL VERSION ---
-    const VERSION = "18.02.2026 - 17:15 (Ketten-Logik)";
+    const VERSION = "18.02.2026 - 17:25 (Bumerang-Logik)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -231,7 +231,7 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- NEUE KETTEN-LOGIK MIT "DID" UM DAS SWIMMING-PROBLEM ZU LÖSEN ---
+    // --- NEUE BUMERANG-LOGIK (Doppelte Übersetzung für Deutsch) ---
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
@@ -244,25 +244,30 @@
         document.getElementById('loader').style.display = "block";
         
         try {
-            // SCHRITT 1: Wir erzeugen die deutsche Vergangenheit mit dem "Did"-Trick
-            // "He did swim" (EN) -> "Er schwamm" (DE)
-            // Das umgeht das "Swimming"-Problem, weil "did" die abgeschlossene Vergangenheit erzwingt.
-            let rawDePast = await translate(`He did ${baseEn}`, 'en', 'de');
+            // SCHRITT 1: Mit "He did..." (EN->DE) die temporäre Form finden.
+            // Das liefert oft "Er hat geschwommen" (was wir NICHT wollen), 
+            // aber es ist ein Zwischenschritt.
+            let tempDE = await translate(`He did ${baseEn}`, 'en', 'de');
 
-            // SCHRITT 2: Wir nehmen das saubere deutsche Ergebnis ("Er schwamm")
-            // und übersetzen es zurück ins Englische. 
-            // "Er schwamm" (DE) -> "He swam" (EN)
-            let rawEnPast = await translate(rawDePast, 'de', 'en');
+            // SCHRITT 2: Rückübersetzen (DE->EN), um sauberes Englisch zu bekommen.
+            // "Er hat geschwommen" -> "He swam".
+            // "Er ging" -> "He went".
+            let finalEnPast = await translate(tempDE, 'de', 'en');
 
-            // SCHRITT 3: Wir nehmen das saubere englische Ergebnis ("He swam")
-            // und übersetzen es ins Schwedische.
-            // "He swam" (EN) -> "Han simmade" (SV)
-            let rawSvPast = await translate(rawEnPast, 'en', 'sv');
+            // SCHRITT 3: BUMERANG! Wir nehmen das saubere Englisch ("He swam")
+            // und übersetzen es zurück ins Deutsche.
+            // "He swam" -> "Er schwamm" (oder "Er ist geschwommen").
+            // Das korrigiert oft das falsche "haben" aus Schritt 1.
+            let finalDePast = await translate(finalEnPast, 'en', 'de');
 
-            debug.innerHTML = "<b>KI KETTEN-LOGIK:</b>\n" + 
-                              "1. 'He did...' -> DE: " + rawDePast + "\n" +
-                              "2. DE Result -> EN: " + rawEnPast + "\n" +
-                              "3. EN Result -> SV: " + rawSvPast;
+            // SCHRITT 4: Schwedisch aus dem sauberen Englisch
+            let finalSvPast = await translate(finalEnPast, 'en', 'sv');
+
+            debug.innerHTML = "<b>KI BUMERANG-LOGIK:</b>\n" + 
+                              "1. 'Did' -> Temp: " + tempDE + "\n" +
+                              "2. Clean EN: " + finalEnPast + "\n" +
+                              "3. Clean DE: " + finalDePast + "\n" +
+                              "4. Clean SV: " + finalSvPast;
 
             const anchorClean = (rawText, pronoun) => {
                 if (!rawText) return pronoun + " ...";
@@ -278,9 +283,9 @@
             };
 
             // Ergebnisse eintragen
-            document.getElementById('inEnPast').value = anchorClean(rawEnPast, "He");
-            document.getElementById('inDePast').value = anchorClean(rawDePast, "Er");
-            document.getElementById('inSvPast').value = anchorClean(rawSvPast, "Han");
+            document.getElementById('inEnPast').value = anchorClean(finalEnPast, "He");
+            document.getElementById('inDePast').value = anchorClean(finalDePast, "Er");
+            document.getElementById('inSvPast').value = anchorClean(finalSvPast, "Han");
 
             // Zukunft bleibt einfach
             document.getElementById('inDeFut').value = "Er wird " + baseDe;
