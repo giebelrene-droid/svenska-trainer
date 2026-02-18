@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 2.2</title>
+    <title>Family Trainer 2.3</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👨‍👩‍👧‍👦</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👨‍👩‍👧‍👦</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🧨</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🧨</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -57,6 +57,9 @@
         .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--accent); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--primary); }
         .lang-tag { font-size: 0.7em; font-weight: 800; color: var(--primary); margin-right: 5px; display: inline-block; width: 25px; }
         .version-info { text-align: center; font-size: 0.7em; color: #a0aec0; padding: 20px; font-weight: 600; }
+        
+        /* Neuer Delete Button Style */
+        .danger-btn { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -167,11 +170,12 @@
             <button class="backup-btn" onclick="exportData()">💾 DATEN SICHERN</button>
             <button class="backup-btn" onclick="document.getElementById('importFile').click()">📂 LADEN</button>
             <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+            <button class="backup-btn danger-btn" onclick="nukeDatabase()">⚠️ ALLES LÖSCHEN</button>
         </div>
     </div>
 </div>
 
-<div class="version-info">FAMILY TRAINER v2.2 (4-User Edition)</div>
+<div class="version-info">FAMILY TRAINER v2.3</div>
 
 <script>
     const firebaseConfig = {
@@ -196,28 +200,23 @@
         'it': { name: 'Italienisch', tts: 'it-IT', flag: '🇮🇹' }
     };
 
-    // USER CONFIGURATION
-    const COLLECTIONS = ['words', 'words_u2', 'words_u3', 'words_u4']; // Feste DB Namen
-    let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; // Standard-Anzeige
+    const COLLECTIONS = ['words', 'words_u2', 'words_u3', 'words_u4']; 
+    let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; 
     let currentCollIndex = 0;
     
     let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
     let allWords = [], curWord = null, isChallenge = false, audioMode = false, voices = [], quizQ = 1;
 
     function init() {
-        // Lade Namen
         const storedNames = localStorage.getItem('trainerUserNames');
         if(storedNames) userNames = JSON.parse(storedNames);
-        
-        // Input Felder füllen
         userNames.forEach((n, i) => document.getElementById('name'+i).value = n);
 
-        // Lade letzten User Index
         const savedIdx = localStorage.getItem('trainerUserIdx');
         if(savedIdx) currentCollIndex = parseInt(savedIdx);
         
-        loadUserConfig(); // Sprachen laden
-        updateUserDropdown(); // Dropdown bauen
+        loadUserConfig(); 
+        updateUserDropdown(); 
         loadVoices();
         updateInterface();
         refreshData();
@@ -238,13 +237,9 @@
     }
 
     function switchUser() {
-        // Speichere Sprachen des alten Users
         localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf));
-        
-        // Wechseln
         currentCollIndex = parseInt(document.getElementById('selUser').value);
         localStorage.setItem('trainerUserIdx', currentCollIndex);
-        
         loadUserConfig();
         updateInterface();
         refreshData();
@@ -253,13 +248,9 @@
     function loadUserConfig() {
         const savedLangs = localStorage.getItem('trainerLangs_' + currentCollIndex);
         if(savedLangs) conf = JSON.parse(savedLangs);
-        else conf = { l1: 'de', l2: 'en', l3: 'sv' }; // Default
-        
-        // Sprachen Selects aktualisieren
+        else conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
         const opts = Object.keys(LANGS).map(k => `<option value="${k}">${LANGS[k].flag} ${LANGS[k].name}</option>`).join('');
-        ['selL1', 'selL2', 'selL3'].forEach(id => {
-            document.getElementById(id).innerHTML = opts;
-        });
+        ['selL1', 'selL2', 'selL3'].forEach(id => { document.getElementById(id).innerHTML = opts; });
         document.getElementById('selL1').value = conf.l1;
         document.getElementById('selL2').value = conf.l2;
         document.getElementById('selL3').value = conf.l3;
@@ -380,6 +371,21 @@
         const coll = COLLECTIONS[currentCollIndex];
         const op = eid ? db.collection(coll).doc(eid).update(data) : db.collection(coll).add(data);
         op.then(() => { clearInputs(); if(eid) showTab('list'); else alert("Gespeichert!"); });
+    }
+
+    // --- NUKE DATABASE FUNCTION ---
+    async function nukeDatabase() {
+        if(!confirm(`WARNUNG: Möchtest du wirklich ALLE Wörter von Benutzer "${userNames[currentCollIndex]}" löschen?`)) return;
+        if(!confirm("Bist du ganz sicher? Die Daten sind unwiderruflich weg!")) return;
+        
+        const coll = COLLECTIONS[currentCollIndex];
+        const snapshot = await db.collection(coll).get();
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        
+        refreshData();
+        alert("Liste erfolgreich geleert. Ein Neuanfang! 🌱");
     }
 
     async function refreshData() {
