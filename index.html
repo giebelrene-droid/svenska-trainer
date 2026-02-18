@@ -166,7 +166,7 @@
 
 <script>
     // --- ZEITSTEMPEL VERSION ---
-    const VERSION = "18.02.2026 - 16:30";
+    const VERSION = "18.02.2026 - 16:45";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -231,7 +231,7 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- VERB-LOGIK MIT PFEIL-MUSTER UND KREUZ-ABFRAGE ---
+    // --- VERB-LOGIK MIT DIREKT-ABFRAGE OHNE PFEIL-ENDE ---
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
@@ -244,10 +244,10 @@
         document.getElementById('loader').style.display = "block";
         
         try {
-            // Kreuz-Abfrage mit Pfeil-Muster um "Same-Language" Fehler zu vermeiden und die KI zu führen
-            const rawEnPast = await translate(`Er kauft -> Er kaufte. He buys ->`, 'de', 'en'); 
-            const rawDePast = await translate(`He buys -> He bought. Er kauft ->`, 'en', 'de');
-            const rawSvPast = await translate(`He buys -> Han köpte. He goes -> Han gick. He ${baseEn} ->`, 'en', 'sv');
+            // Wir nutzen Kreuz-Abfrage und einfache Strukturen, damit die KI nicht in Mustern hängen bleibt
+            const rawEnPast = await translate(`Past tense of "he ${baseEn}"`, 'en', 'en'); 
+            const rawDePast = await translate(`Vergangenheit von "er ${baseDe}"`, 'de', 'de');
+            const rawSvPast = await translate(`Yesterday he ${baseEn}`, 'en', 'sv');
 
             debug.innerHTML = "<b>KI ROH-DATEN:</b>\n" + 
                               "EN (Past): " + rawEnPast + "\n" +
@@ -271,9 +271,7 @@
 
             document.getElementById('inDeFut').value = "Er wird " + baseDe;
             document.getElementById('inEnFut').value = "He will " + baseEn;
-            
-            // Schwedisch Zukunft ebenfalls mit Muster
-            const rawSvFut = await translate(`He buys -> Han ska köpa. He ${baseEn} ->`, 'en', 'sv');
+            const rawSvFut = await translate(`He will ${baseEn}`, 'en', 'sv');
             document.getElementById('inSvFut').value = anchorClean(rawSvFut, "Han");
 
         } catch(e) { 
