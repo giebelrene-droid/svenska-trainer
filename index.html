@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -166,7 +166,7 @@
 
 <script>
     // --- ZEITSTEMPEL VERSION ---
-    const VERSION = "18.02.2026 - 15:45";
+    const VERSION = "18.02.2026 - 15:55";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -231,7 +231,7 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- NEUE ANKER-LOGIK MIT DIAGNOSE-KASTEN ---
+    // --- VERB-LOGIK MIT KREUZ-ABFRAGE GEGEN SAME-LANGUAGE-FEHLER ---
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
@@ -245,15 +245,16 @@
         document.getElementById('loader').style.display = "block";
         
         try {
-            const rawEnPast = await translate(`Yesterday he ${baseEn}`, 'en', 'en');
-            const rawDePast = await translate(`Gestern ist er ${baseDe}`, 'de', 'de');
+            // Kreuz-Abfrage: Deutsch -> Englisch und Englisch -> Deutsch um Fehler zu vermeiden
+            const rawEnPast = await translate(`Gestern ist er ${baseDe}`, 'de', 'en'); 
+            const rawDePast = await translate(`Yesterday he ${baseEn}`, 'en', 'de');
             const rawSvPast = await translate(`Yesterday he ${baseEn}`, 'en', 'sv');
 
             // ROH-DATEN IM KASTEN ANZEIGEN
-            debug.innerHTML = "<b>ROH-DATEN VON DER KI:</b>\n" + 
-                              "EN: " + rawEnPast + "\n" +
-                              "DE: " + rawDePast + "\n" +
-                              "SV: " + rawSvPast;
+            debug.innerHTML = "<b>KI ROH-DATEN:</b>\n" + 
+                              "EN (Past): " + rawEnPast + "\n" +
+                              "DE (Past): " + rawDePast + "\n" +
+                              "SV (Past): " + rawSvPast;
 
             const anchorClean = (rawText, pronoun) => {
                 if (!rawText) return pronoun + " ...";
