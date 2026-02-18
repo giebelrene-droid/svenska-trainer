@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 3.1 (DeepL Fix)</title>
+    <title>Family Trainer 2.8 (Final Polish)</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🔧</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🔧</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>✨</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>✨</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -15,14 +15,15 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 15px; color: var(--text); margin: 0; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
         .container { max-width: 480px; margin: auto; flex: 1; width: 100%; }
         
+        /* HEADER & NAV */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .badge { background: white; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.85em; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .settings-btn { background: white; border: none; font-size: 1.2em; cursor: pointer; padding: 8px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-
         .nav { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
         .nav button { background: #d1dce5; flex: 1; padding: 12px 5px; font-size: 11px; color: #4a627a; border: none; border-radius: 12px; cursor: pointer; font-weight: 800; transition: all 0.2s ease; white-space: nowrap; }
         .nav button.active { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 82, 147, 0.3); }
         
+        /* CARDS & INPUTS */
         .card { background: white; padding: 24px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); margin-bottom: 20px; }
         h2 { color: var(--primary); margin-top: 0; font-size: 1.3em; font-weight: 800; }
         label { display: block; font-size: 0.75em; font-weight: 700; color: #7f8c8d; margin: 12px 0 4px 4px; text-transform: uppercase; }
@@ -30,6 +31,7 @@
         input, select { flex: 1; padding: 14px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 14px; font-size: 16px; width: 100%; box-sizing: border-box; }
         input:focus, select:focus { border-color: var(--primary); background: white; outline: none; }
         
+        /* BUTTONS */
         .action-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 14px; cursor: pointer; font-weight: 700; font-size: 16px; margin-top: 10px; }
         .speaker-btn, .mic-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; }
         .mic-active { background: #feb2b2 !important; border-color: #e53e3e !important; color: white !important; animation: pulse 1.5s infinite; }
@@ -57,8 +59,11 @@
         .lang-tag { font-size: 0.7em; font-weight: 800; color: var(--primary); margin-right: 5px; display: inline-block; width: 25px; }
         .version-info { text-align: center; font-size: 0.7em; color: #a0aec0; padding: 20px; font-weight: 600; }
         
+        /* FEEDBACK COLORS */
         .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
         .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
+        
+        /* API KEY INPUT */
         .api-input { font-family: monospace; font-size: 0.8em; border: 1px solid #cbd5e0; background: #fff; width: 100%; padding: 10px; border-radius: 8px; box-sizing: border-box; }
     </style>
 </head>
@@ -159,7 +164,7 @@
     </div>
 </div>
 
-<div class="version-info">FAMILY TRAINER v3.1 (Fix)</div>
+<div class="version-info">FAMILY TRAINER v2.8 (Polish)</div>
 
 <script>
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
@@ -228,7 +233,6 @@
         document.getElementById('loader').style.display = "block";
         try {
             const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
-            // FIX: Verwende map mit Promise.all um auf ALLE Ergebnisse zu warten
             const tasks = targets.filter(t => t.l !== src).map(async t => {
                 const tr = await translate(txt, src, t.l);
                 return {id: t.id, t: tr};
@@ -240,23 +244,23 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- REPARIERTE VERB FUNKTION (SCHLEIFE) ---
+    // --- REPARIERTE VERB FUNKTION (SMART LOGIC) ---
     async function fetchVerbForms() {
         const base = document.getElementById('inEn').value.trim() || document.getElementById('inDe').value.trim(); 
         if(!base) { alert("Bitte erst ein Wort eingeben."); return; }
         document.getElementById('loader').style.display = "block";
         try {
             const p = [];
-            // FIX: Normale for-Loops statt forEach für korrekte Reihenfolge
-            for (const phrase of [`I did ${base}`, `I will ${base}`]) {
-                for (const l of [conf.l1, conf.l3]) {
-                    p.push(translate(phrase, conf.l2, l));
-                }
-            }
+            // "did" erzwingt Vergangenheit, "will" erzwingt Zukunft. TRICK: "He" nutzen!
+            [`He did ${base}`, `He will ${base}`].forEach(phrase => {
+                [conf.l1, conf.l3].forEach(async l => p.push(await translate(phrase, conf.l2, l)));
+            });
             const res = await Promise.all(p);
             
-            const cleanPast = (t) => t ? t.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did)\b\s?/gi, "").trim() : "";
-            const cleanFut = (t) => t ? t.replace(/\b(Ich|I|jag|Du|Han|Hon|Er|Sie)\b\s?/gi, "").trim() : "";
+            // CLEANER: Entfernt Gestern/Yesterday/etc. und auch 've 's 'd
+            const cleanPast = (t) => t ? t.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did|He|Er|Han|’ve|’s|’d|has|have|had)\b\s?/gi, "").trim() : "";
+            // CLEANER ZUKUNFT: Entfernt Personen, behält "wird"
+            const cleanFut = (t) => t ? t.replace(/\b(Ich|I|jag|Du|Han|Hon|Er|Sie|He)\b\s?/gi, "").trim() : "";
 
             document.getElementById('inDePast').value = cleanPast(res[0]);
             document.getElementById('inSvPast').value = cleanPast(res[1]);
@@ -267,11 +271,15 @@
                 const rawDePast = cleanPast(res[0]);
                 if(rawDePast) {
                     const enBack = await translate(rawDePast, conf.l1, conf.l2);
-                    document.getElementById('inEnPast').value = enBack.replace(/\b(Yesterday|I)\b\s?/gi, "").trim();
+                    document.getElementById('inEnPast').value = enBack.replace(/\b(Yesterday|I|He|did)\b\s?/gi, "").trim();
                 } else document.getElementById('inEnPast').value = base + "ed";
             } else {
-                const enBack = await translate(res[0], conf.l1, conf.l2);
-                document.getElementById('inEnPast').value = enBack.replace(/\b(Yesterday|I)\b\s?/gi, "").trim();
+                // Bei DeepL vertrauen wir auf "He did run" -> "ran"
+                const enBack = await translate(`He did ${base}`, conf.l2, conf.l2); // Dummy call to strip? No, let's assume cleaner logic
+                // Actually, let's just assume simple past from base for English if we have DeepL, 
+                // OR translate the German result back to get the irregular form.
+                const enBack = await translate(res[0], conf.l1, conf.l2); // German result back to English
+                document.getElementById('inEnPast').value = enBack.replace(/\b(Yesterday|I|He|did)\b\s?/gi, "").trim();
             }
             document.getElementById('inEnFut').value = "will " + base;
 
