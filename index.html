@@ -32,8 +32,6 @@
         .action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
         .mic-btn, .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; min-width: 35px; }
         .mic-active { background: #feb2b2 !important; border-color: #e53e3e !important; animation: pulse 1s infinite; }
-        .list-btn { background: #edf2f7; border: none; padding: 5px 10px; border-radius: 50%; cursor: pointer; margin-left: 5px; }
-        .danger-btn { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; margin-top: 10px; }
         
         .verb-section { background: #edf2f7; padding: 12px; border-radius: 12px; margin-top: 15px; display: none; }
         .verb-lang-group { margin-bottom: 12px; border-bottom: 1px solid #dce4ea; padding-bottom: 8px; }
@@ -42,20 +40,14 @@
         
         .feedback-card { text-align: left; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #e2e8f0; }
         .word-item { padding: 16px; border-bottom: 1px solid #f1f5f9; position: relative; }
-        .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
-        .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--accent); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--primary); }
-        .lang-tag { font-weight: bold; color: var(--primary); margin-right: 5px; width: 25px; display: inline-block; }
         .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
         .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
-        .challenge-mode { border: 4px solid #e53e3e; animation: shake 0.5s linear 1; }
+        .challenge-mode { border: 4px solid #e53e3e; }
         
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; }
         .settings-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .st-ok { background: #48bb78; } .st-warn { background: #ed8936; }
     </style>
 </head>
 <body>
@@ -68,13 +60,12 @@
         <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         <label>🔑 DeepL API Key</label>
         <input type="text" id="deeplKey" placeholder="Key hier..." onchange="saveApiKeys()">
-        <div id="apiKeyStatus" style="font-size:0.7em; margin-top:5px; font-weight:bold;">Status: Prüfe...</div>
         <button class="action-btn" onclick="closeSettings()">Fertig</button>
     </div>
 </div>
 
 <div class="header-row">
-    <div class="badge"><span id="apiIndicator" class="status-dot st-warn"></span>📚 <span id="wordCount">0</span></div>
+    <div class="badge">📚 <span id="wordCount">0</span> Wörter</div>
     <div class="badge">🏆 Rekord: <span id="highScoreDisplay">0</span></div>
     <div class="badge">💎 Punkte: <span id="currentScore">0</span></div>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
@@ -102,18 +93,18 @@
     <label>Beispielsatz</label>
     <input type="text" id="inEx" placeholder="...">
     
-    <button class="action-btn" style="background:#4a5568; font-size:0.8em; padding:10px;" onclick="toggleVerbSection()">📝 Verb-Details</button>
+    <button type="button" class="action-btn" style="background:#4a5568; font-size:0.8em; padding:10px;" onclick="toggleVerbSection()">📝 Verb-Details</button>
     
     <div id="verbSection" class="verb-section">
         <div class="verb-lang-group"><label id="vt1">L1</label><div class="verb-row"><input type="text" id="inDePast" placeholder="Vergangenheit"><input type="text" id="inDeFut" placeholder="Zukunft"></div></div>
         <div class="verb-lang-group"><label id="vt2">L2</label><div class="verb-row"><input type="text" id="inEnPast" placeholder="Past"><input type="text" id="inEnFut" placeholder="Future"></div></div>
         <div class="verb-lang-group"><label id="vt3">L3</label><div class="verb-row"><input type="text" id="inSvPast" placeholder="Past"><input type="text" id="inSvFut" placeholder="Future"></div></div>
-        <button class="action-btn" style="background:#e67e22; font-size:0.9em; margin-top:5px;" onclick="fetchVerbForms()">⚡ Formen suchen</button>
+        <button type="button" class="action-btn" style="background:#e67e22; font-size:0.9em; margin-top:5px;" onclick="fetchVerbForms()">⚡ Formen suchen</button>
     </div>
 
-    <button class="action-btn" onclick="handleSmartTranslate()" style="background:#e67e22; margin-top:15px;">1. Übersetzen</button>
-    <button class="action-btn" style="background:#48bb78" onclick="manualSave()">2. Speichern</button>
-    <button class="action-btn" style="background:#cbd5e0; color:#333; margin-top:15px;" onclick="clearInputs()">Leeren</button>
+    <button type="button" class="action-btn" onclick="handleSmartTranslate()" style="background:#e67e22; margin-top:15px;">1. Übersetzen</button>
+    <button type="button" class="action-btn" style="background:#48bb78" onclick="manualSave()">2. Speichern</button>
+    <button type="button" class="action-btn" style="background:#cbd5e0; color:#333; margin-top:15px;" onclick="clearInputs()">Leeren</button>
 </div>
 
 <div id="tabQuiz" class="card" style="display:none">
@@ -147,11 +138,8 @@
     let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; 
     let currentCollIndex = 0;
     let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
-    let apiKeys = { deepl: '' };
     let allWords = [], curWord = null, isChallenge = false, audioMode = false, voices = [], quizQ = 1;
-    let useDeepL = false;
 
-    // --- CHALLENGE VARIABLEN ---
     let score = 0;
     let highscore = localStorage.getItem('trainerHighscore') || 0;
 
@@ -163,6 +151,15 @@
     }
 
     function renderHighscore() { document.getElementById('highScoreDisplay').innerText = highscore; }
+
+    function toggleVerbSection() {
+        const el = document.getElementById('verbSection');
+        if (el.style.display === "none" || el.style.display === "") {
+            el.style.display = "block";
+        } else {
+            el.style.display = "none";
+        }
+    }
 
     function cleanResult(text) {
         if (!text) return "";
@@ -182,19 +179,21 @@
         return diff >= 3;
     }
 
-    // --- FIREBASE & SETUP ---
     function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserConfig(); updateInterface(); refreshData(); }
     function loadUserConfig() { const savedLangs = localStorage.getItem('trainerLangs_' + currentCollIndex); if(savedLangs) conf = JSON.parse(savedLangs); else conf = { l1: 'de', l2: 'en', l3: 'sv' }; }
     function updateUserDropdown() { document.getElementById('selUser').innerHTML = userNames.map((n, i) => `<option value="${i}" ${i===currentCollIndex?'selected':''}>👤 ${n}</option>`).join(''); }
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
-    function updateInterface() { document.getElementById('lblIn1').innerText = LANGS[conf.l1].name; document.getElementById('lblIn2').innerText = LANGS[conf.l2].name; document.getElementById('lblIn3').innerText = LANGS[conf.l3].name; }
+    function updateInterface() { 
+        document.getElementById('lblIn1').innerText = LANGS[conf.l1].name; 
+        document.getElementById('lblIn2').innerText = LANGS[conf.l2].name; 
+        document.getElementById('lblIn3').innerText = LANGS[conf.l3].name; 
+    }
     function loadVoices() { voices = window.speechSynthesis.getVoices(); }
     window.speechSynthesis.onvoiceschanged = loadVoices;
     function speak(txt, langCode) { if (!txt) return; const ut = new SpeechSynthesisUtterance(txt); ut.lang = LANGS[langCode].tts; window.speechSynthesis.speak(ut); }
     function toggleAudioMode() { audioMode = !audioMode; document.getElementById('audioModeToggle').innerText = audioMode ? "🔊 AUDIO: AN" : "🔈 AUDIO: AUS"; }
 
-    // --- KI ÜBERSETZUNG ---
     async function translateWithSynonyms(txt, src, tgt) {
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
         const res = await fetch(url); const data = await res.json();
@@ -219,7 +218,6 @@
         document.getElementById('loader').style.display = "none";
     }
 
-    // --- SPEICHERN ---
     function manualSave() {
         const fields = [{id:'inDePast',k:'deP'},{id:'inEnPast',k:'enP'},{id:'inSvPast',k:'svP'},{id:'inDeFut',k:'deF'},{id:'inEnFut',k:'enF'},{id:'inSvFut',k:'svF'}];
         const vData = {};
@@ -239,7 +237,6 @@
     function renderList() { document.getElementById('listCont').innerHTML = allWords.map(w => `<div class="word-item"><b>${w.de}</b>: ${w.en} / ${w.sv}</div>`).join(''); }
     function clearInputs() { ['inDe','inEn','inSv','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inSvFut'].forEach(id=>document.getElementById(id).value=""); }
 
-    // --- QUIZ LOGIK ---
     function showTab(n) { 
         document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); 
         document.getElementById('tabAdd').style.display=(n==='add')?'block':'none'; 
@@ -252,6 +249,7 @@
         } else {
             document.getElementById('tabQuiz').classList.remove('challenge-mode');
         }
+        document.getElementById(n === 'add' ? 'btn1' : n === 'quiz' ? 'btn2' : n === 'list' ? 'btn3' : 'btn4').classList.add('active');
         if(n==='quiz'||n==='challenge') nextQ();
     }
     
@@ -282,8 +280,10 @@
                     localStorage.setItem('trainerHighscore', highscore);
                     renderHighscore();
                 }
+                setTimeout(nextQ, 1000);
+            } else {
+                document.getElementById('nextBtn').style.display="block";
             }
-            if(isChallenge) setTimeout(nextQ, 1000); else document.getElementById('nextBtn').style.display="block";
         } else {
             document.getElementById('qFeed').innerHTML = `Lösung: ${curWord.en} / ${curWord.sv}`;
             document.getElementById('nextBtn').style.display="block";
