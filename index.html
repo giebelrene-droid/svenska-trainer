@@ -1,12 +1,12 @@
-<!DOCTYPE html>
+     <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 2.7.3</title>
+    <title>Family Trainer 3.0 (Pro)</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🚦</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🚦</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>💎</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>💎</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -15,15 +15,14 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 15px; color: var(--text); margin: 0; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
         .container { max-width: 480px; margin: auto; flex: 1; width: 100%; }
         
-        /* HEADER & NAV */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .badge { background: white; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.85em; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .settings-btn { background: white; border: none; font-size: 1.2em; cursor: pointer; padding: 8px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
         .nav { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
         .nav button { background: #d1dce5; flex: 1; padding: 12px 5px; font-size: 11px; color: #4a627a; border: none; border-radius: 12px; cursor: pointer; font-weight: 800; transition: all 0.2s ease; white-space: nowrap; }
         .nav button.active { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 82, 147, 0.3); }
         
-        /* CARDS & INPUTS */
         .card { background: white; padding: 24px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); margin-bottom: 20px; }
         h2 { color: var(--primary); margin-top: 0; font-size: 1.3em; font-weight: 800; }
         label { display: block; font-size: 0.75em; font-weight: 700; color: #7f8c8d; margin: 12px 0 4px 4px; text-transform: uppercase; }
@@ -31,11 +30,6 @@
         input, select { flex: 1; padding: 14px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 14px; font-size: 16px; width: 100%; box-sizing: border-box; }
         input:focus, select:focus { border-color: var(--primary); background: white; outline: none; }
         
-        /* FEEDBACK COLORS (WIEDER DA!) */
-        .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
-        .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
-
-        /* BUTTONS */
         .action-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 14px; cursor: pointer; font-weight: 700; font-size: 16px; margin-top: 10px; }
         .speaker-btn, .mic-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; }
         .mic-active { background: #feb2b2 !important; border-color: #e53e3e !important; color: white !important; animation: pulse 1.5s infinite; }
@@ -62,21 +56,40 @@
         .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--accent); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--primary); }
         .lang-tag { font-size: 0.7em; font-weight: 800; color: var(--primary); margin-right: 5px; display: inline-block; width: 25px; }
         .version-info { text-align: center; font-size: 0.7em; color: #a0aec0; padding: 20px; font-weight: 600; }
+        
+        /* FEEDBACK COLORS */
+        .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
+        .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
+        
+        /* API KEY INPUT */
+        .api-input { font-family: monospace; font-size: 0.8em; border: 1px solid #cbd5e0; background: #fff; }
     </style>
 </head>
 <body>
 
 <div id="settingsOverlay">
     <div class="settings-box">
-        <h2 style="margin-bottom:5px;">👤 Wer lernt gerade?</h2>
+        <h2 style="margin-bottom:5px;">⚙️ Einstellungen</h2>
+        
+        <label>👤 Aktiver Benutzer</label>
         <select id="selUser" onchange="switchUser()" style="background:#e6fffa; border-color:#38b2ac; font-weight:800; padding:12px; font-size:1.1em; margin-bottom:15px;"></select>
+        
+        <hr style="border:0; border-top:1px solid #edf2f7; margin:10px 0;">
+        
+        <label>🔑 DeepL API Schlüssel (Optional)</label>
+        <input type="text" id="deeplKey" class="api-input" placeholder="Hier Key einfügen..." onchange="saveApiKeys()">
+        <div style="font-size:0.7em; color:#718096; margin-top:3px;">Mit Key = Bessere Qualität. Ohne Key = Standard.</div>
+
+        <hr style="border:0; border-top:1px solid #edf2f7; margin:10px 0;">
+
         <div style="background:#f7fafc; padding:15px; border-radius:10px; border:1px solid #edf2f7; margin-bottom:15px;">
-            <p style="font-size:0.7em; font-weight:800; color:#7f8c8d; margin-top:0;">NAMEN ÄNDERN</p>
+            <p style="font-size:0.7em; font-weight:800; color:#7f8c8d; margin-top:0;">BENUTZER UMBENENNEN</p>
             <div class="rename-row"><span>1.</span><input type="text" id="name0" onchange="saveName(0)"></div>
             <div class="rename-row"><span>2.</span><input type="text" id="name1" onchange="saveName(1)"></div>
             <div class="rename-row"><span>3.</span><input type="text" id="name2" onchange="saveName(2)"></div>
             <div class="rename-row"><span>4.</span><input type="text" id="name3" onchange="saveName(3)"></div>
         </div>
+        
         <label>Sprachen</label>
         <div style="display:flex; gap:5px; margin-bottom:5px;">
             <select id="selL1" onchange="saveSettings()" style="font-size:0.8em;"></select>
@@ -105,7 +118,6 @@
         <h2 id="addTitle">Neuzugang</h2>
         <div id="loader" style="color:var(--primary); font-weight:700; text-align:center; display:none;">KI arbeitet... 🪄</div>
         <input type="hidden" id="editId">
-        
         <label id="lblIn1">L1</label>
         <div class="input-row"><input type="text" id="inDe"><button class="mic-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
         <label id="lblIn2">L2</label>
@@ -119,18 +131,9 @@
         <button class="action-btn" style="background:#4a5568; font-size:0.8em; padding:10px;" onclick="toggleVerbSection()">📝 Verb-Details (Vergangenheit/Zukunft)</button>
         
         <div id="verbSection" class="verb-section">
-            <div class="verb-lang-group">
-                <div class="verb-lang-title" id="vt1">L1</div>
-                <div class="verb-row"><input type="text" id="inDePast" placeholder="Vergangenheit"><input type="text" id="inDeFut" placeholder="Zukunft"></div>
-            </div>
-            <div class="verb-lang-group">
-                <div class="verb-lang-title" id="vt2">L2</div>
-                <div class="verb-row"><input type="text" id="inEnPast" placeholder="Past"><input type="text" id="inEnFut" placeholder="Future"></div>
-            </div>
-            <div class="verb-lang-group">
-                <div class="verb-lang-title" id="vt3">L3</div>
-                <div class="verb-row"><input type="text" id="inSvPast" placeholder="Past"><input type="text" id="inSvFut" placeholder="Future"></div>
-            </div>
+            <div class="verb-lang-group"><div class="verb-lang-title" id="vt1">L1</div><div class="verb-row"><input type="text" id="inDePast" placeholder="Vergangenheit"><input type="text" id="inDeFut" placeholder="Zukunft"></div></div>
+            <div class="verb-lang-group"><div class="verb-lang-title" id="vt2">L2</div><div class="verb-row"><input type="text" id="inEnPast" placeholder="Past"><input type="text" id="inEnFut" placeholder="Future"></div></div>
+            <div class="verb-lang-group"><div class="verb-lang-title" id="vt3">L3</div><div class="verb-row"><input type="text" id="inSvPast" placeholder="Past"><input type="text" id="inSvFut" placeholder="Future"></div></div>
             <button class="action-btn" style="background:#e67e22; font-size:0.8em; margin-top:5px;" onclick="fetchVerbForms()">⚡ Formen suchen</button>
         </div>
 
@@ -145,9 +148,7 @@
             <div id="audioModeToggle" style="font-size:0.7em; font-weight:800; color:var(--primary); cursor:pointer; margin-bottom:10px; border:1px solid; padding:5px; border-radius:15px; display:inline-block;" onclick="toggleAudioMode()">🔈 AUDIO: AUS</div>
             <div id="timer" style="display:none; font-size:1.8em; font-weight:800; color:#e53e3e;">60s</div>
             <p style="font-size:0.7em; font-weight:700; color:#718096; margin:0;">WAS HEISST...?</p>
-            <div style="display:flex; align-items:center; justify-content:center;">
-                <h1 id="qMainText">---</h1><button class="speaker-btn" id="spkMain">🔊</button>
-            </div>
+            <div style="display:flex; align-items:center; justify-content:center;"><h1 id="qMainText">---</h1><button class="speaker-btn" id="spkMain">🔊</button></div>
             <label id="lblAns1">ANTWORT 1</label>
             <div class="input-row"><input type="text" id="qAns1"><button class="mic-btn" id="micAns1">🎤</button><button class="speaker-btn" id="spkAns1">🔊</button></div>
             <label id="lblAns2">ANTWORT 2</label>
@@ -170,19 +171,10 @@
     </div>
 </div>
 
-<div class="version-info">FAMILY TRAINER v2.7.3 (Visual Fix)</div>
+<div class="version-info">FAMILY TRAINER v3.0 (Pro/DeepL)</div>
 
 <script>
-    // --- SETUP ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q",
-        authDomain: "uebersetzer-d-eng-swe.firebaseapp.com",
-        projectId: "uebersetzer-d-eng-swe",
-        storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app",
-        messagingSenderId: "28644987259",
-        appId: "1:28644987259:web:ad9844766de2ced699adde",
-        measurementId: "G-WDX870XE6B"
-    };
+    const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -191,28 +183,29 @@
     let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; 
     let currentCollIndex = 0;
     let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
+    let apiKeys = { deepl: '' };
     let allWords = [], curWord = null, isChallenge = false, audioMode = false, voices = [], quizQ = 1;
 
-    // --- INITIALISIERUNG ---
     function init() {
         const storedNames = localStorage.getItem('trainerUserNames');
         if(storedNames) userNames = JSON.parse(storedNames);
         userNames.forEach((n, i) => document.getElementById('name'+i).value = n);
+        
+        const storedKeys = localStorage.getItem('trainerApiKeys');
+        if(storedKeys) apiKeys = JSON.parse(storedKeys);
+        document.getElementById('deeplKey').value = apiKeys.deepl || "";
+
         const savedIdx = localStorage.getItem('trainerUserIdx');
         if(savedIdx) currentCollIndex = parseInt(savedIdx);
+        
         loadUserConfig(); updateUserDropdown(); loadVoices(); updateInterface(); refreshData();
     }
 
     function updateUserDropdown() { document.getElementById('selUser').innerHTML = userNames.map((n, i) => `<option value="${i}" ${i===currentCollIndex?'selected':''}>👤 ${n}</option>`).join(''); }
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
+    function saveApiKeys() { apiKeys.deepl = document.getElementById('deeplKey').value.trim(); localStorage.setItem('trainerApiKeys', JSON.stringify(apiKeys)); }
     function switchUser() { localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf)); currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserConfig(); updateInterface(); refreshData(); }
-    function loadUserConfig() {
-        const savedLangs = localStorage.getItem('trainerLangs_' + currentCollIndex);
-        if(savedLangs) conf = JSON.parse(savedLangs); else conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
-        const opts = Object.keys(LANGS).map(k => `<option value="${k}">${LANGS[k].flag} ${LANGS[k].name}</option>`).join('');
-        ['selL1', 'selL2', 'selL3'].forEach(id => { document.getElementById(id).innerHTML = opts; });
-        document.getElementById('selL1').value = conf.l1; document.getElementById('selL2').value = conf.l2; document.getElementById('selL3').value = conf.l3;
-    }
+    function loadUserConfig() { const savedLangs = localStorage.getItem('trainerLangs_' + currentCollIndex); if(savedLangs) conf = JSON.parse(savedLangs); else conf = { l1: 'de', l2: 'en', l3: 'sv' }; const opts = Object.keys(LANGS).map(k => `<option value="${k}">${LANGS[k].flag} ${LANGS[k].name}</option>`).join(''); ['selL1', 'selL2', 'selL3'].forEach(id => { document.getElementById(id).innerHTML = opts; }); document.getElementById('selL1').value = conf.l1; document.getElementById('selL2').value = conf.l2; document.getElementById('selL3').value = conf.l3; }
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
     function saveSettings() { conf.l1 = document.getElementById('selL1').value; conf.l2 = document.getElementById('selL2').value; conf.l3 = document.getElementById('selL3').value; localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf)); updateInterface(); refreshData(); }
@@ -233,6 +226,26 @@
         return c;
     }
 
+    // --- HYBRID TRANSLATOR (DEEPL + MYMEMORY) ---
+    async function translate(txt, src, tgt) {
+        if(apiKeys.deepl) {
+            // TRY DEEPL
+            try {
+                const url = `https://api-free.deepl.com/v2/translate?auth_key=${apiKeys.deepl}&text=${encodeURIComponent(txt)}&source_lang=${src.toUpperCase()}&target_lang=${tgt.toUpperCase()}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if(data.translations && data.translations.length > 0) {
+                    return data.translations[0].text;
+                }
+            } catch(e) { console.log("DeepL Error, fallback to MyMemory"); }
+        }
+        // FALLBACK MYMEMORY
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        return cleanResult(data.responseData.translatedText);
+    }
+
     async function handleSmartTranslate() {
         const i1 = document.getElementById('inDe').value.trim(), i2 = document.getElementById('inEn').value.trim(), i3 = document.getElementById('inSv').value.trim();
         let txt = i1 || i2 || i3; let src = i1 ? conf.l1 : (i2 ? conf.l2 : conf.l3);
@@ -240,11 +253,10 @@
         document.getElementById('loader').style.display = "block";
         try {
             const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
-            const tasks = targets.filter(t => t.l !== src).map(t => 
-                fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${t.l}`)
-                .then(r => r.json())
-                .then(d => ({id: t.id, t: cleanResult(d.responseData.translatedText)}))
-            );
+            const tasks = targets.filter(t => t.l !== src).map(async t => {
+                const tr = await translate(txt, src, t.l);
+                return {id: t.id, t: tr};
+            });
             const res = await Promise.all(tasks);
             res.forEach(r => { document.getElementById(r.id).value = r.t; });
             const finalL3 = document.getElementById('inSv').value;
@@ -252,138 +264,71 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- FETCH VERB FORMS ---
     async function fetchVerbForms() {
         const base = document.getElementById('inEn').value.trim() || document.getElementById('inDe').value.trim(); 
-        if(!base) { alert("Bitte erst ein Wort in die oberen Felder eingeben."); return; }
+        if(!base) { alert("Bitte erst ein Wort eingeben."); return; }
         document.getElementById('loader').style.display = "block";
         try {
             const p = [];
             [`I did ${base}`, `I will ${base}`].forEach(phrase => {
-                [conf.l1, conf.l3].forEach(l => p.push(fetch(`https://api.mymemory.translated.net/get?q=${phrase}&langpair=${conf.l2}|${l}`).then(r=>r.json())));
+                [conf.l1, conf.l3].forEach(async l => p.push(await translate(phrase, conf.l2, l)));
             });
             const res = await Promise.all(p);
+            // res = [L1_Past, L3_Past, L1_Fut, L3_Fut]
             
             const cleanPast = (t) => t ? t.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did)\b\s?/gi, "").trim() : "";
             const cleanFut = (t) => t ? t.replace(/\b(Ich|I|jag|Du|Han|Hon|Er|Sie)\b\s?/gi, "").trim() : "";
 
-            document.getElementById('inDePast').value = cleanPast(res[0].responseData.translatedText);
-            document.getElementById('inSvPast').value = cleanPast(res[1].responseData.translatedText);
-            document.getElementById('inDeFut').value = cleanFut(res[2].responseData.translatedText);
-            document.getElementById('inSvFut').value = cleanFut(res[3].responseData.translatedText);
+            document.getElementById('inDePast').value = cleanPast(res[0]);
+            document.getElementById('inSvPast').value = cleanPast(res[1]);
+            document.getElementById('inDeFut').value = cleanFut(res[2]);
+            document.getElementById('inSvFut').value = cleanFut(res[3]);
 
-            const rawDePast = cleanPast(res[0].responseData.translatedText); 
-            if(rawDePast) {
-                const pBack = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(rawDePast)}&langpair=${conf.l1}|${conf.l2}`);
-                const rBack = await pBack.json();
-                document.getElementById('inEnPast').value = rBack.responseData.translatedText.replace(/\b(Yesterday|I)\b\s?/gi, "").trim();
-            } else { document.getElementById('inEnPast').value = base + "ed"; }
+            // English Past via Roundtrip if no DeepL
+            if(!apiKeys.deepl) {
+                const rawDePast = cleanPast(res[0]);
+                if(rawDePast) {
+                    const enBack = await translate(rawDePast, conf.l1, conf.l2);
+                    document.getElementById('inEnPast').value = enBack.replace(/\b(Yesterday|I)\b\s?/gi, "").trim();
+                } else document.getElementById('inEnPast').value = base + "ed";
+            } else {
+                // With DeepL we can just trust the translation of "I ran" -> "ran" logic better, but stick to roundtrip for safety
+                const enBack = await translate(res[0], conf.l1, conf.l2);
+                document.getElementById('inEnPast').value = enBack.replace(/\b(Yesterday|I)\b\s?/gi, "").trim();
+            }
             document.getElementById('inEnFut').value = "will " + base;
 
         } catch(e) { console.error(e); } finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- MANUAL SAVE ---
+    // --- STANDARD FUNCTIONS ---
     function manualSave() {
         const vData = { deP: document.getElementById('inDePast').value, enP: document.getElementById('inEnPast').value, svP: document.getElementById('inSvPast').value, deF: document.getElementById('inDeFut').value, enF: document.getElementById('inEnFut').value, svF: document.getElementById('inSvFut').value };
         const data = { de: document.getElementById('inDe').value, en: document.getElementById('inEn').value, sv: document.getElementById('inSv').value, ex: document.getElementById('inEx').value, ...vData, ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0 };
-        
-        if(!data.de || !data.sv) {
-            alert(`STOPP 🛑\n\nDu musst mindestens Wörter für ${LANGS[conf.l1].name} und ${LANGS[conf.l3].name} eingeben.`);
-            return;
-        }
-
-        const eid = document.getElementById('editId').value; 
-        const coll = COLLECTIONS[currentCollIndex];
+        if(!data.de || !data.sv) { alert(`STOPP 🛑\nBitte Wörter für ${LANGS[conf.l1].name} und ${LANGS[conf.l3].name} eingeben.`); return; }
+        const eid = document.getElementById('editId').value; const coll = COLLECTIONS[currentCollIndex];
         const op = eid ? db.collection(coll).doc(eid).update(data) : db.collection(coll).add(data);
-        
-        op.then(() => { 
-            refreshData(); 
-            clearInputs(); 
-            if(eid) showTab('list'); 
-            else alert("Wort erfolgreich gespeichert! ✅"); 
-        }).catch(err => { alert("FEHLER beim Speichern: " + err.message); });
+        op.then(() => { refreshData(); clearInputs(); if(eid) showTab('list'); else alert("Gespeichert! ✅"); }).catch(e => alert("Fehler: "+e.message));
     }
 
-    async function nukeDatabase() { if(!confirm(`WARNUNG: Möchtest du wirklich ALLE Wörter von Benutzer "${userNames[currentCollIndex]}" löschen?`)) return; if(!confirm("Bist du ganz sicher?")) return; const coll = COLLECTIONS[currentCollIndex]; const snapshot = await db.collection(coll).get(); const batch = db.batch(); snapshot.docs.forEach(doc => batch.delete(doc.ref)); await batch.commit(); refreshData(); alert("Liste geleert."); }
+    async function nukeDatabase() { if(!confirm(`ALLES LÖSCHEN für ${userNames[currentCollIndex]}?`)) return; if(!confirm("Sicher?")) return; const coll = COLLECTIONS[currentCollIndex]; const s = await db.collection(coll).get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); alert("Gelöscht."); }
     async function refreshData() { const coll = COLLECTIONS[currentCollIndex]; const s = await db.collection(coll).orderBy("ts", "desc").get(); allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderStats(); }
     function renderStats() { const lvls = [0,0,0,0]; allWords.forEach(w => lvls[w.level || 0]++); document.getElementById('statsGrid').innerHTML = lvls.map((v, i) => `<div class="stat-card"><div class="stat-val">${v}</div><div style="font-size:8px;font-weight:bold;">LVL ${i}</div></div>`).join(''); }
     function clearInputs() { ['inDe','inEn','inSv','inEx','editId','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inSvFut'].forEach(id=>document.getElementById(id).value=""); document.getElementById('addTitle').innerText="Neuzugang"; document.getElementById('cancelEdit').style.display="none"; document.getElementById('verbSection').style.display="none"; }
     function toggleVerbSection() { const el=document.getElementById('verbSection'); el.style.display = (el.style.display==="block")?"none":"block"; }
     function showTab(n) { document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); document.getElementById('tabAdd').style.display=(n==='add')?'block':'none'; document.getElementById('tabQuiz').style.display=(n==='quiz'||n==='challenge')?'block':'none'; document.getElementById('tabList').style.display=(n==='list')?'block':'none'; if(n==='quiz') nextQ(); if(n==='list') renderList(); }
     
-    // --- QUIZ LOGIC WITH HINTS ---
-    function nextQ() {
-        if(allWords.length === 0) return; 
-        let pool = []; allWords.forEach(w => { let wt = (w.level<2)?3:1; for(let i=0;i<wt;i++) pool.push(w); }); 
-        curWord = pool[Math.floor(Math.random()*pool.length)]; 
-        quizQ = Math.random() > 0.5 ? 1 : 2; 
-        
-        const qTxt = quizQ === 1 ? curWord.de : curWord.en; 
-        const qLang = quizQ === 1 ? conf.l1 : conf.l2; 
-        
-        document.getElementById('qMainText').innerText = audioMode ? "???" : qTxt; 
-        document.getElementById('spkMain').onclick = () => speak(qTxt, qLang);
-        
-        // HINTS & FIRST LETTER
-        let h1, h2;
-        if(quizQ === 1) { // Asking L1 (De) -> Want L2 & L3
-            document.getElementById('lblAns1').innerText = LANGS[conf.l2].name; 
-            document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; 
-            h1 = curWord.en ? curWord.en.charAt(0) : "";
-            h2 = curWord.sv ? curWord.sv.charAt(0) : "";
-            document.getElementById('micAns1').onclick = function(){ listen(2, 'qAns1', this) }; 
-            document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; 
-            document.getElementById('spkAns1').onclick = () => speak(curWord.en, conf.l2); 
-            document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); 
-        } else { // Asking L2 (En) -> Want L1 & L3
-            document.getElementById('lblAns1').innerText = LANGS[conf.l1].name; 
-            document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; 
-            h1 = curWord.de ? curWord.de.charAt(0) : "";
-            h2 = curWord.sv ? curWord.sv.charAt(0) : "";
-            document.getElementById('micAns1').onclick = function(){ listen(1, 'qAns1', this) }; 
-            document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; 
-            document.getElementById('spkAns1').onclick = () => speak(curWord.de, conf.l1); 
-            document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); 
-        }
-        
-        // SET HINTS
-        document.getElementById('qAns1').value = h1; 
-        document.getElementById('qAns2').value = h2;
-        
-        // RESET COLORS
-        document.getElementById('qAns1').className = ""; 
-        document.getElementById('qAns2').className = "";
-        
-        document.getElementById('qFeed').innerHTML = ""; 
-        document.getElementById('nextBtn').style.display="none"; 
-        document.getElementById('checkBtn').style.display="block"; 
-        
-        if(audioMode) speak(curWord.sv, conf.l3);
-    }
+    // --- QUIZ ---
+    function nextQ() { if(allWords.length === 0) return; let pool = []; allWords.forEach(w => { let wt = (w.level<2)?3:1; for(let i=0;i<wt;i++) pool.push(w); }); curWord = pool[Math.floor(Math.random()*pool.length)]; quizQ = Math.random() > 0.5 ? 1 : 2; const qTxt = quizQ === 1 ? curWord.de : curWord.en; const qLang = quizQ === 1 ? conf.l1 : conf.l2; document.getElementById('qMainText').innerText = audioMode ? "???" : qTxt; document.getElementById('spkMain').onclick = () => speak(qTxt, qLang);
+        if(quizQ === 1) { document.getElementById('lblAns1').innerText = LANGS[conf.l2].name; document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; document.getElementById('micAns1').onclick = function(){ listen(2, 'qAns1', this) }; document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; document.getElementById('spkAns1').onclick = () => speak(curWord.en, conf.l2); document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); 
+        document.getElementById('qAns1').value = curWord.en ? curWord.en.charAt(0) : ""; document.getElementById('qAns2').value = curWord.sv ? curWord.sv.charAt(0) : ""; } 
+        else { document.getElementById('lblAns1').innerText = LANGS[conf.l1].name; document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; document.getElementById('micAns1').onclick = function(){ listen(1, 'qAns1', this) }; document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; document.getElementById('spkAns1').onclick = () => speak(curWord.de, conf.l1); document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); 
+        document.getElementById('qAns1').value = curWord.de ? curWord.de.charAt(0) : ""; document.getElementById('qAns2').value = curWord.sv ? curWord.sv.charAt(0) : ""; }
+        document.getElementById('qAns1').className = ""; document.getElementById('qAns2').className = ""; document.getElementById('qFeed').innerHTML = ""; document.getElementById('nextBtn').style.display="none"; document.getElementById('checkBtn').style.display="block"; if(audioMode) speak(curWord.sv, conf.l3); }
 
-    function checkAns() { 
-        const i1 = document.getElementById('qAns1').value.trim().toLowerCase(); 
-        const i2 = document.getElementById('qAns2').value.trim().toLowerCase(); 
-        let r1, r2; 
-        if(quizQ === 1) { r1 = i1 === curWord.en.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } 
-        else { r1 = i1 === curWord.de.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } 
-        
-        document.getElementById('qMainText').innerText = quizQ===1 ? curWord.de : curWord.en; 
-        
-        // SET COLORS
-        document.getElementById('qAns1').className = r1 ? "correct" : "wrong";
-        document.getElementById('qAns2').className = r2 ? "correct" : "wrong";
-
-        const vL2 = (curWord.enP) ? `<span class="fb-sub">🕒 ${curWord.enP} | 🔮 ${curWord.enF}</span>` : ""; 
-        const vL3 = (curWord.svP) ? `<span class="fb-sub">🕒 ${curWord.svP} | 🔮 ${curWord.svF}</span>` : ""; 
-        const html = `<div class="feedback-card" style="background:${(r1&&r2)?'#f0fff4':'#fff5f5'}"><div class="fb-row"><span class="lang-tag">${LANGS[conf.l1].flag}</span> <b>${curWord.de}</b></div><div class="fb-row"><span class="lang-tag">${LANGS[conf.l2].flag}</span> <b>${curWord.en}</b> ${vL2}</div><div class="fb-row"><span class="lang-tag">${LANGS[conf.l3].flag}</span> <b>${curWord.sv}</b> ${vL3}</div></div>`; 
-        document.getElementById('qFeed').innerHTML = html; 
-        document.getElementById('nextBtn').style.display="block"; 
-        document.getElementById('checkBtn').style.display="none"; 
-        if(r1 && r2) { updateLevel(curWord.id, true); speak(curWord.sv, conf.l3); } else { updateLevel(curWord.id, false); } 
-    }
-
+    function checkAns() { const i1 = document.getElementById('qAns1').value.trim().toLowerCase(); const i2 = document.getElementById('qAns2').value.trim().toLowerCase(); let r1, r2; if(quizQ === 1) { r1 = i1 === curWord.en.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } else { r1 = i1 === curWord.de.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); }
+        document.getElementById('qAns1').className = r1 ? "correct" : "wrong"; document.getElementById('qAns2').className = r2 ? "correct" : "wrong";
+        document.getElementById('qMainText').innerText = quizQ===1 ? curWord.de : curWord.en; const vL2 = (curWord.enP) ? `<span class="fb-sub">🕒 ${curWord.enP} | 🔮 ${curWord.enF}</span>` : ""; const vL3 = (curWord.svP) ? `<span class="fb-sub">🕒 ${curWord.svP} | 🔮 ${curWord.svF}</span>` : ""; const html = `<div class="feedback-card" style="background:${(r1&&r2)?'#f0fff4':'#fff5f5'}"><div class="fb-row"><span class="lang-tag">${LANGS[conf.l1].flag}</span> <b>${curWord.de}</b></div><div class="fb-row"><span class="lang-tag">${LANGS[conf.l2].flag}</span> <b>${curWord.en}</b> ${vL2}</div><div class="fb-row"><span class="lang-tag">${LANGS[conf.l3].flag}</span> <b>${curWord.sv}</b> ${vL3}</div></div>`; document.getElementById('qFeed').innerHTML = html; document.getElementById('nextBtn').style.display="block"; document.getElementById('checkBtn').style.display="none"; if(r1 && r2) { updateLevel(curWord.id, true); speak(curWord.sv, conf.l3); } else { updateLevel(curWord.id, false); } }
     function updateLevel(id, correct) { db.collection(COLLECTIONS[currentCollIndex]).doc(id).update({ level: Math.max(0, Math.min(3, (curWord.level||0) + (correct?1:-1))) }); }
     function editWord(id) { const w = allWords.find(x=>x.id===id); document.getElementById('editId').value=w.id; document.getElementById('inDe').value=w.de; document.getElementById('inEn').value=w.en; document.getElementById('inSv').value=w.sv; document.getElementById('inEx').value=w.ex||""; document.getElementById('inDePast').value=w.deP||""; document.getElementById('inDeFut').value=w.deF||""; document.getElementById('inEnPast').value=w.enP||""; document.getElementById('inEnFut').value=w.enF||""; document.getElementById('inSvPast').value=w.svP||""; document.getElementById('inSvFut').value=w.svF||""; document.getElementById('addTitle').innerText="Bearbeiten"; document.getElementById('cancelEdit').style.display="block"; if(w.svP) document.getElementById('verbSection').style.display="block"; showTab('add'); }
     function del(id) { if(confirm("Löschen?")) db.collection(COLLECTIONS[currentCollIndex]).doc(id).delete().then(refreshData); }
