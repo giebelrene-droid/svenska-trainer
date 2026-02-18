@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.3 (Precision Fix)</title>
+    <title>Family Trainer 4.3 (Final Stability)</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🛠️</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23005293%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🛡️</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -28,15 +28,18 @@
         .mic-btn, .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; min-width: 35px; }
         .mic-active { background: #feb2b2 !important; border-color: #e53e3e !important; animation: pulse 1s infinite; }
         .verb-section { background: #edf2f7; padding: 12px; border-radius: 12px; margin-top: 15px; display: none; }
+        .verb-lang-group { margin-bottom: 12px; border-bottom: 1px solid #dce4ea; padding-bottom: 8px; }
         .verb-row { display: flex; gap: 8px; }
         .verb-row input { font-size: 0.85em; padding: 8px; }
-        .feedback-card { text-align: left; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #e2e8f0; }
+        .word-item { padding: 16px; border-bottom: 1px solid #f1f5f9; position: relative; }
+        .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+        .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--accent); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--primary); }
         .lang-tag { font-weight: bold; color: var(--primary); margin-right: 5px; width: 25px; display: inline-block; }
         .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
         .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
-        .challenge-mode { border: 2px solid #e53e3e; }
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; }
         .settings-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; }
+        .rename-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
     </style>
 </head>
 <body>
@@ -45,13 +48,13 @@
     <div class="settings-box">
         <h2>⚙️ Einstellungen</h2>
         <label>👤 Benutzer</label>
-        <select id="selUser" onchange="switchUser()"></select>
+        <select id="selUser" onchange="switchUser()" style="width:100%; padding:10px; margin-bottom:15px; font-weight:bold;"></select>
         <div id="renameContainer"></div>
         <label>Sprachen</label>
         <div style="display:flex; gap:5px;">
-            <select id="selL1" onchange="saveSettings()"></select>
-            <select id="selL2" onchange="saveSettings()"></select>
-            <select id="selL3" onchange="saveSettings()"></select>
+            <select id="selL1" onchange="saveSettings()" style="font-size:0.8em;"></select>
+            <select id="selL2" onchange="saveSettings()" style="font-size:0.8em;"></select>
+            <select id="selL3" onchange="saveSettings()" style="font-size:0.8em;"></select>
         </div>
         <button class="action-btn" onclick="closeSettings()">Fertig</button>
     </div>
@@ -81,8 +84,10 @@
     <div class="input-row"><input type="text" id="inEn"><button class="mic-btn" onclick="listen(2, 'inEn', this)">🎤</button></div>
     <label id="lblIn3">L3</label>
     <div class="input-row"><input type="text" id="inSv"><button class="mic-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
+    
     <label>Beispielsatz</label>
     <input type="text" id="inEx" placeholder="...">
+    
     <button class="action-btn" style="background:#4a5568; font-size:0.8em; padding:10px;" onclick="toggleVerbSection()">📝 Verb-Details</button>
     
     <div id="verbSection" class="verb-section">
@@ -147,14 +152,28 @@
 
     function cleanResult(txt) {
         if(!txt) return "";
-        let c = txt.replace(/^(to\s|I\s|He\s|She\s|We\s|You\s)/i, "").replace(/^(a\s|an\s|the\s)/i, "").trim();
-        return c.split('.')[0].split(',')[0]; // Entfernt Satzzeichen
+        return txt.replace(/^(to\s|I\s|He\s|She\s|We\s|You\s)/i, "").replace(/^(a\s|an\s|the\s)/i, "").trim().split('.')[0].split(',')[0];
     }
 
     async function translate(txt, src, tgt) {
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
         const res = await fetch(url); const data = await res.json();
-        return cleanResult(data.responseData.translatedText);
+        return data.responseData.translatedText;
+    }
+
+    async function translateWithSynonyms(txt, src, tgt) {
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
+        const res = await fetch(url); const data = await res.json();
+        let main = cleanResult(data.responseData.translatedText);
+        if(data.matches && data.matches.length > 1) {
+            for(let m of data.matches) {
+                let t = cleanResult(m.translation).toLowerCase();
+                if(t && t !== main.toLowerCase() && t.split(' ').length < 3) {
+                    return main + " / " + t;
+                }
+            }
+        }
+        return main;
     }
 
     async function handleSmartTranslate() {
@@ -163,36 +182,34 @@
         if(!txt) return; document.getElementById('loader').style.display = "block";
         try {
             const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}].filter(t => t.l !== src);
-            for(let t of targets) { document.getElementById(t.id).value = await translate(txt, src, t.l); }
+            for(let t of targets) { document.getElementById(t.id).value = await translateWithSynonyms(txt, src, t.l); }
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- REPARIERTE VERB LOGIK ---
     async function fetchVerbForms() {
         const deB = document.getElementById('inDe').value.split('/')[0].trim();
         const enB = document.getElementById('inEn').value.split('/')[0].trim();
         const svB = document.getElementById('inSv').value.split('/')[0].trim();
-        if(!deB && !enB) return;
+        if(!deB && !enB && !svB) return;
         document.getElementById('loader').style.display = "block";
         
-        // ZUKUNFT (Autobau)
-        if(deB) document.getElementById('inDeFut').value = "wird " + deB;
-        if(enB) document.getElementById('inEnFut').value = "will " + enB;
-        if(svB) document.getElementById('inSvFut').value = "ska " + svB;
+        const autoFut = (v, pre) => v ? pre + " " + v : "";
+        document.getElementById('inDeFut').value = autoFut(deB, "wird");
+        document.getElementById('inEnFut').value = autoFut(enB, "will");
+        document.getElementById('inSvFut').value = autoFut(svB, "ska");
 
-        // VERGANGENHEIT (Spezifische Abfrage)
-        const cleaner = (t) => t.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did|donerade|satte)\b/gi, "").trim();
-        
+        const cleaner = (t) => t.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did|donerade|satte|he|er|han)\b/gi, "").trim();
+
         try {
-            if(enB) {
-                const resDe = await translate(`Yesterday I ${enB}`, 'en', 'de');
-                document.getElementById('inDePast').value = cleaner(resDe);
-                const resSv = await translate(`Yesterday I ${enB}`, 'en', 'sv');
-                document.getElementById('inSvPast').value = cleaner(resSv);
-            }
             if(deB) {
-                const resEn = await translate(`Gestern ${deB} ich`, 'de', 'en');
-                document.getElementById('inEnPast').value = cleaner(resEn);
+                const r = await translate(`Gestern ${deB} ich`, 'de', 'en');
+                document.getElementById('inEnPast').value = cleaner(r);
+            }
+            if(enB) {
+                const rD = await translate(`Yesterday I ${enB}`, 'en', 'de');
+                document.getElementById('inDePast').value = cleaner(rD);
+                const rS = await translate(`Yesterday I ${enB}`, 'en', 'sv');
+                document.getElementById('inSvPast').value = cleaner(rS);
             }
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
