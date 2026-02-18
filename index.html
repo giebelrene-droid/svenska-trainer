@@ -44,7 +44,6 @@
         .backup-btn { flex: 1; padding: 10px; font-size: 10px; font-weight: 800; border-radius: 10px; border: none; background: #edf2f7; cursor: pointer; }
         .lang-tag { font-size: 0.7em; font-weight: 800; color: var(--se-blue); margin-right: 5px; display: inline-block; width: 25px; }
         
-        /* Neuer Verb-Bereich Style */
         .verb-section { background: #edf2f7; padding: 15px; border-radius: 12px; margin-top: 15px; display: none; border: 1px solid #cbd5e0; }
         .verb-row { display: flex; gap: 5px; margin-bottom: 5px; }
         .verb-row input { font-size: 0.85em; padding: 10px; }
@@ -81,8 +80,8 @@
         <label>Schwedisch</label>
         <div class="input-row"><input type="text" id="inSv" placeholder="Eingabe..."><button class="mic-btn" onclick="listenToSpeech('sv-SE', 'inSv', this)">🎤</button></div>
         
-        <label>Beispielsatz</label>
-        <input type="text" id="inEx" placeholder="Wird automatisch erstellt...">
+        <label>Beispielsatz (KI)</label>
+        <input type="text" id="inEx" placeholder="Beispiel...">
         
         <button class="action-btn" style="background:#4a5568; font-size:0.8em; padding:10px;" onclick="toggleVerbSection()">📝 Verb-Details (Vergangenheit/Zukunft)</button>
         
@@ -144,7 +143,7 @@
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.9.0</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.9.1</div>
 
 <script>
     const firebaseConfig = {
@@ -219,27 +218,33 @@
         el.style.display = (el.style.display === "block") ? "none" : "block";
     }
 
+    // --- VERBESSERTE FORMEN-SUCHE MIT RÜCKÜBERSETZUNG ---
     async function fetchVerbForms() {
         const enBase = document.getElementById('inEn').value.trim();
         if(!enBase) { alert("Bitte erst ein englisches Wort (z.B. run) eingeben."); return; }
         document.getElementById('loader').style.display = "block";
         
         try {
-            // Wir tricksen die API aus, indem wir Sätze übersetzen
+            // 1. Suche Deutsche & Schwedische Formen
             const p1 = fetch(`https://api.mymemory.translated.net/get?q=Yesterday%20I%20${enBase}&langpair=en|de`).then(r=>r.json());
             const p2 = fetch(`https://api.mymemory.translated.net/get?q=Yesterday%20I%20${enBase}&langpair=en|sv`).then(r=>r.json());
             const p3 = fetch(`https://api.mymemory.translated.net/get?q=I%20will%20${enBase}&langpair=en|de`).then(r=>r.json());
             const p4 = fetch(`https://api.mymemory.translated.net/get?q=I%20will%20${enBase}&langpair=en|sv`).then(r=>r.json());
 
             const [rDePast, rSvPast, rDeFut, rSvFut] = await Promise.all([p1, p2, p3, p4]);
+            
+            const dePastText = rDePast.responseData.translatedText; // z.B. "Gestern rannte ich"
 
-            // Simple Logik: Wir nehmen den Text, aber der User muss oft korrigieren, da "Yesterday I ran" übersetzt wird.
-            // Besser: Wir lassen es als Vorschlag.
-            document.getElementById('inEnPast').value = "ran/did"; // Platzhalter, da Englisch unregelmäßig schwer per API ist ohne Kontext
+            // 2. TRICK: Rückübersetzung DE -> EN um "ran" zu finden
+            const pBack = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(dePastText)}&langpair=de|en`);
+            const rBack = await pBack.json();
+            const enPastText = rBack.responseData.translatedText; // "Yesterday I ran"
+
+            // 3. Felder befüllen und bereinigen
+            document.getElementById('inEnPast').value = enPastText.replace(/Yesterday I/i, "").replace(/Yesterday/i, "").trim();
             document.getElementById('inEnFut').value = "will " + enBase;
             
-            // Versuch die deutschen/schwedischen Sätze einzutragen (User muss oft kürzen)
-            document.getElementById('inDePast').value = rDePast.responseData.translatedText.replace("Gestern habe ich", "").replace("Gestern bin ich", "").trim();
+            document.getElementById('inDePast').value = dePastText.replace("Gestern habe ich", "").replace("Gestern bin ich", "").replace("Gestern", "").trim();
             document.getElementById('inSvPast').value = rSvPast.responseData.translatedText.replace("Igår", "").trim();
             document.getElementById('inDeFut').value = rDeFut.responseData.translatedText.replace("Ich werde", "").trim();
             document.getElementById('inSvFut').value = rSvFut.responseData.translatedText.replace("Jag kommer att", "").trim();
@@ -266,12 +271,10 @@
 
     function manualSave() {
         const de = document.getElementById('inDe').value.trim(), en = document.getElementById('inEn').value.trim(), sv = document.getElementById('inSv').value.trim(), ex = document.getElementById('inEx').value.trim(), eid = document.getElementById('editId').value;
-        // Verb Daten
         const vData = {
             deP: document.getElementById('inDePast').value, enP: document.getElementById('inEnPast').value, svP: document.getElementById('inSvPast').value,
             deF: document.getElementById('inDeFut').value, enF: document.getElementById('inEnFut').value, svF: document.getElementById('inSvFut').value
         };
-
         if(!de || !sv) return;
         const data = { de, en, sv, ex, ...vData, level: (eid ? allWords.find(x=>x.id===eid).level : 0), ts: firebase.firestore.FieldValue.serverTimestamp() };
         const op = eid ? db.collection("words").doc(eid).update(data) : db.collection("words").add(data);
@@ -352,7 +355,6 @@
         document.getElementById('qMainText').innerText = quizMode === "DE" ? curWord.de : curWord.en;
 
         let extraInfo = "";
-        // Wenn Verb-Informationen da sind, anzeigen
         if(curWord.svP || curWord.svF) {
             extraInfo = `<div class="grammar-hint-box">
                 <b>🕒 Ver:</b> ${curWord.deP||'-'} | ${curWord.enP||'-'} | ${curWord.svP||'-'}<br>
@@ -381,13 +383,10 @@
         const w = allWords.find(word => word.id === id);
         document.getElementById('editId').value = w.id;
         document.getElementById('inDe').value = w.de; document.getElementById('inEn').value = w.en; document.getElementById('inSv').value = w.sv; document.getElementById('inEx').value = w.ex || "";
-        // Verb Felder füllen
         document.getElementById('inDePast').value = w.deP || ""; document.getElementById('inEnPast').value = w.enP || ""; document.getElementById('inSvPast').value = w.svP || "";
         document.getElementById('inDeFut').value = w.deF || ""; document.getElementById('inEnFut').value = w.enF || ""; document.getElementById('inSvFut').value = w.svF || "";
-        
         document.getElementById('addTitle').innerText = "Bearbeiten";
         document.getElementById('cancelEdit').style.display = "block";
-        // Verb Section öffnen, falls Daten da sind
         if(w.svP) document.getElementById('verbSection').style.display = "block";
         showTab('add');
     }
