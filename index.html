@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.1 (Synonym Master)</title>
+    <title>Family Trainer 4.2 (Precision)</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>✨</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🎯</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -13,6 +13,7 @@
         :root { --primary: #005293; --accent: #FECC00; --bg: #f4f7f9; --text: #1a2b3c; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; color: var(--text); max-width: 500px; margin: 0 auto; }
         
+        /* HEADER & NAV */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .badge { background: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .settings-btn { background: white; border: none; font-size: 1.2em; cursor: pointer; padding: 5px 10px; border-radius: 50%; }
@@ -21,6 +22,7 @@
         .nav button { background: #d1dce5; flex: 1; padding: 10px; font-size: 11px; color: #4a627a; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
         .nav button.active { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 82, 147, 0.3); }
         
+        /* CARDS & INPUTS */
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; }
         h2 { color: var(--primary); margin-top: 0; font-size: 1.2em; font-weight: 800; }
         label { display: block; font-size: 0.7em; font-weight: 700; color: #7f8c8d; margin: 10px 0 3px 3px; text-transform: uppercase; }
@@ -29,27 +31,33 @@
         input, select { flex: 1; padding: 12px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 12px; font-size: 16px; width: 100%; box-sizing: border-box; }
         input:focus { border-color: var(--primary); background: white; outline: none; }
         
+        /* BUTTONS */
         .action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
         .mic-btn, .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; min-width: 35px; }
         .mic-active { background: #feb2b2 !important; border-color: #e53e3e !important; animation: pulse 1s infinite; }
         .list-btn { background: #edf2f7; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-left: 5px; font-size: 12px; }
         .danger-btn { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; margin-top: 10px; }
-        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* VERB SECTION */
         .verb-section { background: #edf2f7; padding: 12px; border-radius: 12px; margin-top: 15px; display: none; }
         .verb-lang-group { margin-bottom: 12px; border-bottom: 1px solid #dce4ea; padding-bottom: 8px; }
         .verb-lang-title { font-size: 0.75em; font-weight: 800; color: var(--primary); margin-bottom: 4px; text-transform: uppercase; }
         .verb-row { display: flex; gap: 8px; }
         .verb-row input { font-size: 0.85em; padding: 8px; }
         
+        /* QUIZ & LIST */
         .feedback-card { text-align: left; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #e2e8f0; }
         .word-item { padding: 16px; border-bottom: 1px solid #f1f5f9; position: relative; }
         .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
         .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--accent); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--primary); }
         .lang-tag { font-weight: bold; color: var(--primary); margin-right: 5px; width: 25px; display: inline-block; }
+        
         .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
         .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
         .challenge-mode { border: 2px solid #e53e3e; }
         
+        /* SETTINGS OVERLAY */
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; }
         .settings-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; }
         .rename-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
@@ -66,10 +74,12 @@
         <h2>⚙️ Einstellungen</h2>
         <label>👤 Aktiver Benutzer</label>
         <select id="selUser" onchange="switchUser()" style="width:100%; padding:10px; margin-bottom:15px; font-weight:bold;"></select>
+        
         <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         <label>🔑 DeepL API Key</label>
         <input type="text" id="deeplKey" class="api-input" placeholder="Key hier..." onchange="saveApiKeys()">
         <div id="apiKeyStatus" style="font-size:0.7em; margin-top:5px; font-weight:bold;">Status: Prüfe...</div>
+        
         <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         <label>Namen ändern</label>
         <div id="renameContainer"></div>
@@ -207,6 +217,7 @@
         c = c.replace(/^(to\s|I\s|He\s|She\s|We\s|You\s)/i, ""); 
         c = c.replace(/^(a\s|an\s|the\s)/i, ""); 
         c = c.replace(/^(ein\s|eine\s|der\s|die\s|das\s)/i, "");
+        if(c.toUpperCase().includes("PLEASE SELECT") || c.toUpperCase().includes("SELECT TWO")) return ""; 
         return c;
     }
 
@@ -224,15 +235,14 @@
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
         const res = await fetch(url); const data = await res.json();
         
-        // Versuche Synonyme zu finden
         let main = cleanResult(data.responseData.translatedText);
         if(data.matches && data.matches.length > 1) {
             const alts = new Set([main.toLowerCase()]);
             let count = 0;
             for(let m of data.matches) {
-                if(count >= 1) break; // Max 1 Synonym dazu (Insgesamt 2)
+                if(count >= 1) break; 
                 let t = cleanResult(m.translation).toLowerCase();
-                if(t && !alts.has(t) && t.split(' ').length === 1) { // Nur Einzelwörter
+                if(t && !alts.has(t) && t.split(' ').length === 1) { 
                     alts.add(t);
                     main += " / " + t;
                     count++;
@@ -243,7 +253,6 @@
     }
 
     async function translateSingle(txt, src, tgt) {
-        // Simple translation for conjugation logic (no synonyms)
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
         const res = await fetch(url); const data = await res.json();
         return cleanResult(data.responseData.translatedText);
@@ -256,7 +265,6 @@
         document.getElementById('loader').style.display = "block";
         try {
             const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
-            // Use translateWithSynonyms only for main fields
             const tasks = targets.filter(t => t.l !== src).map(async t => { 
                 const tr = await translateWithSynonyms(txt, src, t.l); 
                 return {id: t.id, t: tr}; 
@@ -276,44 +284,41 @@
     async function fetchVerbForms() {
         const deBase = document.getElementById('inDe').value;
         const enBase = document.getElementById('inEn').value;
+        const svBase = document.getElementById('inSv').value;
         
         if(!enBase && !deBase) { alert("Bitte erst ein Wort eingeben."); return; }
         document.getElementById('loader').style.display = "block";
         
-        // Helper to process multiple words "put / give"
         const processMulti = async (inputStr, templateFn, src, tgt) => {
             if(!inputStr) return "";
-            const parts = inputStr.split('/').map(s => s.trim()).slice(0,2); // Max 2 words
+            const parts = inputStr.split('/').map(s => s.trim()).slice(0,2);
             const results = [];
             for(let part of parts) {
                 const sentence = templateFn(part);
                 let res = await translateSingle(sentence, src, tgt);
-                // Clean result
+                
+                // CLEANER FIX: Erst Wörter entfernen, DANN trimmen
                 res = res.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did|He|Er|Han|’ve|’s|’d|has|have|had)\b\s?/gi, "").trim();
+                
+                // Länge Check nach dem Cleanen
+                if(res.split(' ').length > 2) res = part + " (check)"; // Fallback
                 results.push(res);
             }
             return results.join(' / ');
         };
 
-        // ZUKUNFT (AUTO)
-        const autoFut = (str, pre) => str.split('/').map(s => `${pre} ${s.trim()}`).join(' / ');
+        const autoFut = (str, pre) => str ? str.split('/').map(s => `${pre} ${s.trim()}`).join(' / ') : "";
         if(document.getElementById('inDe').value) document.getElementById('inDeFut').value = autoFut(document.getElementById('inDe').value, "wird");
         if(document.getElementById('inEn').value) document.getElementById('inEnFut').value = autoFut(document.getElementById('inEn').value, "will");
         if(document.getElementById('inSv').value) document.getElementById('inSvFut').value = autoFut(document.getElementById('inSv').value, "ska");
 
-        // VERGANGENHEIT (API)
         try {
-            // EN -> DE Past
             if(enBase) {
                 const deP = await processMulti(enBase, (w) => `Yesterday I ${w}`, 'en', conf.l1);
                 document.getElementById('inDePast').value = deP;
-            }
-            // EN -> SV Past
-            if(enBase) {
                 const svP = await processMulti(enBase, (w) => `Yesterday I ${w}`, 'en', conf.l3);
                 document.getElementById('inSvPast').value = svP;
             }
-            // DE -> EN Past
             if(deBase) {
                 const enP = await processMulti(deBase, (w) => `Gestern ${w} ich`, 'de', 'en');
                 document.getElementById('inEnPast').value = enP;
@@ -419,7 +424,7 @@
         const i2 = document.getElementById('qAns2').value.trim().toLowerCase(); 
         let r1, r2; 
         if(quizQ === 1) { 
-            r1 = curWord.en.toLowerCase().includes(i1) && i1.length > 1; // Flexible check for multi-words
+            r1 = curWord.en.toLowerCase().includes(i1) && i1.length > 1; 
             r2 = curWord.sv.toLowerCase().includes(i2) && i2.length > 1;
         } else { 
             r1 = curWord.de.toLowerCase().includes(i1) && i1.length > 1;
