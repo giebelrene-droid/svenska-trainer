@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.0 (Meister-Edition)</title>
+    <title>Family Trainer 4.0.1 (Meister-Edition)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👑</text></svg>">
     
@@ -90,6 +90,7 @@
 <div class="header-row">
     <div class="badge">🔥 <span id="streakDisplay">0</span></div>
     <div class="badge">📚 <span id="wordCount">0</span> Wörter</div>
+    <div class="badge" style="color: var(--primary);">🚀 v<span id="versionDisplay"></span></div>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
 </div>
 
@@ -160,6 +161,8 @@
 </div>
 
 <script>
+    const VERSION = "4.0.1"; // VERSION HIER DEFINIERT
+
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -172,6 +175,9 @@
     let allWords = [], curWord = null, isChallenge = false, audioMode = false, voices = [], quizQ = 1;
 
     function init() {
+        // VERSIONSANZEIGE BEIM START SCHREIBEN
+        document.getElementById('versionDisplay').innerText = VERSION;
+
         const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames);
         renderRenameInputs();
         
@@ -236,29 +242,21 @@
         if(!base) { alert("Bitte erst ein Wort eingeben."); return; }
         document.getElementById('loader').style.display = "block";
         try {
-            // Erst die stabilen englischen und schwedischen Formen holen
             const rawEnPast = await translate(`He did ${base}`, conf.l2, conf.l2);
             const enFut = `will ${base}`;
-            
             const rawSvPast = await translate(`He did ${base}`, conf.l2, conf.l3);
             const rawSvFut = await translate(`He will ${base}`, conf.l2, conf.l3);
-
-            // Jetzt die deutschen Formen (L1)
             const rawDePast = await translate(`He did ${base}`, conf.l2, conf.l1);
-            // BRÜCKE: Nutzt den fertigen englischen Satz für die deutsche Zukunft
             const rawDeFut = await translate(`He ${enFut}`, conf.l2, conf.l1); 
 
-            // Cleaner
             const clean = (t) => t ? t.replace(/\b(Ich|I|jag|Du|Han|Hon|Er|Sie|He|did|will|wird|Gestern|Yesterday|Igår|habe|bin|ich|har|war|was|Han|’ve|’s|’d|has|have|had)\b\s?/gi, "").trim() : "";
             
-            // Werte schreiben
             document.getElementById('inEnPast').value = clean(rawEnPast);
             document.getElementById('inEnFut').value = enFut;
             document.getElementById('inSvPast').value = clean(rawSvPast);
             document.getElementById('inSvFut').value = clean(rawSvFut);
             document.getElementById('inDePast').value = clean(rawDePast);
             
-            // Deutsche Zukunft mit manuellem "wird" falls nötig
             const finalDeFut = clean(rawDeFut);
             document.getElementById('inDeFut').value = finalDeFut.includes("wird") ? finalDeFut : "wird " + finalDeFut;
 
@@ -292,7 +290,7 @@
             </div>`).join('');
     }
 
-    function clearInputs() { ['inDe','inEn','inSv','inEx','editId','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inSvFut'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=""; }); document.getElementById('addTitle').innerText="Neues Wort"; document.getElementById('cancelEdit').style.display="none"; document.getElementById('verbSection').style.display="none"; }
+    function clearInputs() { ['inDe','inEn','inSv','inEx','editId','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inEnFut','inSvFut'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=""; }); document.getElementById('addTitle').innerText="Neues Wort"; document.getElementById('cancelEdit').style.display="none"; document.getElementById('verbSection').style.display="none"; }
     function toggleVerbSection() { const el=document.getElementById('verbSection'); el.style.display = (el.style.display==="block")?"none":"block"; }
     function showTab(n) { 
         document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); 
