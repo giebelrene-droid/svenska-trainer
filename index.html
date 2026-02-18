@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.0.3 - Diagnose Modus</title>
+    <title>Family Trainer 4.0.3 (Anker-Logik)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👑</text></svg>">
     
@@ -12,28 +12,19 @@
     <style>
         :root { --primary: #005293; --accent: #FECC00; --bg: #f4f7f9; --text: #1a2b3c; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; color: var(--text); max-width: 500px; margin: 0 auto; }
-        
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .badge { background: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .settings-btn { background: white; border: none; font-size: 1.2em; cursor: pointer; padding: 5px 10px; border-radius: 50%; }
-        
         .nav { display: flex; gap: 5px; margin-bottom: 20px; overflow-x: auto; }
         .nav button { background: #d1dce5; flex: 1; padding: 10px; font-size: 11px; color: #4a627a; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
         .nav button.active { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 82, 147, 0.3); }
-        
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; }
         h2 { color: var(--primary); margin-top: 0; font-size: 1.2em; font-weight: 800; }
         label { display: block; font-size: 0.7em; font-weight: 700; color: #7f8c8d; margin: 10px 0 3px 3px; text-transform: uppercase; }
-        
         .input-row { display: flex; align-items: center; gap: 5px; width: 100%; margin-bottom: 5px; }
         input, select { flex: 1; padding: 12px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 12px; font-size: 16px; width: 100%; box-sizing: border-box; }
-        
         .action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
         .mic-btn, .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; min-width: 35px; }
-        
-        /* DIAGNOSE BOX */
-        #debugBox { background: #1a202c; color: #48bb78; padding: 12px; border-radius: 12px; font-family: monospace; font-size: 11px; margin-bottom: 15px; display: none; border: 1px solid #2d3748; }
-
         .verb-section { background: #edf2f7; padding: 12px; border-radius: 12px; margin-top: 15px; display: none; }
         .verb-lang-group { margin-bottom: 12px; border-bottom: 1px solid #dce4ea; padding-bottom: 8px; }
         .verb-row { display: flex; gap: 8px; }
@@ -44,7 +35,7 @@
 
 <div class="header-row">
     <div class="badge">🔥 <span id="streakDisplay">0</span></div>
-    <div class="badge">📚 <span id="wordCount">0</span></div>
+    <div class="badge">📚 <span id="wordCount">0</span> Wörter</div>
     <div class="badge" style="color: var(--primary);"><span id="versionDisplay"></span></div>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
 </div>
@@ -52,29 +43,30 @@
 <div class="nav">
     <button id="btn1" class="active" onclick="showTab('add')">➕ NEU</button>
     <button id="btn2" onclick="showTab('quiz')">🧠 ÜBEN</button>
+    <button id="btn4" onclick="showTab('challenge')">⏱️ CHALLENGE</button>
     <button id="btn3" onclick="showTab('list')">📖 LISTE</button>
 </div>
 
-<div id="debugBox"></div>
+<div id="debugBox" style="background:#1a202c; color:#48bb78; padding:12px; border-radius:12px; font-family:monospace; font-size:11px; margin-bottom:15px; display:none; border: 1px solid #2d3748; white-space: pre-wrap;"></div>
 
 <div id="tabAdd" class="card">
     <h2 id="addTitle">Neues Wort</h2>
     <div id="loader" style="color:var(--primary); text-align:center; display:none; font-weight:bold;">🤖 KI arbeitet...</div>
     <input type="hidden" id="editId">
     
-    <label>🇩🇪 Deutsch</label>
+    <label>L1</label>
     <div class="input-row"><input type="text" id="inDe"></div>
-    <label>🇬🇧 Englisch</label>
+    <label>L2</label>
     <div class="input-row"><input type="text" id="inEn"></div>
-    <label>🇸🇪 Schwedisch</label>
+    <label>L3</label>
     <div class="input-row"><input type="text" id="inSv"></div>
     
     <button class="action-btn" style="background:#4a5568; font-size:0.8em; padding:10px;" onclick="toggleVerbSection()">📝 Verb-Details</button>
     
     <div id="verbSection" class="verb-section">
-        <div class="verb-lang-group"><label>Deutsch</label><div class="verb-row"><input type="text" id="inDePast" placeholder="Er..."><input type="text" id="inDeFut" placeholder="Er wird..."></div></div>
-        <div class="verb-lang-group"><label>Englisch</label><div class="verb-row"><input type="text" id="inEnPast" placeholder="He..."><input type="text" id="inEnFut" placeholder="He will..."></div></div>
-        <div class="verb-lang-group"><label>Schwedisch</label><div class="verb-row"><input type="text" id="inSvPast" placeholder="Han..."><input type="text" id="inSvFut" placeholder="Han kommer att..."></div></div>
+        <div class="verb-lang-group"><label>L1</label><div class="verb-row"><input type="text" id="inDePast" placeholder="Er..."><input type="text" id="inDeFut" placeholder="Er wird..."></div></div>
+        <div class="verb-lang-group"><label>L2</label><div class="verb-row"><input type="text" id="inEnPast" placeholder="He..."><input type="text" id="inEnFut" placeholder="He will..."></div></div>
+        <div class="verb-lang-group"><label>L3</label><div class="verb-row"><input type="text" id="inSvPast" placeholder="Han..."><input type="text" id="inSvFut" placeholder="Han kommer att..."></div></div>
         <button class="action-btn" style="background:#e67e22; font-size:0.9em; margin-top:5px;" onclick="fetchVerbForms()">⚡ Formen suchen</button>
     </div>
 
@@ -83,15 +75,8 @@
 </div>
 
 <script>
-    const VERSION = "18.02.2026 - 15:15";
-
-    const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    function init() {
-        document.getElementById('versionDisplay').innerText = VERSION;
-    }
+    const VERSION = "18.02.2026 - 15:20";
+    // Firebase Initialisierung hier einfügen...
 
     async function translate(txt, src, tgt) {
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
@@ -116,21 +101,21 @@
             const rawDePast = await translate(`Gestern ist er ${baseDe}`, 'de', 'de');
             const rawSvPast = await translate(`Yesterday he ${baseEn}`, 'en', 'sv');
             
-            // DIAGNOSE ANZEIGE
-            debug.innerHTML = `<b>ROH-DATEN VON DER KI:</b><br>EN: ${rawEnPast}<br>DE: ${rawDePast}<br>SV: ${rawSvPast}`;
+            // DIAGNOSE ANZEIGE - Hier greifen wir die Daten ab!
+            debug.innerHTML = "<b>ROH-DATEN VON DER KI:</b>\n" + 
+                              "EN (Past): " + rawEnPast + "\n" +
+                              "DE (Past): " + rawDePast + "\n" +
+                              "SV (Past): " + rawSvPast;
 
             const anchorClean = (rawText, pronoun) => {
                 if (!rawText) return pronoun + " ...";
                 const lowerText = rawText.toLowerCase();
                 const lowerPronoun = pronoun.toLowerCase();
                 const index = lowerText.indexOf(lowerPronoun);
-                
                 if (index !== -1) {
                     return rawText.substring(index).trim().replace(/[.!]$/, "");
-                } else {
-                    // Fallback: Pronomen + die Antwort der KI
-                    return pronoun + " " + rawText.trim().replace(/[.!]$/, "");
                 }
+                return pronoun + " " + rawText.trim().replace(/[.!]$/, "");
             };
 
             document.getElementById('inEnPast').value = anchorClean(rawEnPast, "He");
@@ -139,7 +124,6 @@
 
             document.getElementById('inDeFut').value = "Er wird " + baseDe;
             document.getElementById('inEnFut').value = "He will " + baseEn;
-            
             const rawSvFut = await translate(`He will ${baseEn}`, 'en', 'sv');
             document.getElementById('inSvFut').value = anchorClean(rawSvFut, "Han");
 
@@ -155,7 +139,11 @@
         el.style.display = (el.style.display === "block") ? "none" : "block";
     }
 
-    window.onload = init;
+    function showTab(n) {
+        document.getElementById('tabAdd').style.display = (n === 'add') ? 'block' : 'none';
+    }
+
+    window.onload = () => { document.getElementById('versionDisplay').innerText = VERSION; };
 </script>
 </body>
 </html>
