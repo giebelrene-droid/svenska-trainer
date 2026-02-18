@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.0.6 (Clean UI)</title>
+    <title>Family Trainer 4.0.7 (No Duplicates)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👑</text></svg>">
     
@@ -168,7 +168,7 @@
 
 <script>
     // --- ZEITSTEMPEL VERSION ---
-    const VERSION = "18.02.2026 - 17:35 (Clean UI)";
+    const VERSION = "18.02.2026 - 17:45 (No Duplicates)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -298,7 +298,23 @@
         const vData = { deP: document.getElementById('inDePast').value, enP: document.getElementById('inEnPast').value, svP: document.getElementById('inSvPast').value, deF: document.getElementById('inDeFut').value, enF: document.getElementById('inEnFut').value, svF: document.getElementById('inSvFut').value };
         const data = { de: document.getElementById('inDe').value, en: document.getElementById('inEn').value, sv: document.getElementById('inSv').value, ex: document.getElementById('inEx').value, ...vData, ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0 };
         if(!data.de || !data.sv) { alert(`Bitte Wörter eingeben.`); return; }
-        const eid = document.getElementById('editId').value; const coll = COLLECTIONS[currentCollIndex];
+        
+        const eid = document.getElementById('editId').value;
+        
+        // DUPLIKAT-CHECK START
+        if (!eid) { // Nur bei neuen Wörtern prüfen (nicht beim Bearbeiten)
+            // Prüfen, ob das deutsche Wort schon in der Liste (allWords) existiert
+            // toLowerCase() sorgt dafür, dass "Haus" und "haus" als gleich erkannt werden
+            const isDuplicate = allWords.some(word => word.de.toLowerCase() === data.de.trim().toLowerCase());
+            
+            if (isDuplicate) {
+                alert("⚠️ Das Wort '" + data.de + "' existiert bereits in der Liste!");
+                return; // Stoppt das Speichern hier
+            }
+        }
+        // DUPLIKAT-CHECK ENDE
+
+        const coll = COLLECTIONS[currentCollIndex];
         const op = eid ? db.collection(coll).doc(eid).update(data) : db.collection(coll).add(data);
         op.then(() => { refreshData(); clearInputs(); if(eid) showTab('list'); else alert("Gespeichert!"); }).catch(e => alert("Fehler: "+e.message));
     }
