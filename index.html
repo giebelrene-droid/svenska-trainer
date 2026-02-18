@@ -48,7 +48,7 @@
         .verb-row input { font-size: 0.85em; padding: 8px; }
         
         /* QUIZ & LIST */
-        .feedback-card { text-align: left; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #e2e8f0; }
+        .feedback-card { text-align: left; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; border: solid 1px #e2e8f0; }
         .word-item { padding: 16px; border-bottom: 1px solid #f1f5f9; position: relative; }
         .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
         .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--accent); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--primary); }
@@ -218,11 +218,9 @@
         document.getElementById('loader').style.display = "block";
         try {
             const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
-            // PROMISE.ALL for speed and sync
             const tasks = targets.filter(t => t.l !== src).map(async t => { const tr = await translate(txt, src, t.l); return {id: t.id, t: tr}; });
             const res = await Promise.all(tasks);
             res.forEach(r => { document.getElementById(r.id).value = r.t; });
-            
             const l1Word = document.getElementById('inDe').value;
             if(l1Word) {
                 const sentence = `Das ist ${l1Word}`;
@@ -238,40 +236,31 @@
         if(!base) { alert("Bitte erst ein Wort eingeben."); return; }
         document.getElementById('loader').style.display = "block";
         try {
-            const p = [];
-            // "He did..." für Vergangenheit, "He will..." für Zukunft
-            // 0: L1 Past, 1: L3 Past, 2: L1 Fut, 3: L3 Fut
-            const queries = [
-                {q: `He did ${base}`, src: conf.l2, tgt: conf.l1},
-                {q: `He did ${base}`, src: conf.l2, tgt: conf.l3},
-                {q: `He will ${base}`, src: conf.l2, tgt: conf.l1},
-                {q: `He will ${base}`, src: conf.l2, tgt: conf.l3}
-            ];
-
-            // SEQUENZIELLER ABLAUF SICHERSTELLEN
-            for (let item of queries) {
-                const tr = await translate(item.q, item.src, item.tgt);
-                p.push(tr);
-            }
+            // Erst die stabilen englischen und schwedischen Formen holen
+            const rawEnPast = await translate(`He did ${base}`, conf.l2, conf.l2);
+            const enFut = `will ${base}`;
             
-            // CLEANER
-            const cleanPast = (t) => t ? t.replace(/\b(Gestern|Yesterday|Igår|habe|bin|ich|I|jag|har|war|was|did|He|Er|Han|’ve|’s|’d|has|have|had)\b\s?/gi, "").trim() : "";
-            const cleanFut = (t) => t ? t.replace(/\b(Ich|I|jag|Du|Han|Hon|Er|Sie|He)\b\s?/gi, "").trim() : "";
+            const rawSvPast = await translate(`He did ${base}`, conf.l2, conf.l3);
+            const rawSvFut = await translate(`He will ${base}`, conf.l2, conf.l3);
 
-            document.getElementById('inDePast').value = cleanPast(p[0]);
-            document.getElementById('inSvPast').value = cleanPast(p[1]);
-            document.getElementById('inDeFut').value = cleanFut(p[2]);
-            document.getElementById('inSvFut').value = cleanFut(p[3]);
+            // Jetzt die deutschen Formen (L1)
+            const rawDePast = await translate(`He did ${base}`, conf.l2, conf.l1);
+            // BRÜCKE: Nutzt den fertigen englischen Satz für die deutsche Zukunft
+            const rawDeFut = await translate(`He ${enFut}`, conf.l2, conf.l1); 
 
-            // ENGLISCH RÜCKÜBERSETZUNG TRICK
-            const rawDePast = cleanPast(p[0]);
-            if(rawDePast) {
-                const enBack = await translate(rawDePast, conf.l1, conf.l2);
-                document.getElementById('inEnPast').value = enBack.replace(/\b(Yesterday|I|He|did)\b\s?/gi, "").trim();
-            } else {
-                document.getElementById('inEnPast').value = base + "ed"; // Notlösung
-            }
-            document.getElementById('inEnFut').value = "will " + base;
+            // Cleaner
+            const clean = (t) => t ? t.replace(/\b(Ich|I|jag|Du|Han|Hon|Er|Sie|He|did|will|wird|Gestern|Yesterday|Igår|habe|bin|ich|har|war|was|Han|’ve|’s|’d|has|have|had)\b\s?/gi, "").trim() : "";
+            
+            // Werte schreiben
+            document.getElementById('inEnPast').value = clean(rawEnPast);
+            document.getElementById('inEnFut').value = enFut;
+            document.getElementById('inSvPast').value = clean(rawSvPast);
+            document.getElementById('inSvFut').value = clean(rawSvFut);
+            document.getElementById('inDePast').value = clean(rawDePast);
+            
+            // Deutsche Zukunft mit manuellem "wird" falls nötig
+            const finalDeFut = clean(rawDeFut);
+            document.getElementById('inDeFut').value = finalDeFut.includes("wird") ? finalDeFut : "wird " + finalDeFut;
 
         } catch(e) { console.error(e); } 
         finally { document.getElementById('loader').style.display = "none"; }
@@ -303,18 +292,16 @@
             </div>`).join('');
     }
 
-    function clearInputs() { ['inDe','inEn','inSv','inEx','editId','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inEnFut','inSvFut'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=""; }); document.getElementById('addTitle').innerText="Neues Wort"; document.getElementById('cancelEdit').style.display="none"; document.getElementById('verbSection').style.display="none"; }
+    function clearInputs() { ['inDe','inEn','inSv','inEx','editId','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inSvFut'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=""; }); document.getElementById('addTitle').innerText="Neues Wort"; document.getElementById('cancelEdit').style.display="none"; document.getElementById('verbSection').style.display="none"; }
     function toggleVerbSection() { const el=document.getElementById('verbSection'); el.style.display = (el.style.display==="block")?"none":"block"; }
     function showTab(n) { 
         document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); 
         document.getElementById('tabAdd').style.display=(n==='add')?'block':'none'; 
         document.getElementById('tabQuiz').style.display=(n==='quiz'||n==='challenge')?'block':'none'; 
         document.getElementById('tabList').style.display=(n==='list')?'block':'none';
-        
         document.getElementById('tabQuiz').classList.remove('challenge-mode');
         document.getElementById('timer').style.display = "none";
         document.getElementById('nextBtn').style.display = "none";
-        
         isChallenge = (n === 'challenge');
         if(n === 'quiz') document.getElementById('btn2').classList.add('active');
         if(n === 'challenge') {
@@ -325,7 +312,6 @@
         }
         if(n === 'list') { document.getElementById('btn3').classList.add('active'); renderList(); }
         if(n === 'add') document.getElementById('btn1').classList.add('active');
-        
         if(n === 'quiz' || n === 'challenge') nextQ();
     }
     
@@ -338,7 +324,6 @@
         const qLang = quizQ === 1 ? conf.l1 : conf.l2; 
         document.getElementById('qMainText').innerText = audioMode ? "???" : qTxt; 
         document.getElementById('spkMain').onclick = () => speak(qTxt, qLang);
-        
         let h1, h2;
         if(quizQ === 1) { 
             document.getElementById('lblAns1').innerText = LANGS[conf.l2].name; 
@@ -357,7 +342,6 @@
             document.getElementById('spkAns1').onclick = () => speak(curWord.de, conf.l1); 
             document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); 
         }
-        
         document.getElementById('qAns1').value = h1; 
         document.getElementById('qAns2').value = h2;
         document.getElementById('qAns1').className = ""; 
@@ -365,7 +349,6 @@
         document.getElementById('qFeed').innerHTML = ""; 
         document.getElementById('nextBtn').style.display="none"; 
         document.getElementById('checkBtn').style.display="block"; 
-        
         if(audioMode) speak(curWord.sv, conf.l3); 
     }
 
@@ -375,22 +358,17 @@
         let r1, r2; 
         if(quizQ === 1) { r1 = i1 === curWord.en.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } 
         else { r1 = i1 === curWord.de.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); }
-        
         document.getElementById('qAns1').className = r1 ? "correct" : "wrong"; 
         document.getElementById('qAns2').className = r2 ? "correct" : "wrong";
         document.getElementById('qMainText').innerText = quizQ===1 ? curWord.de : curWord.en; 
-        
         const vL2 = (curWord.enP) ? `<br><span style="font-size:0.8em; color:#666">🕒 ${curWord.enP} | 🔮 ${curWord.enF}</span>` : ""; 
         const vL3 = (curWord.svP) ? `<br><span style="font-size:0.8em; color:#666">🕒 ${curWord.svP} | 🔮 ${curWord.svF}</span>` : ""; 
-        
         const html = `<div class="feedback-card" style="background:${(r1&&r2)?'#f0fff4':'#fff5f5'}">
             <div class="fb-row"><span class="lang-tag">${LANGS[conf.l1].flag}</span> <b>${curWord.de}</b></div>
             <div class="fb-row"><span class="lang-tag">${LANGS[conf.l2].flag}</span> <b>${curWord.en}</b> ${vL2}</div>
             <div class="fb-row"><span class="lang-tag">${LANGS[conf.l3].flag}</span> <b>${curWord.sv}</b> ${vL3}</div>
         </div>`; 
-        
         document.getElementById('qFeed').innerHTML = html; 
-        
         if(isChallenge) {
             document.getElementById('checkBtn').style.display="none";
             setTimeout(nextQ, 2500); 
@@ -398,7 +376,6 @@
             document.getElementById('nextBtn').style.display="block"; 
             document.getElementById('checkBtn').style.display="none"; 
         }
-        
         if(r1 && r2) { updateLevel(curWord.id, true); speak(curWord.sv, conf.l3); } 
         else { updateLevel(curWord.id, false); } 
     }
