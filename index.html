@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.0.7 (No Duplicates)</title>
+    <title>Family Trainer 4.0.8 (Layout Fix)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👑</text></svg>">
     
@@ -11,7 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
         :root { --primary: #005293; --accent: #FECC00; --bg: #f4f7f9; --text: #1a2b3c; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; color: var(--text); max-width: 500px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; color: var(--text); max-width: 500px; margin: 0 auto; padding-bottom: 40px; }
         
         /* HEADER */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -57,6 +57,9 @@
         .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
         .challenge-mode { border: 2px solid #e53e3e; }
 
+        /* FOOTER VERSION */
+        .footer-version { text-align: center; margin-top: 30px; font-size: 0.75em; color: #a0aec0; font-weight: bold; letter-spacing: 1px; }
+
         /* SETTINGS OVERLAY */
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; overflow-y: auto; }
         .settings-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; max-height: 90vh; overflow-y: auto; }
@@ -96,7 +99,6 @@
 <div class="header-row">
     <div class="badge">🔥 <span id="streakDisplay">0</span></div>
     <div class="badge">📚 <span id="wordCount">0</span> Wörter</div>
-    <div class="badge" style="color: var(--primary);"><span id="versionDisplay"></span></div>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
 </div>
 
@@ -137,7 +139,7 @@
     <button id="cancelEdit" class="action-btn" style="background:#718096; display:none;" onclick="resetForm()">Abbrechen</button>
 </div>
 
-<div id="tabQuiz" class="card">
+<div id="tabQuiz" class="card" style="display:none">
     <div style="text-align:center;">
         <div id="audioModeToggle" style="font-size:0.8em; font-weight:bold; color:var(--primary); cursor:pointer; margin-bottom:10px;" onclick="toggleAudioMode()">🔈 AUDIO: AUS</div>
         <div id="timer" style="display:none; font-size:1.5em; font-weight:bold; color:#e53e3e;">⚡ CHALLENGE</div>
@@ -166,9 +168,11 @@
     <button class="action-btn danger-btn" onclick="nukeDatabase()">⚠️ ALLES LÖSCHEN</button>
 </div>
 
+<div class="footer-version">Family Trainer <span id="versionDisplay"></span></div>
+
 <script>
     // --- ZEITSTEMPEL VERSION ---
-    const VERSION = "18.02.2026 - 17:45 (No Duplicates)";
+    const VERSION = "18.02.2026 - 17:55 (Clean UI + Fix)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -188,6 +192,9 @@
         const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx);
         if(isNaN(currentCollIndex) || currentCollIndex < 0 || currentCollIndex > 3) currentCollIndex = 0;
         updateUserDropdown(); loadUserConfig(); loadVoices(); updateInterface(); refreshData();
+        
+        // FIX: Sicherstellen, dass nur der ADD Tab zu Beginn offen ist
+        showTab('add');
     }
 
     function renderRenameInputs() { let html = ''; userNames.forEach((name, i) => { html += `<div class="rename-row"><span>${i+1}.</span><input type="text" id="name${i}" value="${name}" onchange="saveName(${i})"></div>`; }); document.getElementById('renameContainer').innerHTML = html; }
@@ -303,13 +310,10 @@
         
         // DUPLIKAT-CHECK START
         if (!eid) { // Nur bei neuen Wörtern prüfen (nicht beim Bearbeiten)
-            // Prüfen, ob das deutsche Wort schon in der Liste (allWords) existiert
-            // toLowerCase() sorgt dafür, dass "Haus" und "haus" als gleich erkannt werden
             const isDuplicate = allWords.some(word => word.de.toLowerCase() === data.de.trim().toLowerCase());
-            
             if (isDuplicate) {
                 alert("⚠️ Das Wort '" + data.de + "' existiert bereits in der Liste!");
-                return; // Stoppt das Speichern hier
+                return;
             }
         }
         // DUPLIKAT-CHECK ENDE
