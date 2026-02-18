@@ -23,7 +23,7 @@
         h2 { color: var(--se-blue); margin-top: 0; font-size: 1.3em; font-weight: 800; }
         label { display: block; font-size: 0.75em; font-weight: 700; color: #7f8c8d; margin: 12px 0 4px 4px; text-transform: uppercase; }
         .input-row { display: flex; align-items: center; gap: 5px; width: 100%; margin-bottom: 5px; }
-        input { flex: 1; padding: 14px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 14px; font-size: 16px; }
+        input { flex: 1; padding: 14px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 14px; font-size: 16px; width: 100%; box-sizing: border-box; }
         input:focus { border-color: var(--se-blue); background: white; outline: none; }
         .action-btn { width: 100%; padding: 16px; background: var(--se-blue); color: white; border: none; border-radius: 14px; cursor: pointer; font-weight: 700; font-size: 16px; margin-top: 10px; }
         .quiz-box { background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%); padding: 25px; border-radius: 18px; text-align: center; }
@@ -44,10 +44,13 @@
         .backup-btn { flex: 1; padding: 10px; font-size: 10px; font-weight: 800; border-radius: 10px; border: none; background: #edf2f7; cursor: pointer; }
         .lang-tag { font-size: 0.7em; font-weight: 800; color: var(--se-blue); margin-right: 5px; display: inline-block; width: 25px; }
         
+        /* Verb Section Layout Neu */
         .verb-section { background: #edf2f7; padding: 15px; border-radius: 12px; margin-top: 15px; display: none; border: 1px solid #cbd5e0; }
-        .verb-row { display: flex; gap: 5px; margin-bottom: 5px; }
-        .verb-row input { font-size: 0.85em; padding: 10px; }
-        .verb-label { font-size: 0.7em; font-weight: 800; color: #718096; margin-bottom: 2px; }
+        .verb-lang-group { margin-bottom: 12px; border-bottom: 1px solid #dce4ea; padding-bottom: 8px; }
+        .verb-lang-group:last-child { border-bottom: none; }
+        .verb-lang-title { font-size: 0.75em; font-weight: 800; color: var(--se-blue); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .verb-row { display: flex; gap: 8px; }
+        .verb-row input { font-size: 0.85em; padding: 10px; width: 50%; }
         .grammar-hint-box { margin-top: 15px; background: white; padding: 10px; border-radius: 10px; border: 1px dashed #cbd5e0; text-align: left; font-size: 0.85em; }
     </style>
 </head>
@@ -86,18 +89,30 @@
         <button class="action-btn" style="background:#4a5568; font-size:0.8em; padding:10px;" onclick="toggleVerbSection()">📝 Verb-Details (Vergangenheit/Zukunft)</button>
         
         <div id="verbSection" class="verb-section">
-            <div class="verb-label">VERGANGENHEIT (Past)</div>
-            <div class="verb-row">
-                <input type="text" id="inDePast" placeholder="DE: lief">
-                <input type="text" id="inEnPast" placeholder="EN: ran">
-                <input type="text" id="inSvPast" placeholder="SV: sprang">
+            <div class="verb-lang-group">
+                <div class="verb-lang-title">🇩🇪 DEUTSCH</div>
+                <div class="verb-row">
+                    <input type="text" id="inDePast" placeholder="Vergangenheit (lief)">
+                    <input type="text" id="inDeFut" placeholder="Zukunft (wird laufen)">
+                </div>
             </div>
-            <div class="verb-label">ZUKUNFT (Future)</div>
-            <div class="verb-row">
-                <input type="text" id="inDeFut" placeholder="DE: wird laufen">
-                <input type="text" id="inEnFut" placeholder="EN: will run">
-                <input type="text" id="inSvFut" placeholder="SV: ska springa">
+            
+            <div class="verb-lang-group">
+                <div class="verb-lang-title">🇬🇧 ENGLISCH</div>
+                <div class="verb-row">
+                    <input type="text" id="inEnPast" placeholder="Past (ran)">
+                    <input type="text" id="inEnFut" placeholder="Future (will run)">
+                </div>
             </div>
+
+            <div class="verb-lang-group">
+                <div class="verb-lang-title">🇸🇪 SCHWEDISCH</div>
+                <div class="verb-row">
+                    <input type="text" id="inSvPast" placeholder="Dåtid (sprang)">
+                    <input type="text" id="inSvFut" placeholder="Framtid (ska springa)">
+                </div>
+            </div>
+            
             <button class="action-btn" style="background:#e67e22; font-size:0.8em; margin-top:5px;" onclick="fetchVerbForms()">⚡ Formen suchen (Beta)</button>
         </div>
 
@@ -143,7 +158,7 @@
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.9.1</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.9.2</div>
 
 <script>
     const firebaseConfig = {
@@ -218,14 +233,12 @@
         el.style.display = (el.style.display === "block") ? "none" : "block";
     }
 
-    // --- VERBESSERTE FORMEN-SUCHE MIT RÜCKÜBERSETZUNG ---
     async function fetchVerbForms() {
         const enBase = document.getElementById('inEn').value.trim();
         if(!enBase) { alert("Bitte erst ein englisches Wort (z.B. run) eingeben."); return; }
         document.getElementById('loader').style.display = "block";
         
         try {
-            // 1. Suche Deutsche & Schwedische Formen
             const p1 = fetch(`https://api.mymemory.translated.net/get?q=Yesterday%20I%20${enBase}&langpair=en|de`).then(r=>r.json());
             const p2 = fetch(`https://api.mymemory.translated.net/get?q=Yesterday%20I%20${enBase}&langpair=en|sv`).then(r=>r.json());
             const p3 = fetch(`https://api.mymemory.translated.net/get?q=I%20will%20${enBase}&langpair=en|de`).then(r=>r.json());
@@ -233,14 +246,11 @@
 
             const [rDePast, rSvPast, rDeFut, rSvFut] = await Promise.all([p1, p2, p3, p4]);
             
-            const dePastText = rDePast.responseData.translatedText; // z.B. "Gestern rannte ich"
-
-            // 2. TRICK: Rückübersetzung DE -> EN um "ran" zu finden
+            const dePastText = rDePast.responseData.translatedText; 
             const pBack = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(dePastText)}&langpair=de|en`);
             const rBack = await pBack.json();
-            const enPastText = rBack.responseData.translatedText; // "Yesterday I ran"
+            const enPastText = rBack.responseData.translatedText; 
 
-            // 3. Felder befüllen und bereinigen
             document.getElementById('inEnPast').value = enPastText.replace(/Yesterday I/i, "").replace(/Yesterday/i, "").trim();
             document.getElementById('inEnFut').value = "will " + enBase;
             
