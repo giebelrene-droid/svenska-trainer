@@ -88,6 +88,9 @@
         
         <button class="action-btn" onclick="handleSmartTranslate()" style="background:#e67e22">1. Smart Übersetzen</button>
         <button class="action-btn" style="background:#48bb78" onclick="manualSave()">2. Wort jetzt speichern</button>
+        
+        <button class="action-btn" style="background:#cbd5e0; color:#2d3748; margin-top:15px;" onclick="clearInputs()">🗑️ Alles leeren</button>
+        
         <button id="cancelEdit" class="action-btn" style="background:#718096; display:none;" onclick="resetForm()">Abbrechen</button>
     </div>
 
@@ -136,7 +139,7 @@
     </div>
 </div>
 
-<div class="version-info">SVENSKA TRAINER PRO v1.8.4</div>
+<div class="version-info">SVENSKA TRAINER PRO v1.8.5</div>
 
 <script>
     const firebaseConfig = {
@@ -199,18 +202,31 @@
         return clean;
     }
 
+    // --- BUTTON "ALLES LEEREN" ---
+    function clearInputs() {
+        document.getElementById('inDe').value = "";
+        document.getElementById('inEn').value = "";
+        document.getElementById('inSv').value = "";
+        document.getElementById('inEx').value = "";
+        document.getElementById('editId').value = "";
+        document.getElementById('addTitle').innerText = "Vokabel-Zentrale";
+        document.getElementById('cancelEdit').style.display = "none";
+    }
+
     async function handleSmartTranslate() {
         const de = document.getElementById('inDe').value.trim(), en = document.getElementById('inEn').value.trim(), sv = document.getElementById('inSv').value.trim();
         let txt = de || en || sv, src = de ? "de" : (en ? "en" : "sv");
-        if(!txt) return;
+        if(!txt) { alert("Bitte Wort eingeben!"); return; }
         document.getElementById('loader').style.display = "block";
         try {
             const targets = [{id:'inDe', l:'de'}, {id:'inEn', l:'en'}, {id:'inSv', l:'sv'}];
-            const tasks = targets.filter(t => t.l !== src && !document.getElementById(t.id).value)
+            // HIER WURDE GEÄNDERT: Überschreibt jetzt vorhandene Felder, wenn Smart Translate gedrückt wird
+            const tasks = targets.filter(t => t.l !== src)
                 .map(t => fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${t.l}`).then(r => r.json()).then(d => ({id: t.id, t: refineText(d.responseData.translatedText, t.l)})));
             const res = await Promise.all(tasks);
             res.forEach(r => { document.getElementById(r.id).value = r.t; });
-            if(!document.getElementById('inEx').value) document.getElementById('inEx').value = `Jag gillar ${document.getElementById('inSv').value}.`;
+            const finalSv = document.getElementById('inSv').value;
+            if(finalSv) document.getElementById('inEx').value = `Jag gillar ${finalSv}.`;
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
@@ -219,7 +235,7 @@
         if(!de || !sv) return;
         const data = { de, en, sv, ex, level: (eid ? allWords.find(x=>x.id===eid).level : 0), ts: firebase.firestore.FieldValue.serverTimestamp() };
         const op = eid ? db.collection("words").doc(eid).update(data) : db.collection("words").add(data);
-        op.then(() => { resetForm(); if(eid) showTab('list'); else alert("Gespeichert! ✨"); });
+        op.then(() => { clearInputs(); if(eid) showTab('list'); else alert("Gespeichert! ✨"); });
     }
 
     async function refreshData() {
@@ -325,7 +341,7 @@
             </div>`).join('');
     }
 
-    function resetForm() { document.getElementById('editId').value = ""; document.getElementById('inDe').value = ""; document.getElementById('inEn').value = ""; document.getElementById('inSv').value = ""; document.getElementById('inEx').value = ""; refreshData(); }
+    function resetForm() { clearInputs(); refreshData(); }
     function editWord(id) { const w = allWords.find(x => x.id === id); document.getElementById('editId').value = w.id; document.getElementById('inDe').value = w.de; document.getElementById('inEn').value = w.en; document.getElementById('inSv').value = w.sv; document.getElementById('inEx').value = w.ex || ""; showTab('add'); }
     function del(id) { if(confirm("Löschen?")) db.collection("words").doc(id).delete().then(refreshData); }
     function exportData() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allWords)); const a = document.createElement('a'); a.href = d; a.download = "backup.json"; a.click(); }
