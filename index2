@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.0.2 (Pronomen-Edition)</title>
+    <title>Family Trainer 4.0.3 (Anker-Logik)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👑</text></svg>">
     
@@ -61,6 +61,9 @@
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; }
         .settings-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; }
         .rename-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
+
+        /* DIAGNOSE BOX STYLING */
+        #debugBox { background: #1a202c; color: #48bb78; padding: 12px; border-radius: 12px; font-family: monospace; font-size: 11px; margin-bottom: 15px; display: none; border: 1px solid #2d3748; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -89,7 +92,7 @@
 <div class="header-row">
     <div class="badge">🔥 <span id="streakDisplay">0</span></div>
     <div class="badge">📚 <span id="wordCount">0</span> Wörter</div>
-    <div class="badge" style="color: var(--primary);">🚀 v<span id="versionDisplay"></span></div>
+    <div class="badge" style="color: var(--primary);"><span id="versionDisplay"></span></div>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
 </div>
 
@@ -99,6 +102,8 @@
     <button id="btn4" onclick="showTab('challenge')">⏱️ CHALLENGE</button>
     <button id="btn3" onclick="showTab('list')">📖 LISTE</button>
 </div>
+
+<div id="debugBox"></div>
 
 <div id="tabAdd" class="card">
     <h2 id="addTitle">Neues Wort</h2>
@@ -118,9 +123,9 @@
     <button class="action-btn" style="background:#4a5568; font-size:0.8em; padding:10px;" onclick="toggleVerbSection()">📝 Verb-Details</button>
     
     <div id="verbSection" class="verb-section">
-        <div class="verb-lang-group"><label id="vt1">L1</label><div class="verb-row"><input type="text" id="inDePast" placeholder="Er ..."><input type="text" id="inDeFut" placeholder="Er wird ..."></div></div>
-        <div class="verb-lang-group"><label id="vt2">L2</label><div class="verb-row"><input type="text" id="inEnPast" placeholder="He ..."><input type="text" id="inEnFut" placeholder="He will ..."></div></div>
-        <div class="verb-lang-group"><label id="vt3">L3</label><div class="verb-row"><input type="text" id="inSvPast" placeholder="Han ..."><input type="text" id="inSvFut" placeholder="Han kommer att ..."></div></div>
+        <div class="verb-lang-group"><label id="vt1">L1</label><div class="verb-row"><input type="text" id="inDePast" placeholder="Er..."><input type="text" id="inDeFut" placeholder="Er wird..."></div></div>
+        <div class="verb-lang-group"><label id="vt2">L2</label><div class="verb-row"><input type="text" id="inEnPast" placeholder="He..."><input type="text" id="inEnFut" placeholder="He will..."></div></div>
+        <div class="verb-lang-group"><label id="vt3">L3</label><div class="verb-row"><input type="text" id="inSvPast" placeholder="Han..."><input type="text" id="inSvFut" placeholder="Han kommer att..."></div></div>
         <button class="action-btn" style="background:#e67e22; font-size:0.9em; margin-top:5px;" onclick="fetchVerbForms()">⚡ Formen suchen</button>
     </div>
 
@@ -160,7 +165,8 @@
 </div>
 
 <script>
-    const VERSION = "4.0.2";
+    // --- ZEITSTEMPEL VERSION ---
+    const VERSION = "18.02.2026 - 15:45";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -209,7 +215,7 @@
     async function translate(txt, src, tgt) {
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
         const res = await fetch(url); const data = await res.json();
-        return cleanResult(data.responseData.translatedText);
+        return data.responseData.translatedText;
     }
 
     async function handleSmartTranslate() {
@@ -221,49 +227,61 @@
             const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
             const tasks = targets.filter(t => t.l !== src).map(async t => { const tr = await translate(txt, src, t.l); return {id: t.id, t: tr}; });
             const res = await Promise.all(tasks);
-            res.forEach(r => { document.getElementById(r.id).value = r.t; });
-            const l1Word = document.getElementById('inDe').value;
-            if(l1Word) {
-                const sentence = `Das ist ${l1Word}`;
-                const exTr = await translate(sentence, conf.l1, conf.l3);
-                document.getElementById('inEx').value = `... ${exTr} ...`;
-            }
+            res.forEach(r => { document.getElementById(r.id).value = cleanResult(r.t); });
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // --- SMART VERB LOGIC ---
+    // --- NEUE ANKER-LOGIK MIT DIAGNOSE-KASTEN ---
     async function fetchVerbForms() {
-        const base = document.getElementById('inEn').value.trim() || document.getElementById('inDe').value.trim(); 
-        if(!base) { alert("Bitte erst ein Wort eingeben."); return; }
+        const baseDe = document.getElementById('inDe').value.trim();
+        const baseEn = document.getElementById('inEn').value.trim();
+        const debug = document.getElementById('debugBox');
+        
+        if(!baseDe || !baseEn) return alert("Bitte erst Deutsch und Englisch ausfüllen.");
+        
+        // Diagnose aktivieren
+        debug.style.display = "block";
+        debug.innerHTML = "⏳ KI wird abgefragt...";
         document.getElementById('loader').style.display = "block";
+        
         try {
-            const rawEnPast = await translate(`Yesterday he ${base}`, conf.l2, conf.l2);
-            const enFut = `will ${base}`;
-            const rawSvPast = await translate(`Yesterday he ${base}`, conf.l2, conf.l3);
-            const rawSvFut = await translate(`He will ${base}`, conf.l2, conf.l3);
-            const rawDePast = await translate(`Gestern ist er ${base}`, conf.l1, conf.l1);
-            const rawDeFut = await translate(`He ${enFut}`, conf.l2, conf.l1); 
+            const rawEnPast = await translate(`Yesterday he ${baseEn}`, 'en', 'en');
+            const rawDePast = await translate(`Gestern ist er ${baseDe}`, 'de', 'de');
+            const rawSvPast = await translate(`Yesterday he ${baseEn}`, 'en', 'sv');
 
-            // PRONOMEN-CLEANER: Setzt das gewünschte Pronomen fest davor
-            const clean = (t, prefix) => {
-                if(!t) return prefix;
-                // Entfernt alle typischen Füllwörter und Pronomen der KI
-                let c = t.replace(/\b(Yesterday|Gestern|She|It|Sie|Es|I|Ich|jag|did|is|ist|was|war|bin|habe|has|have|had|He|Han|Er)\b/gi, "").trim();
-                return prefix + " " + c;
+            // ROH-DATEN IM KASTEN ANZEIGEN
+            debug.innerHTML = "<b>ROH-DATEN VON DER KI:</b>\n" + 
+                              "EN: " + rawEnPast + "\n" +
+                              "DE: " + rawDePast + "\n" +
+                              "SV: " + rawSvPast;
+
+            const anchorClean = (rawText, pronoun) => {
+                if (!rawText) return pronoun + " ...";
+                const lowerText = rawText.toLowerCase();
+                const lowerPronoun = pronoun.toLowerCase();
+                const index = lowerText.indexOf(lowerPronoun);
+                
+                if (index !== -1) {
+                    return rawText.substring(index).trim().replace(/[.!]$/, "");
+                } else {
+                    return pronoun + " " + rawText.trim().replace(/[.!]$/, "");
+                }
             };
-            
-            // Werte schreiben
-            document.getElementById('inEnPast').value = clean(rawEnPast, "He");
-            document.getElementById('inEnFut').value = "He " + enFut;
-            document.getElementById('inSvPast').value = clean(rawSvPast, "Han");
-            document.getElementById('inSvFut').value = clean(rawSvFut, "Han");
-            document.getElementById('inDePast').value = clean(rawDePast, "Er");
-            
-            const deFutClean = clean(rawDeFut, "Er");
-            document.getElementById('inDeFut').value = deFutClean.includes("wird") ? deFutClean : deFutClean.replace("Er", "Er wird");
 
-        } catch(e) { console.error(e); } 
-        finally { document.getElementById('loader').style.display = "none"; }
+            document.getElementById('inEnPast').value = anchorClean(rawEnPast, "He");
+            document.getElementById('inDePast').value = anchorClean(rawDePast, "Er");
+            document.getElementById('inSvPast').value = anchorClean(rawSvPast, "Han");
+
+            document.getElementById('inDeFut').value = "Er wird " + baseDe;
+            document.getElementById('inEnFut').value = "He will " + baseEn;
+            const rawSvFut = await translate(`He will ${baseEn}`, 'en', 'sv');
+            document.getElementById('inSvFut').value = anchorClean(rawSvFut, "Han");
+
+        } catch(e) { 
+            debug.innerHTML = "❌ Fehler: " + e.message;
+        } finally { 
+            document.getElementById('loader').style.display = "none"; 
+        }
     }
 
     function manualSave() {
