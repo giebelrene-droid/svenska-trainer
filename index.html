@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.6 (Vokabelheft PRO)</title>
+    <title>Family Trainer 4.7 (Challenge Return)</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -18,30 +18,26 @@
         .nav button { background: #d1dce5; flex: 1; padding: 10px; font-size: 11px; color: #4a627a; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
         .nav button.active { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 82, 147, 0.3); }
         
-        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; }
         
         .input-row { display: flex; align-items: center; gap: 5px; width: 100%; margin-bottom: 5px; }
-        input { flex: 1; padding: 12px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 12px; font-size: 16px; }
+        input { flex: 1; padding: 12px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 12px; font-size: 16px; width: 100%; box-sizing: border-box; }
         
         .action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; margin-top: 10px; }
         .mic-btn, .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 16px; cursor: pointer; border-radius: 8px; padding: 10px; min-width: 45px; }
         
-        /* Listen-Design */
-        .list-item { background: white; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #edf2f7; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .challenge-mode { border: 4px solid #e53e3e !important; }
+        .score-display { font-size: 1.2em; color: #e53e3e; font-weight: bold; margin-bottom: 10px; }
+        
+        /* Listen-Design (unverändert) */
+        .list-item { background: white; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #edf2f7; }
         .word-line { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; padding: 4px 0; border-bottom: 1px solid #f1f5f9; }
         .lang-label { font-weight: 800; color: var(--primary); min-width: 70px; font-size: 0.85em; }
         .word-text { flex-grow: 1; font-size: 1.05em; }
-        
         .list-controls { display: flex; gap: 10px; margin-top: 10px; justify-content: flex-end; }
         .mini-btn { padding: 6px 12px; border-radius: 8px; border: none; font-size: 0.85em; cursor: pointer; font-weight: bold; }
         .btn-edit { background: #e3f2fd; color: #1976d2; }
         .btn-del { background: #ffebee; color: #c62828; }
-        
-        .danger-zone { margin-top: 20px; padding: 15px; border-top: 2px solid #fee2e2; text-align: center; }
-        .btn-nuke { background: #ef4444; color: white; padding: 10px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; width: 100%; }
-        
-        .csv-row { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-csv { background: #10b981; color: white; flex: 1; padding: 10px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -49,12 +45,13 @@
 <div class="header-row">
     <div class="badge">📚 <span id="wordCount">0</span> Wörter</div>
     <div class="badge">🏆 Rekord: <span id="highScoreDisplay">0</span></div>
-    <div id="userLabel" style="font-weight: bold; color: var(--primary);">👤 Lädt...</div>
+    <div id="userLabel" style="font-weight: bold; color: var(--primary);">👤 Benutzer</div>
 </div>
 
 <div class="nav">
     <button id="btn1" class="active" onclick="showTab('add')">➕ NEU</button>
     <button id="btn2" onclick="showTab('quiz')">🧠 ÜBEN</button>
+    <button id="btn4" onclick="showTab('challenge')">⏱️ CHALLENGE</button>
     <button id="btn3" onclick="showTab('list')">📖 LISTE</button>
 </div>
 
@@ -64,51 +61,48 @@
     <div class="input-row"><input type="text" id="inDe" placeholder="Deutsch"><button class="mic-btn" onclick="listen('de-DE', 'inDe', this)">🎤</button></div>
     <div class="input-row"><input type="text" id="inEn" placeholder="Englisch"><button class="mic-btn" onclick="listen('en-US', 'inEn', this)">🎤</button></div>
     <div class="input-row"><input type="text" id="inSv" placeholder="Schwedisch"><button class="mic-btn" onclick="listen('sv-SE', 'inSv', this)">🎤</button></div>
-    <button class="action-btn" id="saveBtn" onclick="manualSave()">Speichern</button>
+    <button class="action-btn" style="background:#48bb78" id="saveBtn" onclick="manualSave()">Speichern</button>
     <button class="action-btn" style="background:#cbd5e0; color:#333; display:none;" id="cancelEditBtn" onclick="cancelEdit()">Abbrechen</button>
 </div>
 
 <div id="tabQuiz" class="card" style="display:none">
+    <div id="challengeHeader" style="display:none; text-align:center;">
+        <div class="score-display">💎 Punkte: <span id="currentScore">0</span></div>
+    </div>
     <div style="text-align:center;">
         <h1 id="qMainText">---</h1>
-        <button class="speaker-btn" onclick="speak(document.getElementById('qMainText').innerText, 'de')">🔊 Anhören</button>
+        <button class="speaker-btn" onclick="speak(document.getElementById('qMainText').innerText, 'de')">🔊</button>
     </div>
-    <input type="text" id="qAns1" placeholder="Englisch" style="margin-top:15px;">
-    <input type="text" id="qAns2" placeholder="Schwedisch" style="margin-top:10px;">
-    <button class="action-btn" onclick="checkAns()">Prüfen</button>
-    <button class="action-btn" style="background:#718096; display:none;" id="nextBtn" onclick="nextQ()">Nächstes Wort</button>
+    <label style="font-size: 0.8em; font-weight: bold; color: #7f8c8d;">ENG 🇬🇧</label>
+    <input type="text" id="qAns1" placeholder="Antwort..." style="margin-bottom: 10px;">
+    <label style="font-size: 0.8em; font-weight: bold; color: #7f8c8d;">SWE 🇸🇪</label>
+    <input type="text" id="qAns2" placeholder="Antwort...">
+    
+    <button class="action-btn" onclick="checkAns()" id="checkBtn">PRÜFEN</button>
+    <div id="qFeed" style="margin-top:10px; font-weight:bold; color:#e53e3e; text-align:center;"></div>
+    <button class="action-btn" style="background:#718096; display:none;" id="nextBtn" onclick="nextQ()">WEITER ➡️</button>
 </div>
 
 <div id="tabList" class="card" style="display:none">
     <h2>Vokabelheft</h2>
-    <div class="csv-row">
-        <button class="btn-csv" onclick="exportToCSV()">📤 Export (CSV)</button>
-        <button class="btn-csv" style="background:#3b82f6" onclick="importCSV()">📥 Import (CSV)</button>
-    </div>
-    <div id="listCont" style="margin-top: 20px;"></div>
-    
-    <div class="danger-zone">
-        <button class="btn-nuke" onclick="nukeDatabase()">⚠️ GESAMTE LISTE LÖSCHEN</button>
-    </div>
+    <div id="listCont"></div>
 </div>
 
 <script>
-    // Firebase Setup
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
     const COLLECTIONS = ['words', 'words_u2', 'words_u3', 'words_u4'];
     let currentCollIndex = localStorage.getItem('trainerUserIdx') || 0;
-    let allWords = [], curWord = null;
+    let allWords = [], curWord = null, isChallenge = false;
+    let score = 0, highscore = localStorage.getItem('trainerHighscore') || 0;
 
-    // Initialisierung
     function init() {
-        document.getElementById('userLabel').innerText = "👤 Benutzer " + (parseInt(currentCollIndex) + 1);
+        document.getElementById('highScoreDisplay').innerText = highscore;
         refreshData();
     }
 
-    // Daten laden
     async function refreshData() {
         const s = await db.collection(COLLECTIONS[currentCollIndex]).orderBy("ts", "desc").get();
         allWords = s.docs.map(d => ({id: d.id, ...d.data()}));
@@ -116,26 +110,13 @@
         renderList();
     }
 
-    // --- DIE NEUE LISTE ---
     function renderList() {
         const cont = document.getElementById('listCont');
         cont.innerHTML = allWords.map(w => `
             <div class="list-item">
-                <div class="word-line">
-                    <span class="lang-label">DE 🇩🇪</span>
-                    <span class="word-text">${w.de}</span>
-                    <button class="mini-btn" onclick="speak('${w.de}', 'de')">🔊</button>
-                </div>
-                <div class="word-line">
-                    <span class="lang-label">ENG 🇬🇧</span>
-                    <span class="word-text">${w.en}</span>
-                    <button class="mini-btn" onclick="speak('${w.en}', 'en')">🔊</button>
-                </div>
-                <div class="word-line">
-                    <span class="lang-label">SWE 🇸🇪</span>
-                    <span class="word-text">${w.sv}</span>
-                    <button class="mini-btn" onclick="speak('${w.sv}', 'sv')">🔊</button>
-                </div>
+                <div class="word-line"><span class="lang-label">DE 🇩🇪</span><span class="word-text">${w.de}</span><button class="mini-btn" onclick="speak('${w.de}', 'de')">🔊</button></div>
+                <div class="word-line"><span class="lang-label">ENG 🇬🇧</span><span class="word-text">${w.en}</span><button class="mini-btn" onclick="speak('${w.en}', 'en')">🔊</button></div>
+                <div class="word-line"><span class="lang-label">SWE 🇸🇪</span><span class="word-text">${w.sv}</span><button class="mini-btn" onclick="speak('${w.sv}', 'sv')">🔊</button></div>
                 <div class="list-controls">
                     <button class="mini-btn btn-edit" onclick="startEdit('${w.id}')">✏️ Bearbeiten</button>
                     <button class="mini-btn btn-del" onclick="deleteWord('${w.id}')">🗑️ Löschen</button>
@@ -144,52 +125,62 @@
         `).join('');
     }
 
-    // Datenbank komplett löschen
-    async function nukeDatabase() {
-        if(confirm("BIST DU SICHER? Alle Wörter in dieser Liste werden unwiderruflich gelöscht!")) {
-            const batch = db.batch();
-            allWords.forEach(w => {
-                batch.delete(db.collection(COLLECTIONS[currentCollIndex]).doc(w.id));
-            });
-            await batch.commit();
-            refreshData();
-            alert("Liste wurde geleert.");
+    function showTab(n) {
+        isChallenge = (n === 'challenge');
+        const tabs = ['add', 'quiz', 'list'];
+        tabs.forEach(t => document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = (n === t || (n === 'challenge' && t === 'quiz') ? 'block' : 'none'));
+        
+        document.getElementById('challengeHeader').style.display = isChallenge ? 'block' : 'none';
+        document.getElementById('tabQuiz').classList.toggle('challenge-mode', isChallenge);
+        
+        if(isChallenge) { score = 0; document.getElementById('currentScore').innerText = "0"; }
+        
+        document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+        const btnId = n === 'add' ? 'btn1' : n === 'quiz' ? 'btn2' : n === 'list' ? 'btn3' : 'btn4';
+        document.getElementById(btnId).classList.add('active');
+        
+        if(n === 'quiz' || n === 'challenge') nextQ();
+    }
+
+    function nextQ() {
+        if(allWords.length === 0) return;
+        curWord = allWords[Math.floor(Math.random()*allWords.length)];
+        document.getElementById('qMainText').innerText = curWord.de;
+        document.getElementById('qAns1').value = ""; document.getElementById('qAns2').value = "";
+        document.getElementById('qFeed').innerText = ""; 
+        document.getElementById('nextBtn').style.display="none";
+        document.getElementById('checkBtn').style.display="block";
+    }
+
+    function checkAns() {
+        const a1 = document.getElementById('qAns1').value.trim().toLowerCase();
+        const a2 = document.getElementById('qAns2').value.trim().toLowerCase();
+        const r1 = curWord.en.toLowerCase().split('/').map(s=>s.trim()).includes(a1);
+        const r2 = curWord.sv.toLowerCase().split('/').map(s=>s.trim()).includes(a2);
+        
+        if(r1 && r2) {
+            if(isChallenge) {
+                score += 100; document.getElementById('currentScore').innerText = score;
+                if(score > highscore) { highscore = score; localStorage.setItem('trainerHighscore', highscore); document.getElementById('highScoreDisplay').innerText = highscore; }
+                setTimeout(nextQ, 600);
+            } else {
+                document.getElementById('qFeed').style.color = "#48bb78";
+                document.getElementById('qFeed').innerText = "Richtig! ✨";
+                document.getElementById('nextBtn').style.display="block";
+                document.getElementById('checkBtn').style.display="none";
+            }
+        } else {
+            document.getElementById('qFeed').style.color = "#e53e3e";
+            document.getElementById('qFeed').innerText = `Lösung: ${curWord.en} / ${curWord.sv}`;
+            document.getElementById('nextBtn').style.display="block";
+            document.getElementById('checkBtn').style.display="none";
         }
     }
 
-    // CSV Export
-    function exportToCSV() {
-        let csv = "Deutsch;Englisch;Schwedisch\n";
-        allWords.forEach(w => { csv += `${w.de};${w.en};${w.sv}\n`; });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "vokabeln.csv";
-        link.click();
-    }
-
-    // Hilfsfunktionen (Speak, Listen, Tabs etc.)
     function speak(txt, lang) {
         const ut = new SpeechSynthesisUtterance(txt);
         ut.lang = lang === 'de' ? 'de-DE' : lang === 'en' ? 'en-US' : 'sv-SE';
         window.speechSynthesis.speak(ut);
-    }
-
-    function listen(lang, targetId, btn) {
-        const Recognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-        if (!Recognition) return alert("Browser nicht unterstützt");
-        const rec = new Recognition();
-        rec.lang = lang;
-        rec.onstart = () => btn.style.background = "#ff4d4d";
-        rec.onend = () => btn.style.background = "white";
-        rec.onresult = (e) => document.getElementById(targetId).value = e.results[0][0].transcript;
-        rec.start();
-    }
-
-    function showTab(n) {
-        ['add', 'quiz', 'list'].forEach(t => document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = (n === t ? 'block' : 'none'));
-        document.querySelectorAll('.nav button').forEach((b, i) => b.classList.toggle('active', i === (n === 'add' ? 0 : n === 'quiz' ? 1 : 2)));
-        if(n === 'quiz') nextQ();
     }
 
     function manualSave() {
