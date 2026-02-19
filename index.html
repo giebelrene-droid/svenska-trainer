@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -214,6 +214,8 @@
         <button class="action-btn" style="font-size:0.8em; background:#718096;" onclick="document.getElementById('importFile').click()">📂 Laden</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
     </div>
+    <div id="importStatus" style="color: #38b2ac; font-size: 0.9em; font-weight: bold; margin-top: 15px; display: none; text-align: center;"></div>
+    
     <button class="action-btn danger-btn" onclick="nukeDatabase()">⚠️ ALLES LÖSCHEN</button>
 </div>
 
@@ -223,7 +225,7 @@
 </div>
 
 <script>
-    const VERSION = "19.02.2026 - 16:15 (Mit Teilen-Funktion)";
+    const VERSION = "19.02.2026 - 16:15 (Mit Teilen-Funktion & Lade-Status)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -688,15 +690,57 @@
     function editWord(id) { const w = allWords.find(x=>x.id===id); document.getElementById('editId').value=w.id; document.getElementById('inDe').value=w.de; document.getElementById('inEn').value=w.en; document.getElementById('inSv').value=w.sv; document.getElementById('inEx').value=w.ex||""; document.getElementById('inDePast').value=w.deP||""; document.getElementById('inDeFut').value=w.deF||""; document.getElementById('inEnPast').value=w.enP||""; document.getElementById('inEnFut').value=w.enF||""; document.getElementById('inSvPast').value=w.svP||""; document.getElementById('inSvFut').value=w.svF||""; document.getElementById('addTitle').innerText="Bearbeiten"; document.getElementById('cancelEdit').style.display="block"; if(w.svP) document.getElementById('verbSection').style.display="block"; showTab('add'); }
     function del(id) { if(confirm("Löschen?")) db.collection(COLLECTIONS[currentCollIndex]).doc(id).delete().then(refreshData); }
     function exportData() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allWords)); const a = document.createElement('a'); a.href = d; a.download = "backup.json"; a.click(); }
-    function importData(e) { const f = e.target.files[0]; const r = new FileReader(); r.onload = async (ev) => { const data = JSON.parse(ev.target.result); for(let w of data) { if(!allWords.some(x => x.de === w.de)) await db.collection(COLLECTIONS[currentCollIndex]).add({...w, ts: firebase.firestore.FieldValue.serverTimestamp()}); } refreshData(); }; r.readAsText(f); }
     
-    // NEU: Teilen Funktion
+    // NEU: Überarbeitete Import-Funktion mit Status-Anzeige
+    function importData(e) { 
+        const f = e.target.files[0]; 
+        if (!f) return;
+        
+        const r = new FileReader(); 
+        const statusEl = document.getElementById('importStatus');
+        
+        // Zeige Lade-Status an
+        statusEl.style.color = "#e67e22";
+        statusEl.innerText = "⏳ Lade Datei und speichere... Bitte warten.";
+        statusEl.style.display = "block";
+
+        r.onload = async (ev) => { 
+            try {
+                const data = JSON.parse(ev.target.result); 
+                for(let w of data) { 
+                    if(!allWords.some(x => x.de === w.de)) {
+                        await db.collection(COLLECTIONS[currentCollIndex]).add({...w, ts: firebase.firestore.FieldValue.serverTimestamp()}); 
+                    }
+                } 
+                refreshData(); 
+                
+                // Erfolg melden
+                statusEl.style.color = "#38b2ac";
+                statusEl.innerText = "✅ Datei erfolgreich geladen! Du kannst jetzt weitere hochladen.";
+                
+                // Nach 5 Sekunden ausblenden
+                setTimeout(() => {
+                    statusEl.style.display = "none";
+                }, 5000);
+
+            } catch (error) {
+                // Fehler melden
+                statusEl.style.color = "#e53e3e";
+                statusEl.innerText = "❌ Fehler beim Laden der Datei. Falsches Format?";
+            }
+            
+            // WICHTIG: Setzt das Eingabefeld zurück, damit man die gleiche Datei nochmal laden kann
+            document.getElementById('importFile').value = "";
+        }; 
+        r.readAsText(f); 
+    }
+    
     function shareApp() {
         if (navigator.share) {
             navigator.share({
                 title: 'Family Trainer App',
                 text: 'Schau dir diesen tollen Vokabel-Trainer an!',
-                url: window.location.href // Teilt den aktuellen Link der App
+                url: window.location.href
             }).catch((error) => console.log('Fehler beim Teilen:', error));
         } else {
             alert('Teilen wird von diesem Gerät leider nicht direkt unterstützt. Kopiere einfach den Link aus der Suchleiste!');
