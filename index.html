@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 5.1 (Sätze prüfen)</title>
+    <title>Family Trainer 5.2 (Bessere Sätze & Layout Fix)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -37,20 +37,20 @@
         .settings-btn { background: var(--card-bg); border: 1px solid var(--border-soft); font-size: 1.3em; cursor: pointer; padding: 6px 12px; border-radius: 50%; box-shadow: var(--shadow-soft); color: var(--text); transition: all 0.2s; }
         .settings-btn:hover { background: #edf2f7; }
 
-        .nav { display: flex; gap: 8px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
-        .nav::-webkit-scrollbar { display: none; }
+        /* NAV: Angepasst für mehr Platz und Umbrüche */
+        .nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 25px; }
         .nav button { 
             background: transparent; 
-            flex: 1; 
-            padding: 10px 12px; 
+            flex: 1 1 calc(30% - 8px); 
+            padding: 10px 5px; 
             font-size: 12px; 
             color: var(--text-light); 
             border: 2px solid transparent; 
-            border-radius: 25px; 
+            border-radius: 15px; 
             cursor: pointer; 
             font-weight: 700; 
-            white-space: nowrap; 
-            min-width: 70px;
+            white-space: normal; 
+            min-width: 80px;
             transition: all 0.2s;
         }
         .nav button.active { 
@@ -94,9 +94,9 @@
         .action-btn[style*="background:#a0aec0"], 
         .action-btn[style*="background:#718096"],
         .action-btn[style*="background:#4a5568"],
-        .action-btn[style*="background:#cbd5e0"] { background: #e2e8f0 !important; color: var(--text) !important; }
+        .action-btn[style*="background:#cbd5e0"],
+        .action-btn[style*="background:#e2e8f0"] { background: #e2e8f0 !important; color: var(--text) !important; }
         .action-btn[style*="background:var(--accent)"] { background: var(--accent) !important; color: var(--text) !important; } 
-
 
         .mic-btn, .speaker-btn, .clear-btn { background: white; border: 2px solid var(--border-soft); font-size: 15px; cursor: pointer; border-radius: 10px; padding: 10px; min-width: 40px;color: var(--text-light); transition: all 0.2s; }
         .mic-btn:hover, .speaker-btn:hover { border-color: var(--primary); color: var(--primary); }
@@ -219,7 +219,7 @@
     
     <label>Mein Satz (Deutsch)</label>
     <div class="input-row">
-        <textarea id="sentBase" rows="2" placeholder="z. B. Heute gehen wir in den Wald spazieren."></textarea>
+        <textarea id="sentBase" rows="2" placeholder="z. B. Warst du gestern einkaufen?"></textarea>
         <button class="mic-btn" onclick="listen(1, 'sentBase', this)" style="height: 100%;">🎤</button>
     </div>
 
@@ -345,7 +345,7 @@
 </div>
 
 <script>
-    const VERSION = "20.02.2026 (Sätze prüfen & Smart Pool)";
+    const VERSION = "5.2 (Sätze & Layout Fix)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -495,7 +495,6 @@
     
     function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; } const rec = new SpeechRecognition(); const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3); rec.lang = LANGS[langKey].tts; btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; btn.classList.remove('mic-active'); }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
     
-    // NEU: Mikrofon für den Sätze-Tab
     function listenAttempt(targetId, btn) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; }
@@ -519,13 +518,19 @@
         return c;
     }
 
+    // NEU: Google Translate API (viel bessere Qualität bei ganzen Sätzen)
     async function translate(txt, src, tgt) {
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
-        const response = await fetch(url); const data = await response.json();
-        return data.responseData.translatedText;
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${src}&tl=${tgt}&dt=t&q=${encodeURIComponent(txt)}`;
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            return data[0].map(item => item[0]).join('');
+        } catch (error) {
+            console.error(error);
+            return "Übersetzungsfehler";
+        }
     }
 
-    // NEU: Sätze übersetzen
     async function checkSentence() {
         const base = document.getElementById('sentBase').value.trim();
         const tgtLang = document.getElementById('sentTargetLang').value; 
