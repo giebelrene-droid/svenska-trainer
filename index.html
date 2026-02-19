@@ -3,81 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.1.2 (Teilen-Funktion)</title>
+    <title>Family Trainer 5.0 (Schweden-Style & Smart Pool)</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👑</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
-        :root { --primary: #005293; --accent: #FECC00; --bg: #f4f7f9; --text: #1a2b3c; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; color: var(--text); max-width: 500px; margin: 0 auto; padding-bottom: 40px; }
+        /* --- NEUES SCHWEDEN-DESIGN (Scandi-Style) --- */
+        :root {
+            --primary: #006aa7; /* Schwedisches Blau, etwas weicher */
+            --accent: #fecc00;  /* Schwedisches Gelb, warm */
+            --bg: #f4f6f8;      /* Sehr heller, kühler Hintergrund */
+            --card-bg: #ffffff; /* Reines Weiß für Karten */
+            --text: #2d3748;    /* Weiches Dunkelgrau statt Schwarz */
+            --text-light: #718096; /* Helleres Grau für Labels etc. */
+            --border-soft: #e2e8f0; /* Subtile Ränder */
+            --shadow-soft: 0 4px 12px rgba(0,0,0,0.05); /* Sehr weicher Schatten */
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: var(--bg);
+            padding: 20px;
+            color: var(--text);
+            max-width: 500px;
+            margin: 0 auto;
+            padding-bottom: 50px;
+            line-height: 1.5;
+        }
         
-        /* HEADER */
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .badge { background: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.85em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .settings-btn { background: white; border: none; font-size: 1.2em; cursor: pointer; padding: 5px 10px; border-radius: 50%; }
+        /* HEADER - Minimalistischer */
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .badge { background: var(--card-bg); padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.85em; box-shadow: var(--shadow-soft); border: 1px solid var(--border-soft); }
+        .settings-btn { background: var(--card-bg); border: 1px solid var(--border-soft); font-size: 1.3em; cursor: pointer; padding: 6px 12px; border-radius: 50%; box-shadow: var(--shadow-soft); color: var(--text); transition: all 0.2s; }
+        .settings-btn:hover { background: #edf2f7; }
+
+        /* NAV - Skandinavisch klar */
+        .nav { display: flex; gap: 8px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .nav::-webkit-scrollbar { display: none; }
+        .nav button { 
+            background: transparent; 
+            flex: 1; 
+            padding: 10px 12px; 
+            font-size: 12px; 
+            color: var(--text-light); 
+            border: 2px solid transparent; /* Platzhalter für Border */
+            border-radius: 25px; /* Pillenform */
+            cursor: pointer; 
+            font-weight: 700; 
+            white-space: nowrap; 
+            min-width: 70px;
+            transition: all 0.2s;
+        }
+        .nav button.active { 
+            background: var(--primary); 
+            color: white; 
+            box-shadow: 0 4px 10px rgba(0, 106, 167, 0.2);
+            border-color: var(--primary);
+        }
+        .nav button:hover:not(.active) { background: #e2e8f0; color: var(--text); }
         
-        /* NAV */
-        .nav { display: flex; gap: 5px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .nav button { background: #d1dce5; flex: 1; padding: 10px; font-size: 11px; color: #4a627a; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; min-width: 70px; }
-        .nav button.active { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 82, 147, 0.3); }
+        /* CARDS - Flacher und heller */
+        .card { 
+            background: var(--card-bg); 
+            padding: 25px; 
+            border-radius: 20px; 
+            box-shadow: var(--shadow-soft); 
+            margin-bottom: 25px; 
+            position: relative;
+            border: 1px solid var(--border-soft); /* Feiner Rand statt starkem Schatten */
+        }
+        h2 { color: var(--text); margin-top: 0; font-size: 1.4em; font-weight: 700; letter-spacing: -0.5px; }
+        label { display: block; font-size: 0.75em; font-weight: 700; color: var(--text-light); margin: 12px 0 4px 4px; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        /* CARDS */
-        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; }
-        h2 { color: var(--primary); margin-top: 0; font-size: 1.2em; font-weight: 800; }
-        label { display: block; font-size: 0.7em; font-weight: 700; color: #7f8c8d; margin: 10px 0 3px 3px; text-transform: uppercase; }
+        /* INPUTS - Clean look */
+        .input-row { display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 8px; }
+        input, select { 
+            flex: 1; 
+            padding: 14px; 
+            background: #f8fafc; 
+            border: 2px solid var(--border-soft); 
+            border-radius: 12px; 
+            font-size: 16px; 
+            width: 100%; 
+            box-sizing: border-box;
+            color: var(--text);
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--primary); background: white; outline: none; }
         
-        .input-row { display: flex; align-items: center; gap: 5px; width: 100%; margin-bottom: 5px; }
-        input, select { flex: 1; padding: 12px; background: #f8fafc; border: 2px solid #edf2f7; border-radius: 12px; font-size: 16px; width: 100%; box-sizing: border-box; }
-        input:focus { border-color: var(--primary); background: white; outline: none; }
-        
-        /* BUTTONS */
-        .action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        .mic-btn, .speaker-btn, .clear-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; min-width: 35px; }
-        .clear-btn { color: #e53e3e; font-weight: bold; background: #fff5f5; border-color: #feb2b2; }
-        .mic-active { background: #feb2b2 !important; border-color: #e53e3e !important; animation: pulse 1s infinite; }
-        .list-btn { background: #edf2f7; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-left: 5px; font-size: 12px; }
-        .danger-btn { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; margin-top: 10px; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        /* BUTTONS - Freundlicher */
+        .action-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 16px; cursor: pointer; font-weight: 700; font-size: 16px; margin-top: 12px; transition: transform 0.1s, background-color 0.2s; }
+        .action-btn:active { transform: scale(0.98); }
+        /* Sekundäre Buttons heller machen */
+        .action-btn[style*="background:#a0aec0"], 
+        .action-btn[style*="background:#718096"],
+        .action-btn[style*="background:#4a5568"],
+        .action-btn[style*="background:#cbd5e0"] { background: #e2e8f0 !important; color: var(--text) !important; }
+        .action-btn[style*="background:#e67e22"] { background: var(--accent) !important; color: var(--text) !important; } /* Übersetzen-Button in Akzentfarbe */
+
+
+        .mic-btn, .speaker-btn, .clear-btn { background: white; border: 2px solid var(--border-soft); font-size: 15px; cursor: pointer; border-radius: 10px; padding: 10px; min-width: 40px;color: var(--text-light); transition: all 0.2s; }
+        .mic-btn:hover, .speaker-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .clear-btn { color: #e53e3e; background: #fff5f5; border-color: #feb2b2; font-weight: bold;}
+        .clear-btn:hover { background: #fee2e2; }
+        .mic-active { background: #fee2e2 !important; border-color: #e53e3e !important; color: #e53e3e !important; animation: pulse 1s infinite; }
+        .list-btn { background: #edf2f7; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; margin-left: 5px; font-size: 13px; color: var(--text-light); transition: background 0.2s; }
+        .list-btn:hover { background: #e2e8f0; color: var(--text); }
+        .danger-btn { background: #fff5f5 !important; color: #e53e3e !important; border: 2px solid #feb2b2 !important; margin-top: 20px;}
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
         /* VERB SECTION */
-        .verb-section { background: #edf2f7; padding: 12px; border-radius: 12px; margin-top: 15px; display: none; }
-        .verb-lang-group { margin-bottom: 12px; border-bottom: 1px solid #dce4ea; padding-bottom: 8px; }
-        .verb-row { display: flex; gap: 8px; }
-        .verb-row input { font-size: 0.85em; padding: 8px; }
+        .verb-section { background: #f1f5f9; padding: 15px; border-radius: 16px; margin-top: 20px; display: none; border: 1px solid var(--border-soft); }
+        .verb-lang-group { margin-bottom: 15px; border-bottom: 1px solid var(--border-soft); padding-bottom: 10px; }
+        .verb-row { display: flex; gap: 10px; }
+        .verb-row input { font-size: 0.9em; padding: 10px; background: white;}
         
         /* QUIZ & LIST */
-        .feedback-card { text-align: left; background: white; padding: 15px; border-radius: 12px; margin-top: 15px; border: solid 1px #e2e8f0; }
-        .word-item { padding: 16px; border-bottom: 1px solid #f1f5f9; position: relative; }
-        .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+        .feedback-card { text-align: left; background: white; padding: 20px; border-radius: 16px; margin-top: 20px; border: 2px solid var(--border-soft); box-shadow: var(--shadow-soft); }
+        .word-item { padding: 18px 10px; border-bottom: 1px solid var(--border-soft); position: relative; display: flex; flex-direction: column; gap: 5px; }
+        .word-item:last-child { border-bottom: none; }
+        .level-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 10px; flex-shrink: 0;}
         .lvl-0 { background: #cbd5e0; } .lvl-1 { background: var(--accent); } .lvl-2 { background: #48bb78; } .lvl-3 { background: var(--primary); }
-        .lang-tag { font-weight: bold; color: var(--primary); margin-right: 5px; width: 25px; display: inline-block; text-align: center; }
+        .lang-tag { font-weight: 700; color: var(--text); margin-right: 8px; font-size: 1.1em; display: inline-block; width: 25px; text-align: center;}
         
-        .correct { background-color: #e6fffa !important; border-color: #38b2ac !important; }
-        .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
-        .challenge-mode { border: 2px solid #e53e3e; }
+        .correct { background-color: #f0fff4 !important; border-color: #48bb78 !important; color: #2f855a !important; }
+        .wrong { background-color: #fff5f5 !important; border-color: #e53e3e !important; color: #c53030 !important; }
+        .challenge-mode { border: 3px solid #e53e3e; }
 
-        /* BUCHSTABEN-POOL (ÜBEN) */
-        .letter-pool { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; margin-top: 5px; justify-content: center; }
-        .letter-btn { background: #e2e8f0; border: none; border-radius: 8px; padding: 8px 14px; font-size: 1.2em; font-weight: bold; cursor: pointer; color: var(--primary); transition: transform 0.1s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .letter-btn:active { transform: scale(0.9); background: #cbd5e0; }
+        /* --- NEUE STYLES FÜR DEN BUCHSTABEN-POOL --- */
+        .letter-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; margin-top: 10px; justify-content: center; }
+        .letter-btn { 
+            background: white; 
+            border: 2px solid var(--border-soft); 
+            border-radius: 12px; 
+            padding: 10px 16px; 
+            font-size: 1.2em; 
+            font-weight: 700; 
+            cursor: pointer; 
+            color: var(--text); 
+            transition: all 0.15s; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+        }
+        .letter-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+        .letter-btn:active { transform: scale(0.95) translateY(0); }
+        
+        /* Der Stil für benutzte Buchstaben (ausgegraut) */
+        .letter-btn.used {
+            background: #edf2f7;
+            color: #a0aec0;
+            border-color: #edf2f7;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none;
+        }
+        /* ----------------------------------------- */
 
         /* FOOTER VERSION & SHARE */
-        .footer-area { text-align: center; margin-top: 30px; }
-        .share-btn { background: #38b2ac; color: white; border: none; border-radius: 20px; padding: 10px 20px; font-size: 0.9em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(56, 178, 172, 0.3); margin-bottom: 15px; display: inline-block; }
-        .footer-version { font-size: 0.75em; color: #a0aec0; font-weight: bold; letter-spacing: 1px; }
+        .footer-area { text-align: center; margin-top: 40px; }
+        .share-btn { background: var(--primary); color: white; border: none; border-radius: 25px; padding: 12px 24px; font-size: 1em; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 106, 167, 0.3); margin-bottom: 20px; display: inline-block; transition: transform 0.2s; }
+        .share-btn:hover { transform: translateY(-2px); }
+        .footer-version { font-size: 0.8em; color: var(--text-light); font-weight: 600; letter-spacing: 1px; text-transform: uppercase;}
 
-        /* SETTINGS OVERLAY */
-        #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; }
-        .settings-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 380px; max-height: 90vh; overflow-y: auto; }
-        .rename-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
+        /* SETTINGS OVERLAY - Heller */
+        #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(45, 55, 72, 0.6); display: none; z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .settings-box { background: var(--card-bg); padding: 30px; border-radius: 24px; width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .rename-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .rename-row span { font-weight: bold; color: var(--primary); width: 25px;}
 
-        #debugBox { background: #1a202c; color: #48bb78; padding: 12px; border-radius: 12px; font-family: monospace; font-size: 11px; margin-bottom: 15px; display: none; border: 1px solid #2d3748; white-space: pre-wrap; margin-top: 15px;}
+        #debugBox { background: #2d3748; color: #68d391; padding: 15px; border-radius: 12px; font-family: 'Fira Code', monospace; font-size: 11px; margin-bottom: 20px; display: none; border: 1px solid #4a5568; white-space: pre-wrap; margin-top: 20px;}
         
         /* VOICE SELECTS */
-        .voice-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-        .voice-row select { font-size: 0.8em; padding: 8px; background: white; }
+        .voice-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .voice-row select { font-size: 0.85em; padding: 10px; background: white; }
+        
+        /* STUDY TAB Styling Adjustments */
+        #studySearch { border-radius: 25px; padding: 12px 20px; border: 2px solid var(--border-soft); }
+        #studySearch:focus { border-color: var(--primary); }
+        #studyContainer { background: white; border: none; box-shadow: var(--shadow-soft); padding: 20px; }
+        hr { border-color: var(--border-soft); opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -86,28 +191,28 @@
     <div class="settings-box">
         <h2>⚙️ Einstellungen</h2>
         <label>👤 Aktiver Benutzer</label>
-        <select id="selUser" onchange="switchUser()" style="width:100%; padding:10px; margin-bottom:15px; font-weight:bold;"></select>
+        <select id="selUser" onchange="switchUser()" style="width:100%; padding:12px; margin-bottom:20px; font-weight:bold; border: 2px solid var(--primary);"></select>
         
-        <div style="background:#f7fafc; padding:15px; border-radius:10px; border:1px solid #edf2f7; margin-bottom:15px;">
-            <p style="font-size:0.7em; font-weight:800; color:#7f8c8d; margin-top:0;">BENUTZER UMBENENNEN</p>
+        <div style="background:#f8fafc; padding:20px; border-radius:16px; border:1px solid var(--border-soft); margin-bottom:20px;">
+            <p style="font-size:0.75em; font-weight:800; color:var(--text-light); margin-top:0; letter-spacing: 0.5px;">BENUTZER UMBENENNEN</p>
             <div id="renameContainer"></div>
         </div>
         
         <label>Sprachen</label>
-        <div style="display:flex; gap:5px; margin-bottom: 15px;">
+        <div style="display:flex; gap:10px; margin-bottom: 20px;">
             <select id="selL1" onchange="langChanged()"></select>
             <select id="selL2" onchange="langChanged()"></select>
             <select id="selL3" onchange="langChanged()"></select>
         </div>
 
         <label>Stimmen (Aussprache)</label>
-        <div style="background:#edf2f7; padding:12px; border-radius:10px; margin-bottom:15px;">
+        <div style="background:#f8fafc; padding:15px; border-radius:16px; border:1px solid var(--border-soft); margin-bottom:20px;">
             <div class="voice-row"><span id="flagV1" class="lang-tag"></span> <select id="selVoiceL1" onchange="saveSettings()"></select></div>
             <div class="voice-row"><span id="flagV2" class="lang-tag"></span> <select id="selVoiceL2" onchange="saveSettings()"></select></div>
             <div class="voice-row"><span id="flagV3" class="lang-tag"></span> <select id="selVoiceL3" onchange="saveSettings()"></select></div>
         </div>
 
-        <label style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">🔧 KI-Diagnose</label>
+        <label style="margin-top:25px; border-top:1px solid var(--border-soft); padding-top:15px;">🔧 KI-Diagnose</label>
         <div id="debugBox"></div>
 
         <button class="action-btn" onclick="closeSettings()">Fertig</button>
@@ -129,24 +234,24 @@
 </div>
 
 <div id="tabStudy" class="card" style="display:none">
-    <div style="text-align:center;">
-        <p style="color:#888; font-size:0.8em; margin:0; text-transform:uppercase; font-weight:bold;">VOKABELN LERNEN & SUCHEN</p>
-        <input type="text" id="studySearch" placeholder="🔍 Wort suchen (Deutsch, Englisch, Schwedisch)..." oninput="filterStudyWords()" style="width: 100%; padding: 10px; margin-top: 10px; margin-bottom: 10px; border-radius: 10px; border: 2px solid #edf2f7; font-size: 14px;">
-        <div id="studyWordCount" style="font-size:0.85em; color:var(--primary); font-weight:bold; margin-bottom: 15px;">0 / 0</div>
+    <div style="text-align:center; margin-bottom: 20px;">
+        <p style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">VOKABELN LERNEN & SUCHEN</p>
+        <input type="text" id="studySearch" placeholder="🔍 Suchen..." oninput="filterStudyWords()" style="width: 100%; margin-top: 15px; margin-bottom: 10px; font-size: 16px;">
+        <div id="studyWordCount" style="font-size:0.9em; color:var(--primary); font-weight:700;">0 / 0</div>
     </div>
     
-    <div id="studyContainer" style="background:#f8fafc; padding: 25px 15px; border-radius: 15px; border: 2px solid #edf2f7; text-align: left; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+    <div id="studyContainer" style="border-radius: 16px; text-align: left; margin-bottom: 25px;">
     </div>
 
-    <div style="display: flex; gap: 10px;">
-        <button class="action-btn" style="background:#a0aec0; flex:1;" onclick="prevStudyWord()">⬅️ ZURÜCK</button>
-        <button class="action-btn" style="flex:1;" onclick="nextStudyWord()">WEITER ➡️</button>
+    <div style="display: flex; gap: 15px;">
+        <button class="action-btn" style="background:#e2e8f0; color:var(--text); flex:1;" onclick="prevStudyWord()">⬅️ Zurück</button>
+        <button class="action-btn" style="flex:1;" onclick="nextStudyWord()">Weiter ➡️</button>
     </div>
 </div>
 
 <div id="tabAdd" class="card">
     <h2 id="addTitle">Neues Wort</h2>
-    <div id="loader" style="color:var(--primary); text-align:center; display:none; font-weight:bold;">🤖 KI arbeitet...</div>
+    <div id="loader" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI arbeitet...</div>
     <input type="hidden" id="editId">
     
     <label id="lblIn1">L1</label>
@@ -159,28 +264,33 @@
     <label>Beispielsatz</label>
     <input type="text" id="inEx" placeholder="...">
     
-    <button class="action-btn" style="background:#4a5568; font-size:0.8em; padding:10px;" onclick="toggleVerbSection()">📝 Verb-Details</button>
+    <button class="action-btn" style="background:#e2e8f0; color:var(--text); font-size:0.9em; padding:12px;" onclick="toggleVerbSection()">📝 Verb-Details anzeigen</button>
     
     <div id="verbSection" class="verb-section">
         <div class="verb-lang-group"><label id="vt1">L1</label><div class="verb-row"><input type="text" id="inDePast" placeholder="Er..."><input type="text" id="inDeFut" placeholder="Er wird..."></div></div>
         <div class="verb-lang-group"><label id="vt2">L2</label><div class="verb-row"><input type="text" id="inEnPast" placeholder="He..."><input type="text" id="inEnFut" placeholder="He will..."></div></div>
         <div class="verb-lang-group"><label id="vt3">L3</label><div class="verb-row"><input type="text" id="inSvPast" placeholder="Han..."><input type="text" id="inSvFut" placeholder="Han kommer att..."></div></div>
-        <button class="action-btn" style="background:#e67e22; font-size:0.9em; margin-top:5px;" onclick="fetchVerbForms()">⚡ Formen suchen</button>
+        <button class="action-btn" style="background:var(--accent); color:var(--text); font-size:0.95em; margin-top:10px;" onclick="fetchVerbForms()">⚡ Formen automatisch suchen</button>
     </div>
 
-    <button class="action-btn" onclick="handleSmartTranslate()" style="background:#e67e22; margin-top:15px;">1. Übersetzen</button>
-    <button class="action-btn" style="background:#48bb78" onclick="manualSave()">2. Speichern</button>
-    <button class="action-btn" style="background:#cbd5e0; color:#333; margin-top:15px;" onclick="clearInputs()">Leeren</button>
-    <button id="cancelEdit" class="action-btn" style="background:#718096; display:none;" onclick="resetForm()">Abbrechen</button>
+    <div style="display: flex; gap: 10px; margin-top: 25px;">
+        <button class="action-btn" onclick="handleSmartTranslate()" style="background:var(--accent); color:var(--text); flex:1;">1. Übersetzen</button>
+        <button class="action-btn" style="flex:1;" onclick="manualSave()">2. Speichern</button>
+    </div>
+    <button class="action-btn" style="background:#e2e8f0; color:var(--text); margin-top:15px;" onclick="clearInputs()">Felder leeren</button>
+    <button id="cancelEdit" class="action-btn" style="background:var(--text-light); display:none;" onclick="resetForm()">Abbrechen</button>
 </div>
 
 <div id="tabQuiz" class="card" style="display:none">
-    <div style="text-align:center;">
-        <div id="audioModeToggle" style="font-size:0.8em; font-weight:bold; color:var(--primary); cursor:pointer; margin-bottom:10px;" onclick="toggleAudioMode()">🔈 AUDIO: AUS</div>
-        <div id="timer" style="display:none; font-size:1.5em; font-weight:bold; color:#e53e3e;">⚡ SPIEL</div>
-        <p style="color:#888; font-size:0.8em; margin:0;">WAS HEISST...?</p>
-        <h1 id="qMainText" style="margin:5px 0; color:var(--primary);">---</h1>
-        <button class="speaker-btn" id="spkMain">🔊</button>
+    <div style="text-align:center; margin-bottom: 20px;">
+        <div id="audioModeToggle" style="font-size:0.85em; font-weight:700; color:var(--primary); cursor:pointer; margin-bottom:15px; display: inline-block; padding: 5px 10px; background: #eef2f6; border-radius: 15px;" onclick="toggleAudioMode()">🔈 AUDIO: AUS</div>
+        <div id="timer" style="display:none; font-size:1.8em; font-weight:800; color:#e53e3e; margin-bottom: 10px;">⚡ SPIEL</div>
+        <p style="color:var(--text-light); font-size:0.8em; margin:0; font-weight: 700; letter-spacing: 1px;">WAS HEISST...?</p>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+             <h1 id="qMainText" style="margin:10px 0; color:var(--primary); font-size: 2em;">---</h1>
+             <button class="speaker-btn" id="spkMain" style="font-size: 1.2em;">🔊</button>
+        </div>
+       
     </div>
     
     <label id="lblAns1">ANTWORT 1</label>
@@ -188,7 +298,7 @@
         <input type="text" id="qAns1">
         <button class="mic-btn" id="micAns1">🎤</button>
         <button class="speaker-btn" id="spkAns1">🔊</button>
-        <button class="clear-btn" onclick="document.getElementById('qAns1').value=''">⌫</button>
+        <button class="clear-btn" onclick="clearFieldAndPool('qAns1', 'poolAns1')">⌫</button>
     </div>
     <div id="poolAns1" class="letter-pool"></div>
 
@@ -197,24 +307,24 @@
         <input type="text" id="qAns2" onkeypress="if(event.key==='Enter') checkAns()">
         <button class="mic-btn" id="micAns2">🎤</button>
         <button class="speaker-btn" id="spkAns2">🔊</button>
-        <button class="clear-btn" onclick="document.getElementById('qAns2').value=''">⌫</button>
+        <button class="clear-btn" onclick="clearFieldAndPool('qAns2', 'poolAns2')">⌫</button>
     </div>
     <div id="poolAns2" class="letter-pool"></div>
     
-    <button class="action-btn" onclick="checkAns()" id="checkBtn">PRÜFEN</button>
+    <button class="action-btn" onclick="checkAns()" id="checkBtn" style="margin-top: 25px;">PRÜFEN</button>
     <div id="qFeed"></div>
-    <button class="action-btn" style="background:#718096; display:none;" id="nextBtn" onclick="nextQ()">WEITER ➡️</button>
+    <button class="action-btn" style="background:#e2e8f0; color:var(--text); display:none; margin-top: 25px;" id="nextBtn" onclick="nextQ()">NÄCHSTES WORT ➡️</button>
 </div>
 
 <div id="tabList" class="card" style="display:none">
     <h2>Vokabelheft</h2>
     <div id="listCont"></div>
-    <div style="margin-top:20px; display:flex; gap:10px;">
-        <button class="action-btn" style="font-size:0.8em; background:#718096;" onclick="exportData()">💾 Backup</button>
-        <button class="action-btn" style="font-size:0.8em; background:#718096;" onclick="document.getElementById('importFile').click()">📂 Laden</button>
+    <div style="margin-top:30px; display:flex; gap:15px;">
+        <button class="action-btn" style="font-size:0.9em; background:#e2e8f0; color: var(--text); flex:1;" onclick="exportData()">💾 Backup speichern</button>
+        <button class="action-btn" style="font-size:0.9em; background:#e2e8f0; color: var(--text); flex:1;" onclick="document.getElementById('importFile').click()">📂 Backup laden</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
     </div>
-    <div id="importStatus" style="color: #38b2ac; font-size: 0.9em; font-weight: bold; margin-top: 15px; display: none; text-align: center;"></div>
+    <div id="importStatus" style="color: var(--primary); font-size: 0.95em; font-weight: 700; margin-top: 20px; display: none; text-align: center; padding: 10px; background: #eef2f6; border-radius: 12px;"></div>
     
     <button class="action-btn danger-btn" onclick="nukeDatabase()">⚠️ ALLES LÖSCHEN</button>
 </div>
@@ -225,7 +335,7 @@
 </div>
 
 <script>
-    const VERSION = "19.02.2026 - 16:15 (Mit Teilen-Funktion & Lade-Status)";
+    const VERSION = "20.02.2026 (Schweden-Design & Smart Pool)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -484,13 +594,17 @@
     function renderList() {
         document.getElementById('listCont').innerHTML = allWords.map(w => `
             <div class="word-item">
-                <span class="level-dot lvl-${w.level||0}"></span> 
-                <b>${w.de}</b>
-                <div><span class="lang-tag">${LANGS[conf.l3].flag}</span> ${w.sv} <button class="speaker-btn" onclick="speak('${w.sv}','${conf.l3}')">🔊</button></div>
-                <div><span class="lang-tag">${LANGS[conf.l2].flag}</span> ${w.en} <button class="speaker-btn" onclick="speak('${w.en}','${conf.l2}')">🔊</button></div>
-                <div style="position:absolute; right:10px; top:10px;">
-                    <button class="list-btn" onclick="editWord('${w.id}')">✎</button> 
-                    <button class="list-btn" onclick="del('${w.id}')">X</button>
+                <div style="display:flex; align-items:center;">
+                    <span class="level-dot lvl-${w.level||0}"></span> 
+                    <b style="font-size:1.2em; color:var(--text);">${w.de}</b>
+                </div>
+                <div style="margin-left:22px;">
+                    <div style="display:flex; align-items:center; margin-top:5px;"><span class="lang-tag">${LANGS[conf.l3].flag}</span> ${w.sv} <button class="speaker-btn" onclick="speak('${w.sv}','${conf.l3}')" style="padding:6px; font-size:12px; margin-left:10px;">🔊</button></div>
+                    <div style="display:flex; align-items:center; margin-top:5px;"><span class="lang-tag">${LANGS[conf.l2].flag}</span> ${w.en} <button class="speaker-btn" onclick="speak('${w.en}','${conf.l2}')" style="padding:6px; font-size:12px; margin-left:10px;">🔊</button></div>
+                </div>
+                <div style="position:absolute; right:10px; top:15px;">
+                    <button class="list-btn" onclick="editWord('${w.id}')">✎ Bearbeiten</button> 
+                    <button class="list-btn" onclick="del('${w.id}')" style="color:#e53e3e;">X</button>
                 </div>
             </div>`).join('');
     }
@@ -544,7 +658,7 @@
 
     function renderStudyWord() {
         if(studyWords.length === 0) {
-            document.getElementById('studyContainer').innerHTML = "<p>Keine passenden Vokabeln gefunden.</p>";
+            document.getElementById('studyContainer').innerHTML = "<p style='text-align:center; color:var(--text-light); font-weight:600;'>Keine passenden Vokabeln gefunden.</p>";
             document.getElementById('studyWordCount').innerText = "0 / 0";
             return;
         }
@@ -555,30 +669,30 @@
         const w = studyWords[studyIndex];
         document.getElementById('studyWordCount').innerText = `Wort ${studyIndex + 1} von ${studyWords.length}`;
         
-        const vL2 = w.enP ? `<div style="font-size:0.65em; color:#718096; margin-top:5px; margin-left:45px;">🕒 ${w.enP} | 🔮 ${w.enF}</div>` : "";
-        const vL3 = w.svP ? `<div style="font-size:0.65em; color:#718096; margin-top:5px; margin-left:45px;">🕒 ${w.svP} | 🔮 ${w.svF}</div>` : "";
+        const vL2 = w.enP ? `<div style="font-size:0.75em; color:var(--text-light); margin-top:8px; margin-left:45px; font-weight:600;">🕒 ${w.enP} | 🔮 ${w.enF}</div>` : "";
+        const vL3 = w.svP ? `<div style="font-size:0.75em; color:var(--text-light); margin-top:8px; margin-left:45px; font-weight:600;">🕒 ${w.svP} | 🔮 ${w.svF}</div>` : "";
 
         const html = `
-            <div style="margin-bottom:25px; display:flex; align-items:center;">
-                <span class="lang-tag" style="font-size:1.4em; margin-right:15px;">${LANGS[conf.l1].flag}</span>
-                <b style="font-size:1.5em; color:var(--primary); flex:1;">${w.de}</b>
-                <button class="speaker-btn" onclick="speak('${w.de}','${conf.l1}')" style="font-size:1.4em; padding:10px 15px;">🔊</button>
+            <div style="margin-bottom:30px; display:flex; align-items:center;">
+                <span class="lang-tag" style="font-size:1.5em; margin-right:15px;">${LANGS[conf.l1].flag}</span>
+                <b style="font-size:1.8em; color:var(--primary); flex:1;">${w.de}</b>
+                <button class="speaker-btn" onclick="speak('${w.de}','${conf.l1}')" style="font-size:1.4em; padding:12px 18px;">🔊</button>
             </div>
-            <hr style="border:0; border-top:1px solid #e2e8f0; margin-bottom:25px;">
-            <div style="margin-bottom:25px;">
+            <hr style="border:0; border-top:1px solid var(--border-soft); margin-bottom:30px;">
+            <div style="margin-bottom:30px;">
                 <div style="display:flex; align-items:center;">
-                    <span class="lang-tag" style="font-size:1.4em; margin-right:15px;">${LANGS[conf.l2].flag}</span>
-                    <b style="font-size:1.5em; color:#2d3748; flex:1;">${w.en}</b>
-                    <button class="speaker-btn" onclick="speak('${w.en}','${conf.l2}')" style="font-size:1.4em; padding:10px 15px;">🔊</button>
+                    <span class="lang-tag" style="font-size:1.5em; margin-right:15px;">${LANGS[conf.l2].flag}</span>
+                    <b style="font-size:1.8em; color:var(--text); flex:1;">${w.en}</b>
+                    <button class="speaker-btn" onclick="speak('${w.en}','${conf.l2}')" style="font-size:1.4em; padding:12px 18px;">🔊</button>
                 </div>
                 ${vL2}
             </div>
-            <hr style="border:0; border-top:1px solid #e2e8f0; margin-bottom:25px;">
+            <hr style="border:0; border-top:1px solid var(--border-soft); margin-bottom:30px;">
             <div>
                 <div style="display:flex; align-items:center;">
-                    <span class="lang-tag" style="font-size:1.4em; margin-right:15px;">${LANGS[conf.l3].flag}</span>
-                    <b style="font-size:1.5em; color:#2d3748; flex:1;">${w.sv}</b>
-                    <button class="speaker-btn" onclick="speak('${w.sv}','${conf.l3}')" style="font-size:1.4em; padding:10px 15px;">🔊</button>
+                    <span class="lang-tag" style="font-size:1.5em; margin-right:15px;">${LANGS[conf.l3].flag}</span>
+                    <b style="font-size:1.8em; color:var(--text); flex:1;">${w.sv}</b>
+                    <button class="speaker-btn" onclick="speak('${w.sv}','${conf.l3}')" style="font-size:1.4em; padding:12px 18px;">🔊</button>
                 </div>
                 ${vL3}
             </div>
@@ -588,6 +702,8 @@
 
     function nextStudyWord() { studyIndex++; renderStudyWord(); }
     function prevStudyWord() { studyIndex--; renderStudyWord(); }
+
+    // --- NEUE FUNKTIONEN FÜR DEN BUCHSTABEN-POOL ---
 
     function renderLetterPool(text, poolDivId, inputId) {
         const pool = document.getElementById(poolDivId);
@@ -601,11 +717,37 @@
         
         let html = chars.map(c => {
             let displayChar = c === ' ' ? '␣' : c; 
-            let safeC = c.replace(/'/g, "\\'"); 
-            return `<button class="letter-btn" onclick="document.getElementById('${inputId}').value += '${safeC}'">${displayChar}</button>`;
+            let safeC = c.replace(/'/g, "\\'");
+            // NEU: Ruft jetzt useLetter auf und übergibt 'this' (den Button selbst)
+            return `<button class="letter-btn" onclick="useLetter(this, '${safeC}', '${inputId}')">${displayChar}</button>`;
         }).join('');
         pool.innerHTML = html;
     }
+
+    // NEU: Verarbeitet den Klick auf einen Buchstaben
+    function useLetter(btnElem, letter, inputId) {
+        // Prüfen, ob der Button schon benutzt wurde (Sicherheitsnetz)
+        if(btnElem.classList.contains('used')) return;
+
+        // 1. Buchstaben ins Inputfeld einfügen
+        document.getElementById(inputId).value += letter;
+
+        // 2. Button deaktivieren (visuell grau machen)
+        btnElem.classList.add('used');
+    }
+
+    // NEU: Leert das Feld UND setzt die Buchstaben-Buttons zurück
+    function clearFieldAndPool(inputId, poolId) {
+        // Input leeren
+        document.getElementById(inputId).value = '';
+
+        // Pool Buttons zurücksetzen (die Klasse 'used' entfernen)
+        const poolBtns = document.querySelectorAll(`#${poolId} .letter-btn`);
+        poolBtns.forEach(btn => btn.classList.remove('used'));
+    }
+
+    // --------------------------------------------------
+
 
     function nextQ() { 
         if(allWords.length === 0) return; 
@@ -691,7 +833,6 @@
     function del(id) { if(confirm("Löschen?")) db.collection(COLLECTIONS[currentCollIndex]).doc(id).delete().then(refreshData); }
     function exportData() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allWords)); const a = document.createElement('a'); a.href = d; a.download = "backup.json"; a.click(); }
     
-    // NEU: Überarbeitete Import-Funktion mit Status-Anzeige
     function importData(e) { 
         const f = e.target.files[0]; 
         if (!f) return;
@@ -699,8 +840,7 @@
         const r = new FileReader(); 
         const statusEl = document.getElementById('importStatus');
         
-        // Zeige Lade-Status an
-        statusEl.style.color = "#e67e22";
+        statusEl.style.color = "var(--accent)";
         statusEl.innerText = "⏳ Lade Datei und speichere... Bitte warten.";
         statusEl.style.display = "block";
 
@@ -714,22 +854,18 @@
                 } 
                 refreshData(); 
                 
-                // Erfolg melden
-                statusEl.style.color = "#38b2ac";
+                statusEl.style.color = "var(--primary)";
                 statusEl.innerText = "✅ Datei erfolgreich geladen! Du kannst jetzt weitere hochladen.";
                 
-                // Nach 5 Sekunden ausblenden
                 setTimeout(() => {
                     statusEl.style.display = "none";
                 }, 5000);
 
             } catch (error) {
-                // Fehler melden
                 statusEl.style.color = "#e53e3e";
                 statusEl.innerText = "❌ Fehler beim Laden der Datei. Falsches Format?";
             }
             
-            // WICHTIG: Setzt das Eingabefeld zurück, damit man die gleiche Datei nochmal laden kann
             document.getElementById('importFile').value = "";
         }; 
         r.readAsText(f); 
