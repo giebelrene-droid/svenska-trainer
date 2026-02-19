@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 4.0.9 (Lernen + Stimmen)</title>
+    <title>Family Trainer 4.1.2 (Teilen-Funktion)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232d3748%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>👑</text></svg>">
     
@@ -34,7 +34,8 @@
         
         /* BUTTONS */
         .action-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        .mic-btn, .speaker-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; min-width: 35px; }
+        .mic-btn, .speaker-btn, .clear-btn { background: white; border: 1px solid #e2e8f0; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px; min-width: 35px; }
+        .clear-btn { color: #e53e3e; font-weight: bold; background: #fff5f5; border-color: #feb2b2; }
         .mic-active { background: #feb2b2 !important; border-color: #e53e3e !important; animation: pulse 1s infinite; }
         .list-btn { background: #edf2f7; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-left: 5px; font-size: 12px; }
         .danger-btn { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; margin-top: 10px; }
@@ -57,8 +58,15 @@
         .wrong { background-color: #fff5f5 !important; border-color: #feb2b2 !important; }
         .challenge-mode { border: 2px solid #e53e3e; }
 
-        /* FOOTER VERSION */
-        .footer-version { text-align: center; margin-top: 30px; font-size: 0.75em; color: #a0aec0; font-weight: bold; letter-spacing: 1px; }
+        /* BUCHSTABEN-POOL (ÜBEN) */
+        .letter-pool { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; margin-top: 5px; justify-content: center; }
+        .letter-btn { background: #e2e8f0; border: none; border-radius: 8px; padding: 8px 14px; font-size: 1.2em; font-weight: bold; cursor: pointer; color: var(--primary); transition: transform 0.1s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .letter-btn:active { transform: scale(0.9); background: #cbd5e0; }
+
+        /* FOOTER VERSION & SHARE */
+        .footer-area { text-align: center; margin-top: 30px; }
+        .share-btn { background: #38b2ac; color: white; border: none; border-radius: 20px; padding: 10px 20px; font-size: 0.9em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(56, 178, 172, 0.3); margin-bottom: 15px; display: inline-block; }
+        .footer-version { font-size: 0.75em; color: #a0aec0; font-weight: bold; letter-spacing: 1px; }
 
         /* SETTINGS OVERLAY */
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; justify-content: center; align-items: center; }
@@ -116,24 +124,26 @@
     <button id="btn1" class="active" onclick="showTab('add')">➕ NEU</button>
     <button id="btn5" onclick="showTab('study')">👀 LERNEN</button>
     <button id="btn2" onclick="showTab('quiz')">🧠 ÜBEN</button>
-    <button id="btn4" onclick="showTab('challenge')">⏱️ CHALLENGE</button>
+    <button id="btn4" onclick="showTab('spiel')">⏱️ SPIEL</button>
     <button id="btn3" onclick="showTab('list')">📖 LISTE</button>
 </div>
 
 <div id="tabStudy" class="card" style="display:none">
     <div style="text-align:center;">
-        <p style="color:#888; font-size:0.8em; margin:0; text-transform:uppercase; font-weight:bold;">VOKABELN ANSCHAUEN & HÖREN</p>
+        <p style="color:#888; font-size:0.8em; margin:0; text-transform:uppercase; font-weight:bold;">VOKABELN LERNEN & SUCHEN</p>
+        <input type="text" id="studySearch" placeholder="🔍 Wort suchen (Deutsch, Englisch, Schwedisch)..." oninput="filterStudyWords()" style="width: 100%; padding: 10px; margin-top: 10px; margin-bottom: 10px; border-radius: 10px; border: 2px solid #edf2f7; font-size: 14px;">
         <div id="studyWordCount" style="font-size:0.85em; color:var(--primary); font-weight:bold; margin-bottom: 15px;">0 / 0</div>
     </div>
     
     <div id="studyContainer" style="background:#f8fafc; padding: 25px 15px; border-radius: 15px; border: 2px solid #edf2f7; text-align: left; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-        </div>
+    </div>
 
     <div style="display: flex; gap: 10px;">
         <button class="action-btn" style="background:#a0aec0; flex:1;" onclick="prevStudyWord()">⬅️ ZURÜCK</button>
         <button class="action-btn" style="flex:1;" onclick="nextStudyWord()">WEITER ➡️</button>
     </div>
 </div>
+
 <div id="tabAdd" class="card">
     <h2 id="addTitle">Neues Wort</h2>
     <div id="loader" style="color:var(--primary); text-align:center; display:none; font-weight:bold;">🤖 KI arbeitet...</div>
@@ -167,15 +177,29 @@
 <div id="tabQuiz" class="card" style="display:none">
     <div style="text-align:center;">
         <div id="audioModeToggle" style="font-size:0.8em; font-weight:bold; color:var(--primary); cursor:pointer; margin-bottom:10px;" onclick="toggleAudioMode()">🔈 AUDIO: AUS</div>
-        <div id="timer" style="display:none; font-size:1.5em; font-weight:bold; color:#e53e3e;">⚡ CHALLENGE</div>
+        <div id="timer" style="display:none; font-size:1.5em; font-weight:bold; color:#e53e3e;">⚡ SPIEL</div>
         <p style="color:#888; font-size:0.8em; margin:0;">WAS HEISST...?</p>
         <h1 id="qMainText" style="margin:5px 0; color:var(--primary);">---</h1>
         <button class="speaker-btn" id="spkMain">🔊</button>
     </div>
+    
     <label id="lblAns1">ANTWORT 1</label>
-    <div class="input-row"><input type="text" id="qAns1"><button class="mic-btn" id="micAns1">🎤</button><button class="speaker-btn" id="spkAns1">🔊</button></div>
+    <div class="input-row">
+        <input type="text" id="qAns1">
+        <button class="mic-btn" id="micAns1">🎤</button>
+        <button class="speaker-btn" id="spkAns1">🔊</button>
+        <button class="clear-btn" onclick="document.getElementById('qAns1').value=''">⌫</button>
+    </div>
+    <div id="poolAns1" class="letter-pool"></div>
+
     <label id="lblAns2">ANTWORT 2</label>
-    <div class="input-row"><input type="text" id="qAns2" onkeypress="if(event.key==='Enter') checkAns()"><button class="mic-btn" id="micAns2">🎤</button><button class="speaker-btn" id="spkAns2">🔊</button></div>
+    <div class="input-row">
+        <input type="text" id="qAns2" onkeypress="if(event.key==='Enter') checkAns()">
+        <button class="mic-btn" id="micAns2">🎤</button>
+        <button class="speaker-btn" id="spkAns2">🔊</button>
+        <button class="clear-btn" onclick="document.getElementById('qAns2').value=''">⌫</button>
+    </div>
+    <div id="poolAns2" class="letter-pool"></div>
     
     <button class="action-btn" onclick="checkAns()" id="checkBtn">PRÜFEN</button>
     <div id="qFeed"></div>
@@ -193,10 +217,13 @@
     <button class="action-btn danger-btn" onclick="nukeDatabase()">⚠️ ALLES LÖSCHEN</button>
 </div>
 
-<div class="footer-version">Family Trainer <span id="versionDisplay"></span></div>
+<div class="footer-area">
+    <button class="share-btn" onclick="shareApp()">📤 App weiterleiten</button>
+    <div class="footer-version">Family Trainer <span id="versionDisplay"></span></div>
+</div>
 
 <script>
-    const VERSION = "18.02.2026 - 18:00 (Lernen + Stimmen)";
+    const VERSION = "19.02.2026 - 16:15 (Mit Teilen-Funktion)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -207,11 +234,12 @@
     let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; 
     let currentCollIndex = 0;
     
-    // config beinhaltet nun auch die ausgewählten Stimmen (v1, v2, v3)
     let conf = { l1: 'de', l2: 'en', l3: 'sv', v1: '', v2: '', v3: '' }; 
     
-    let allWords = [], curWord = null, isChallenge = false, audioMode = false, voices = [], quizQ = 1;
-    let studyIndex = 0; // Für den Lern-Tab
+    let allWords = [], curWord = null, isSpiel = false, audioMode = false, voices = [], quizQ = 1;
+    
+    let studyWords = []; 
+    let studyIndex = 0; 
 
     function init() {
         document.getElementById('versionDisplay').innerText = VERSION;
@@ -224,7 +252,7 @@
         loadVoices(); 
         updateInterface(); 
         refreshData();
-        showTab('add'); // Sicherstellen, dass Startbildschirm "Neu" ist
+        showTab('add'); 
     }
 
     function renderRenameInputs() { let html = ''; userNames.forEach((name, i) => { html += `<div class="rename-row"><span>${i+1}.</span><input type="text" id="name${i}" value="${name}" onchange="saveName(${i})"></div>`; }); document.getElementById('renameContainer').innerHTML = html; }
@@ -236,7 +264,6 @@
         const savedLangs = localStorage.getItem('trainerLangs_' + currentCollIndex); 
         if(savedLangs) {
             conf = JSON.parse(savedLangs); 
-            // Falls alte Config geladen wird, die noch keine v1, v2, v3 hatte
             if(conf.v1 === undefined) { conf.v1 = ''; conf.v2 = ''; conf.v3 = ''; }
         } else {
             conf = { l1: 'de', l2: 'en', l3: 'sv', v1: '', v2: '', v3: '' }; 
@@ -251,18 +278,16 @@
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; populateVoiceSelects(); }
     function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
     
-    // Wenn die Sprache geändert wird, müssen die Stimmen zurückgesetzt werden
     function langChanged() {
         conf.l1 = document.getElementById('selL1').value; 
         conf.l2 = document.getElementById('selL2').value; 
         conf.l3 = document.getElementById('selL3').value;
-        conf.v1 = ''; conf.v2 = ''; conf.v3 = ''; // Reset Voices
+        conf.v1 = ''; conf.v2 = ''; conf.v3 = ''; 
         populateVoiceSelects();
         saveSettings();
     }
 
     function saveSettings() { 
-        // Stimmen auslesen (falls geladen)
         const v1El = document.getElementById('selVoiceL1');
         const v2El = document.getElementById('selVoiceL2');
         const v3El = document.getElementById('selVoiceL3');
@@ -296,13 +321,12 @@
     }
     window.speechSynthesis.onvoiceschanged = loadVoices;
 
-    // --- NEU: Stimmen Auswahl füllen ---
     function populateVoiceSelects() {
         if(voices.length === 0) return;
         
         const buildOptions = (langCode, confKey, elId) => {
             const el = document.getElementById(elId);
-            const prefix = LANGS[langCode].tts.split('-')[0]; // z.B. 'de' aus 'de-DE'
+            const prefix = LANGS[langCode].tts.split('-')[0]; 
             const available = voices.filter(v => v.lang.startsWith(prefix));
             
             if(available.length === 0) {
@@ -315,7 +339,6 @@
             if(confKey && available.some(v => v.voiceURI === confKey)) {
                 el.value = confKey;
             } else {
-                // Versuche automatisch eine hochwertige ("Premium/Natural") Stimme auszuwählen
                 let best = available.find(v => v.name.includes("Premium") || v.name.includes("Natural")) || available[0];
                 el.value = best.voiceURI;
             }
@@ -326,7 +349,6 @@
         buildOptions(conf.l3, conf.v3, 'selVoiceL3');
     }
 
-    // --- NEU: Speak Funktion nutzt jetzt die gewählten Stimmen ---
     function speak(txt, langCode) { 
         if (!txt) return; 
         window.speechSynthesis.cancel(); 
@@ -341,7 +363,6 @@
         let v = null;
         if (selectedURI) v = voices.find(vo => vo.voiceURI === selectedURI);
         
-        // Fallback falls gewählte Stimme nicht existiert
         if(!v) v = voices.find(vo => vo.lang === ttsCode && (vo.name.includes("Premium") || vo.name.includes("Natural"))); 
         if(!v) v = voices.find(vo => vo.lang.startsWith(ttsCode.split('-')[0])); 
         
@@ -382,12 +403,10 @@
         } catch(e) {} finally { document.getElementById('loader').style.display = "none"; }
     }
 
-    // BUMERANG-LOGIK
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
         const debug = document.getElementById('debugBox');
-        
         if(!baseDe || !baseEn) return alert("Bitte erst Deutsch und Englisch ausfüllen.");
         
         debug.style.display = "block";
@@ -400,11 +419,7 @@
             let finalDePast = await translate(finalEnPast, 'en', 'de');
             let finalSvPast = await translate(finalEnPast, 'en', 'sv');
 
-            debug.innerHTML = "<b>KI BUMERANG-LOGIK:</b>\n" + 
-                              "1. 'Did' -> Temp: " + tempDE + "\n" +
-                              "2. Clean EN: " + finalEnPast + "\n" +
-                              "3. Clean DE: " + finalDePast + "\n" +
-                              "4. Clean SV: " + finalSvPast;
+            debug.innerHTML = "<b>KI BUMERANG-LOGIK:</b>\n1. 'Did' -> Temp: " + tempDE + "\n2. Clean EN: " + finalEnPast + "\n3. Clean DE: " + finalDePast + "\n4. Clean SV: " + finalSvPast;
 
             const anchorClean = (rawText, pronoun) => {
                 if (!rawText) return pronoun + " ...";
@@ -421,10 +436,8 @@
             document.getElementById('inEnPast').value = anchorClean(finalEnPast, "He");
             document.getElementById('inDePast').value = anchorClean(finalDePast, "Er");
             document.getElementById('inSvPast').value = anchorClean(finalSvPast, "Han");
-
             document.getElementById('inDeFut').value = "Er wird " + baseDe;
             document.getElementById('inEnFut').value = "He will " + baseEn;
-            
             const rawSvFut = await translate(`He will ${baseEn}`, 'en', 'sv');
             document.getElementById('inSvFut').value = anchorClean(rawSvFut, "Han");
 
@@ -442,7 +455,6 @@
         
         const eid = document.getElementById('editId').value;
         
-        // DUPLIKAT-CHECK START
         if (!eid) { 
             const isDuplicate = allWords.some(word => word.de.toLowerCase() === data.de.trim().toLowerCase());
             if (isDuplicate) {
@@ -450,7 +462,6 @@
                 return;
             }
         }
-        // DUPLIKAT-CHECK ENDE
 
         const coll = COLLECTIONS[currentCollIndex];
         const op = eid ? db.collection(coll).doc(eid).update(data) : db.collection(coll).add(data);
@@ -458,7 +469,15 @@
     }
 
     async function nukeDatabase() { if(!confirm(`ALLES LÖSCHEN?`)) return; if(!confirm("Sicher?")) return; const coll = COLLECTIONS[currentCollIndex]; const s = await db.collection(coll).get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); alert("Gelöscht."); }
-    async function refreshData() { const coll = COLLECTIONS[currentCollIndex]; const s = await db.collection(coll).orderBy("ts", "desc").get(); allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderList(); }
+    
+    async function refreshData() { 
+        const coll = COLLECTIONS[currentCollIndex]; 
+        const s = await db.collection(coll).orderBy("ts", "desc").get(); 
+        allWords = s.docs.map(d => ({id: d.id, ...d.data()})); 
+        document.getElementById('wordCount').innerText = allWords.length; 
+        filterStudyWords(); 
+        renderList(); 
+    }
     
     function renderList() {
         document.getElementById('listCont').innerHTML = allWords.map(w => `
@@ -481,18 +500,18 @@
         document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); 
         document.getElementById('tabAdd').style.display=(n==='add')?'block':'none'; 
         document.getElementById('tabStudy').style.display=(n==='study')?'block':'none'; 
-        document.getElementById('tabQuiz').style.display=(n==='quiz'||n==='challenge')?'block':'none'; 
+        document.getElementById('tabQuiz').style.display=(n==='quiz'||n==='spiel')?'block':'none'; 
         document.getElementById('tabList').style.display=(n==='list')?'block':'none';
         
         document.getElementById('tabQuiz').classList.remove('challenge-mode');
         document.getElementById('timer').style.display = "none";
         document.getElementById('nextBtn').style.display = "none";
-        isChallenge = (n === 'challenge');
+        isSpiel = (n === 'spiel');
         
         if(n === 'add') document.getElementById('btn1').classList.add('active');
         if(n === 'study') { document.getElementById('btn5').classList.add('active'); renderStudyWord(); }
         if(n === 'quiz') document.getElementById('btn2').classList.add('active');
-        if(n === 'challenge') {
+        if(n === 'spiel') {
             document.getElementById('btn4').classList.add('active');
             document.getElementById('tabQuiz').style.display = 'block';
             document.getElementById('tabQuiz').classList.add('challenge-mode');
@@ -500,22 +519,39 @@
         }
         if(n === 'list') { document.getElementById('btn3').classList.add('active'); renderList(); }
         
-        if(n === 'quiz' || n === 'challenge') nextQ();
+        if(n === 'quiz' || n === 'spiel') nextQ();
     }
     
-    // --- NEU: LERN-TAB LOGIK (Anschauen & Hören) ---
+    function filterStudyWords() {
+        const query = document.getElementById('studySearch').value.toLowerCase().trim();
+        if (!query) {
+            studyWords = [...allWords];
+        } else {
+            studyWords = allWords.filter(w => 
+                (w.de && w.de.toLowerCase().includes(query)) || 
+                (w.en && w.en.toLowerCase().includes(query)) || 
+                (w.sv && w.sv.toLowerCase().includes(query))
+            );
+        }
+        studyIndex = 0;
+        
+        if (document.getElementById('tabStudy').style.display === 'block') {
+            renderStudyWord();
+        }
+    }
+
     function renderStudyWord() {
-        if(allWords.length === 0) {
-            document.getElementById('studyContainer').innerHTML = "<p>Keine Vokabeln vorhanden. Füge erst welche im NEU-Tab hinzu.</p>";
+        if(studyWords.length === 0) {
+            document.getElementById('studyContainer').innerHTML = "<p>Keine passenden Vokabeln gefunden.</p>";
             document.getElementById('studyWordCount').innerText = "0 / 0";
             return;
         }
         
-        if(studyIndex < 0) studyIndex = allWords.length - 1;
-        if(studyIndex >= allWords.length) studyIndex = 0;
+        if(studyIndex < 0) studyIndex = studyWords.length - 1;
+        if(studyIndex >= studyWords.length) studyIndex = 0;
         
-        const w = allWords[studyIndex];
-        document.getElementById('studyWordCount').innerText = `Wort ${studyIndex + 1} von ${allWords.length}`;
+        const w = studyWords[studyIndex];
+        document.getElementById('studyWordCount').innerText = `Wort ${studyIndex + 1} von ${studyWords.length}`;
         
         const vL2 = w.enP ? `<div style="font-size:0.65em; color:#718096; margin-top:5px; margin-left:45px;">🕒 ${w.enP} | 🔮 ${w.enF}</div>` : "";
         const vL3 = w.svP ? `<div style="font-size:0.65em; color:#718096; margin-top:5px; margin-left:45px;">🕒 ${w.svP} | 🔮 ${w.svF}</div>` : "";
@@ -550,7 +586,24 @@
 
     function nextStudyWord() { studyIndex++; renderStudyWord(); }
     function prevStudyWord() { studyIndex--; renderStudyWord(); }
-    // --- ENDE LERN-TAB LOGIK ---
+
+    function renderLetterPool(text, poolDivId, inputId) {
+        const pool = document.getElementById(poolDivId);
+        if(!text) { pool.innerHTML = ''; return; }
+        
+        let chars = text.split('');
+        for (let i = chars.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [chars[i], chars[j]] = [chars[j], chars[i]];
+        }
+        
+        let html = chars.map(c => {
+            let displayChar = c === ' ' ? '␣' : c; 
+            let safeC = c.replace(/'/g, "\\'"); 
+            return `<button class="letter-btn" onclick="document.getElementById('${inputId}').value += '${safeC}'">${displayChar}</button>`;
+        }).join('');
+        pool.innerHTML = html;
+    }
 
     function nextQ() { 
         if(allWords.length === 0) return; 
@@ -562,6 +615,7 @@
         document.getElementById('qMainText').innerText = audioMode ? "???" : qTxt; 
         document.getElementById('spkMain').onclick = () => speak(qTxt, qLang);
         let h1, h2;
+        
         if(quizQ === 1) { 
             document.getElementById('lblAns1').innerText = LANGS[conf.l2].name; 
             document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; 
@@ -570,6 +624,9 @@
             document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; 
             document.getElementById('spkAns1').onclick = () => speak(curWord.en, conf.l2); 
             document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); 
+            
+            renderLetterPool(curWord.en, 'poolAns1', 'qAns1');
+            renderLetterPool(curWord.sv, 'poolAns2', 'qAns2');
         } else { 
             document.getElementById('lblAns1').innerText = LANGS[conf.l1].name; 
             document.getElementById('lblAns2').innerText = LANGS[conf.l3].name; 
@@ -578,7 +635,11 @@
             document.getElementById('micAns2').onclick = function(){ listen(3, 'qAns2', this) }; 
             document.getElementById('spkAns1').onclick = () => speak(curWord.de, conf.l1); 
             document.getElementById('spkAns2').onclick = () => speak(curWord.sv, conf.l3); 
+            
+            renderLetterPool(curWord.de, 'poolAns1', 'qAns1');
+            renderLetterPool(curWord.sv, 'poolAns2', 'qAns2');
         }
+        
         document.getElementById('qAns1').value = h1; 
         document.getElementById('qAns2').value = h2;
         document.getElementById('qAns1').className = ""; 
@@ -595,9 +656,14 @@
         let r1, r2; 
         if(quizQ === 1) { r1 = i1 === curWord.en.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); } 
         else { r1 = i1 === curWord.de.trim().toLowerCase(); r2 = i2 === curWord.sv.trim().toLowerCase(); }
+        
         document.getElementById('qAns1').className = r1 ? "correct" : "wrong"; 
         document.getElementById('qAns2').className = r2 ? "correct" : "wrong";
         document.getElementById('qMainText').innerText = quizQ===1 ? curWord.de : curWord.en; 
+        
+        document.getElementById('poolAns1').innerHTML = "";
+        document.getElementById('poolAns2').innerHTML = "";
+
         const vL2 = (curWord.enP) ? `<br><span style="font-size:0.8em; color:#666">🕒 ${curWord.enP} | 🔮 ${curWord.enF}</span>` : ""; 
         const vL3 = (curWord.svP) ? `<br><span style="font-size:0.8em; color:#666">🕒 ${curWord.svP} | 🔮 ${curWord.svF}</span>` : ""; 
         const html = `<div class="feedback-card" style="background:${(r1&&r2)?'#f0fff4':'#fff5f5'}">
@@ -606,7 +672,8 @@
             <div class="fb-row"><span class="lang-tag">${LANGS[conf.l3].flag}</span> <b>${curWord.sv}</b> ${vL3}</div>
         </div>`; 
         document.getElementById('qFeed').innerHTML = html; 
-        if(isChallenge) {
+        
+        if(isSpiel) {
             document.getElementById('checkBtn').style.display="none";
             setTimeout(nextQ, 2500); 
         } else {
@@ -623,6 +690,19 @@
     function exportData() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allWords)); const a = document.createElement('a'); a.href = d; a.download = "backup.json"; a.click(); }
     function importData(e) { const f = e.target.files[0]; const r = new FileReader(); r.onload = async (ev) => { const data = JSON.parse(ev.target.result); for(let w of data) { if(!allWords.some(x => x.de === w.de)) await db.collection(COLLECTIONS[currentCollIndex]).add({...w, ts: firebase.firestore.FieldValue.serverTimestamp()}); } refreshData(); }; r.readAsText(f); }
     
+    // NEU: Teilen Funktion
+    function shareApp() {
+        if (navigator.share) {
+            navigator.share({
+                title: 'Family Trainer App',
+                text: 'Schau dir diesen tollen Vokabel-Trainer an!',
+                url: window.location.href // Teilt den aktuellen Link der App
+            }).catch((error) => console.log('Fehler beim Teilen:', error));
+        } else {
+            alert('Teilen wird von diesem Gerät leider nicht direkt unterstützt. Kopiere einfach den Link aus der Suchleiste!');
+        }
+    }
+
     window.onload = init;
 </script>
 </body>
