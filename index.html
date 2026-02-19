@@ -3,23 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 5.0 (Schweden-Style & Smart Pool)</title>
+    <title>Family Trainer 5.1 (Sätze prüfen)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
-        /* --- NEUES SCHWEDEN-DESIGN (Scandi-Style) --- */
         :root {
-            --primary: #006aa7; /* Schwedisches Blau, etwas weicher */
-            --accent: #fecc00;  /* Schwedisches Gelb, warm */
-            --bg: #f4f6f8;      /* Sehr heller, kühler Hintergrund */
-            --card-bg: #ffffff; /* Reines Weiß für Karten */
-            --text: #2d3748;    /* Weiches Dunkelgrau statt Schwarz */
-            --text-light: #718096; /* Helleres Grau für Labels etc. */
-            --border-soft: #e2e8f0; /* Subtile Ränder */
-            --shadow-soft: 0 4px 12px rgba(0,0,0,0.05); /* Sehr weicher Schatten */
+            --primary: #006aa7; 
+            --accent: #fecc00;  
+            --bg: #f4f6f8;      
+            --card-bg: #ffffff; 
+            --text: #2d3748;    
+            --text-light: #718096; 
+            --border-soft: #e2e8f0; 
+            --shadow-soft: 0 4px 12px rgba(0,0,0,0.05); 
         }
 
         body {
@@ -33,13 +32,11 @@
             line-height: 1.5;
         }
         
-        /* HEADER - Minimalistischer */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         .badge { background: var(--card-bg); padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.85em; box-shadow: var(--shadow-soft); border: 1px solid var(--border-soft); }
         .settings-btn { background: var(--card-bg); border: 1px solid var(--border-soft); font-size: 1.3em; cursor: pointer; padding: 6px 12px; border-radius: 50%; box-shadow: var(--shadow-soft); color: var(--text); transition: all 0.2s; }
         .settings-btn:hover { background: #edf2f7; }
 
-        /* NAV - Skandinavisch klar */
         .nav { display: flex; gap: 8px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
         .nav::-webkit-scrollbar { display: none; }
         .nav button { 
@@ -48,8 +45,8 @@
             padding: 10px 12px; 
             font-size: 12px; 
             color: var(--text-light); 
-            border: 2px solid transparent; /* Platzhalter für Border */
-            border-radius: 25px; /* Pillenform */
+            border: 2px solid transparent; 
+            border-radius: 25px; 
             cursor: pointer; 
             font-weight: 700; 
             white-space: nowrap; 
@@ -64,7 +61,6 @@
         }
         .nav button:hover:not(.active) { background: #e2e8f0; color: var(--text); }
         
-        /* CARDS - Flacher und heller */
         .card { 
             background: var(--card-bg); 
             padding: 25px; 
@@ -72,14 +68,13 @@
             box-shadow: var(--shadow-soft); 
             margin-bottom: 25px; 
             position: relative;
-            border: 1px solid var(--border-soft); /* Feiner Rand statt starkem Schatten */
+            border: 1px solid var(--border-soft); 
         }
         h2 { color: var(--text); margin-top: 0; font-size: 1.4em; font-weight: 700; letter-spacing: -0.5px; }
         label { display: block; font-size: 0.75em; font-weight: 700; color: var(--text-light); margin: 12px 0 4px 4px; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        /* INPUTS - Clean look */
         .input-row { display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 8px; }
-        input, select { 
+        input, select, textarea { 
             flex: 1; 
             padding: 14px; 
             background: #f8fafc; 
@@ -90,18 +85,17 @@
             box-sizing: border-box;
             color: var(--text);
             transition: border-color 0.2s;
+            font-family: inherit;
         }
-        input:focus, select:focus { border-color: var(--primary); background: white; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); background: white; outline: none; }
         
-        /* BUTTONS - Freundlicher */
         .action-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 16px; cursor: pointer; font-weight: 700; font-size: 16px; margin-top: 12px; transition: transform 0.1s, background-color 0.2s; }
         .action-btn:active { transform: scale(0.98); }
-        /* Sekundäre Buttons heller machen */
         .action-btn[style*="background:#a0aec0"], 
         .action-btn[style*="background:#718096"],
         .action-btn[style*="background:#4a5568"],
         .action-btn[style*="background:#cbd5e0"] { background: #e2e8f0 !important; color: var(--text) !important; }
-        .action-btn[style*="background:#e67e22"] { background: var(--accent) !important; color: var(--text) !important; } /* Übersetzen-Button in Akzentfarbe */
+        .action-btn[style*="background:var(--accent)"] { background: var(--accent) !important; color: var(--text) !important; } 
 
 
         .mic-btn, .speaker-btn, .clear-btn { background: white; border: 2px solid var(--border-soft); font-size: 15px; cursor: pointer; border-radius: 10px; padding: 10px; min-width: 40px;color: var(--text-light); transition: all 0.2s; }
@@ -114,13 +108,11 @@
         .danger-btn { background: #fff5f5 !important; color: #e53e3e !important; border: 2px solid #feb2b2 !important; margin-top: 20px;}
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        /* VERB SECTION */
         .verb-section { background: #f1f5f9; padding: 15px; border-radius: 16px; margin-top: 20px; display: none; border: 1px solid var(--border-soft); }
         .verb-lang-group { margin-bottom: 15px; border-bottom: 1px solid var(--border-soft); padding-bottom: 10px; }
         .verb-row { display: flex; gap: 10px; }
         .verb-row input { font-size: 0.9em; padding: 10px; background: white;}
         
-        /* QUIZ & LIST */
         .feedback-card { text-align: left; background: white; padding: 20px; border-radius: 16px; margin-top: 20px; border: 2px solid var(--border-soft); box-shadow: var(--shadow-soft); }
         .word-item { padding: 18px 10px; border-bottom: 1px solid var(--border-soft); position: relative; display: flex; flex-direction: column; gap: 5px; }
         .word-item:last-child { border-bottom: none; }
@@ -132,7 +124,6 @@
         .wrong { background-color: #fff5f5 !important; border-color: #e53e3e !important; color: #c53030 !important; }
         .challenge-mode { border: 3px solid #e53e3e; }
 
-        /* --- NEUE STYLES FÜR DEN BUCHSTABEN-POOL --- */
         .letter-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; margin-top: 10px; justify-content: center; }
         .letter-btn { 
             background: white; 
@@ -148,25 +139,13 @@
         }
         .letter-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
         .letter-btn:active { transform: scale(0.95) translateY(0); }
-        
-        /* Der Stil für benutzte Buchstaben (ausgegraut) */
-        .letter-btn.used {
-            background: #edf2f7;
-            color: #a0aec0;
-            border-color: #edf2f7;
-            cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none;
-        }
-        /* ----------------------------------------- */
+        .letter-btn.used { background: #edf2f7; color: #a0aec0; border-color: #edf2f7; cursor: not-allowed; transform: none !important; box-shadow: none; }
 
-        /* FOOTER VERSION & SHARE */
         .footer-area { text-align: center; margin-top: 40px; }
         .share-btn { background: var(--primary); color: white; border: none; border-radius: 25px; padding: 12px 24px; font-size: 1em; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 106, 167, 0.3); margin-bottom: 20px; display: inline-block; transition: transform 0.2s; }
         .share-btn:hover { transform: translateY(-2px); }
         .footer-version { font-size: 0.8em; color: var(--text-light); font-weight: 600; letter-spacing: 1px; text-transform: uppercase;}
 
-        /* SETTINGS OVERLAY - Heller */
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(45, 55, 72, 0.6); display: none; z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
         .settings-box { background: var(--card-bg); padding: 30px; border-radius: 24px; width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .rename-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
@@ -174,11 +153,9 @@
 
         #debugBox { background: #2d3748; color: #68d391; padding: 15px; border-radius: 12px; font-family: 'Fira Code', monospace; font-size: 11px; margin-bottom: 20px; display: none; border: 1px solid #4a5568; white-space: pre-wrap; margin-top: 20px;}
         
-        /* VOICE SELECTS */
         .voice-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .voice-row select { font-size: 0.85em; padding: 10px; background: white; }
         
-        /* STUDY TAB Styling Adjustments */
         #studySearch { border-radius: 25px; padding: 12px 20px; border: 2px solid var(--border-soft); }
         #studySearch:focus { border-color: var(--primary); }
         #studyContainer { background: white; border: none; box-shadow: var(--shadow-soft); padding: 20px; }
@@ -227,10 +204,44 @@
 
 <div class="nav">
     <button id="btn1" class="active" onclick="showTab('add')">➕ NEU</button>
+    <button id="btn6" onclick="showTab('sentences')">📝 SÄTZE</button>
     <button id="btn5" onclick="showTab('study')">👀 LERNEN</button>
     <button id="btn2" onclick="showTab('quiz')">🧠 ÜBEN</button>
     <button id="btn4" onclick="showTab('spiel')">⏱️ SPIEL</button>
     <button id="btn3" onclick="showTab('list')">📖 LISTE</button>
+</div>
+
+<div id="tabSentences" class="card" style="display:none">
+    <div style="text-align:center; margin-bottom: 20px;">
+        <p style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">SÄTZE BILDEN & PRÜFEN</p>
+    </div>
+    <div id="loaderSentences" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI übersetzt...</div>
+    
+    <label>Mein Satz (Deutsch)</label>
+    <div class="input-row">
+        <textarea id="sentBase" rows="2" placeholder="z. B. Heute gehen wir in den Wald spazieren."></textarea>
+        <button class="mic-btn" onclick="listen(1, 'sentBase', this)" style="height: 100%;">🎤</button>
+    </div>
+
+    <label>Zielsprache</label>
+    <select id="sentTargetLang" style="margin-bottom: 15px; font-weight: bold;">
+        <option value="en">Englisch</option>
+        <option value="sv">Schwedisch</option>
+    </select>
+
+    <label>Meine Übersetzung</label>
+    <div class="input-row">
+        <textarea id="sentAttempt" rows="2" placeholder="Ich versuche es mal..."></textarea>
+        <button class="mic-btn" onclick="listenAttempt('sentAttempt', this)" style="height: 100%;">🎤</button>
+    </div>
+
+    <button class="action-btn" onclick="checkSentence()" style="margin-top: 20px;">🔍 Übersetzung prüfen</button>
+
+    <div id="sentFeedback" style="display:none; margin-top:20px; padding:20px; border-radius:16px; background:#f0fff4; border:2px solid #48bb78; box-shadow: var(--shadow-soft);">
+        <label style="color: #2f855a;">KI-Korrektur / Vorschlag:</label>
+        <div id="sentResult" style="font-size: 1.2em; font-weight: 700; color: #2f855a; margin-bottom: 15px; line-height: 1.4;"></div>
+        <button class="speaker-btn" id="spkSent" style="width:100%; background: white; border-color: #48bb78; color: #2f855a; font-weight: bold;">🔊 Anhören</button>
+    </div>
 </div>
 
 <div id="tabStudy" class="card" style="display:none">
@@ -290,7 +301,6 @@
              <h1 id="qMainText" style="margin:10px 0; color:var(--primary); font-size: 2em;">---</h1>
              <button class="speaker-btn" id="spkMain" style="font-size: 1.2em;">🔊</button>
         </div>
-       
     </div>
     
     <label id="lblAns1">ANTWORT 1</label>
@@ -335,7 +345,7 @@
 </div>
 
 <script>
-    const VERSION = "20.02.2026 (Schweden-Design & Smart Pool)";
+    const VERSION = "20.02.2026 (Sätze prüfen & Smart Pool)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -349,7 +359,6 @@
     let conf = { l1: 'de', l2: 'en', l3: 'sv', v1: '', v2: '', v3: '' }; 
     
     let allWords = [], curWord = null, isSpiel = false, audioMode = false, voices = [], quizQ = 1;
-    
     let studyWords = []; 
     let studyIndex = 0; 
 
@@ -485,6 +494,20 @@
     }
     
     function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; } const rec = new SpeechRecognition(); const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3); rec.lang = LANGS[langKey].tts; btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; btn.classList.remove('mic-active'); }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
+    
+    // NEU: Mikrofon für den Sätze-Tab
+    function listenAttempt(targetId, btn) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; }
+        const rec = new SpeechRecognition();
+        const tgt = document.getElementById('sentTargetLang').value;
+        rec.lang = tgt === 'en' ? LANGS[conf.l2].tts : LANGS[conf.l3].tts; 
+        btn.classList.add('mic-active');
+        rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; btn.classList.remove('mic-active'); };
+        rec.onend = () => btn.classList.remove('mic-active');
+        rec.start();
+    }
+
     function toggleAudioMode() { audioMode = !audioMode; document.getElementById('audioModeToggle').innerText = audioMode ? "🔊 AUDIO: AN" : "🔈 AUDIO: AUS"; }
 
     function cleanResult(txt) {
@@ -500,6 +523,32 @@
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=${src}|${tgt}`;
         const response = await fetch(url); const data = await response.json();
         return data.responseData.translatedText;
+    }
+
+    // NEU: Sätze übersetzen
+    async function checkSentence() {
+        const base = document.getElementById('sentBase').value.trim();
+        const tgtLang = document.getElementById('sentTargetLang').value; 
+        const srcLang = 'de'; 
+
+        if(!base) { alert("Bitte einen deutschen Satz eingeben!"); return; }
+
+        document.getElementById('loaderSentences').style.display = "block";
+        document.getElementById('sentFeedback').style.display = "none";
+
+        try {
+            const result = await translate(base, srcLang, tgtLang);
+            document.getElementById('sentResult').innerText = result;
+
+            const langCode = tgtLang === 'en' ? conf.l2 : conf.l3;
+            document.getElementById('spkSent').onclick = () => speak(result, langCode);
+
+            document.getElementById('sentFeedback').style.display = "block";
+        } catch(e) {
+            alert("Fehler bei der Übersetzung: " + e.message);
+        } finally {
+            document.getElementById('loaderSentences').style.display = "none";
+        }
     }
 
     async function handleSmartTranslate() {
@@ -577,7 +626,7 @@
 
         const coll = COLLECTIONS[currentCollIndex];
         const op = eid ? db.collection(coll).doc(eid).update(data) : db.collection(coll).add(data);
-        op.then(() => { refreshData(); clearInputs(); if(eid) showTab('list'); else alert("Gespeichert!"); }).catch(e => alert("Fehler: "+e.message));
+        op.then(() => { refreshData(); clearInputs(); if(eid) showTab('list'); }).catch(e => alert("Fehler: "+e.message));
     }
 
     async function nukeDatabase() { if(!confirm(`ALLES LÖSCHEN?`)) return; if(!confirm("Sicher?")) return; const coll = COLLECTIONS[currentCollIndex]; const s = await db.collection(coll).get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); alert("Gelöscht."); }
@@ -615,6 +664,7 @@
     function showTab(n) { 
         document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); 
         document.getElementById('tabAdd').style.display=(n==='add')?'block':'none'; 
+        document.getElementById('tabSentences').style.display=(n==='sentences')?'block':'none';
         document.getElementById('tabStudy').style.display=(n==='study')?'block':'none'; 
         document.getElementById('tabQuiz').style.display=(n==='quiz'||n==='spiel')?'block':'none'; 
         document.getElementById('tabList').style.display=(n==='list')?'block':'none';
@@ -625,6 +675,7 @@
         isSpiel = (n === 'spiel');
         
         if(n === 'add') document.getElementById('btn1').classList.add('active');
+        if(n === 'sentences') document.getElementById('btn6').classList.add('active');
         if(n === 'study') { document.getElementById('btn5').classList.add('active'); renderStudyWord(); }
         if(n === 'quiz') document.getElementById('btn2').classList.add('active');
         if(n === 'spiel') {
@@ -703,8 +754,6 @@
     function nextStudyWord() { studyIndex++; renderStudyWord(); }
     function prevStudyWord() { studyIndex--; renderStudyWord(); }
 
-    // --- NEUE FUNKTIONEN FÜR DEN BUCHSTABEN-POOL ---
-
     function renderLetterPool(text, poolDivId, inputId) {
         const pool = document.getElementById(poolDivId);
         if(!text) { pool.innerHTML = ''; return; }
@@ -718,36 +767,22 @@
         let html = chars.map(c => {
             let displayChar = c === ' ' ? '␣' : c; 
             let safeC = c.replace(/'/g, "\\'");
-            // NEU: Ruft jetzt useLetter auf und übergibt 'this' (den Button selbst)
             return `<button class="letter-btn" onclick="useLetter(this, '${safeC}', '${inputId}')">${displayChar}</button>`;
         }).join('');
         pool.innerHTML = html;
     }
 
-    // NEU: Verarbeitet den Klick auf einen Buchstaben
     function useLetter(btnElem, letter, inputId) {
-        // Prüfen, ob der Button schon benutzt wurde (Sicherheitsnetz)
         if(btnElem.classList.contains('used')) return;
-
-        // 1. Buchstaben ins Inputfeld einfügen
         document.getElementById(inputId).value += letter;
-
-        // 2. Button deaktivieren (visuell grau machen)
         btnElem.classList.add('used');
     }
 
-    // NEU: Leert das Feld UND setzt die Buchstaben-Buttons zurück
     function clearFieldAndPool(inputId, poolId) {
-        // Input leeren
         document.getElementById(inputId).value = '';
-
-        // Pool Buttons zurücksetzen (die Klasse 'used' entfernen)
         const poolBtns = document.querySelectorAll(`#${poolId} .letter-btn`);
         poolBtns.forEach(btn => btn.classList.remove('used'));
     }
-
-    // --------------------------------------------------
-
 
     function nextQ() { 
         if(allWords.length === 0) return; 
