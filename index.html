@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 6.1 (Live Fix & Löschen)</title>
+    <title>Family Trainer 6.2 (Multi-Language UI)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -129,7 +129,7 @@
         .letter-btn:active { transform: scale(0.95) translateY(0); }
         .letter-btn.used { background: #edf2f7; color: #a0aec0; border-color: #edf2f7; cursor: not-allowed; transform: none !important; box-shadow: none; }
 
-        .footer-area { text-align: center; margin-top: 40px; }
+        .footer-area { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-soft); }
         .share-btn { background: var(--primary); color: white; border: none; border-radius: 25px; padding: 12px 24px; font-size: 1em; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 106, 167, 0.3); margin-bottom: 20px; display: inline-block; transition: transform 0.2s; }
         .share-btn:hover { transform: translateY(-2px); }
         .footer-version { font-size: 0.8em; color: var(--text-light); font-weight: 600; letter-spacing: 1px; text-transform: uppercase;}
@@ -154,58 +154,58 @@
 
 <div id="settingsOverlay">
     <div class="settings-box">
-        <h2>⚙️ Einstellungen</h2>
-        <label>👤 Aktiver Benutzer</label>
+        <h2 data-i18n="lblSettings">⚙️ Einstellungen</h2>
+        <label data-i18n="lblUser">👤 Aktiver Benutzer</label>
         <select id="selUser" onchange="switchUser()" style="width:100%; padding:12px; margin-bottom:20px; font-weight:bold; border: 2px solid var(--primary);"></select>
         
         <div style="background:#f8fafc; padding:20px; border-radius:16px; border:1px solid var(--border-soft); margin-bottom:20px;">
-            <p style="font-size:0.75em; font-weight:800; color:var(--text-light); margin-top:0; letter-spacing: 0.5px;">BENUTZER UMBENENNEN</p>
+            <p data-i18n="lblRename" style="font-size:0.75em; font-weight:800; color:var(--text-light); margin-top:0; letter-spacing: 0.5px;">BENUTZER UMBENENNEN</p>
             <div id="renameContainer"></div>
         </div>
         
-        <label>Sprachen</label>
+        <label data-i18n="lblLangs">Sprachen</label>
         <div style="display:flex; gap:10px; margin-bottom: 20px;">
             <select id="selL1" onchange="langChanged()"></select>
             <select id="selL2" onchange="langChanged()"></select>
             <select id="selL3" onchange="langChanged()"></select>
         </div>
 
-        <label>Stimmen (Aussprache)</label>
+        <label data-i18n="lblVoices">Stimmen (Aussprache)</label>
         <div style="background:#f8fafc; padding:15px; border-radius:16px; border:1px solid var(--border-soft); margin-bottom:20px;">
             <div class="voice-row"><span id="flagV1" class="lang-tag"></span> <select id="selVoiceL1" onchange="saveSettings()"></select></div>
             <div class="voice-row"><span id="flagV2" class="lang-tag"></span> <select id="selVoiceL2" onchange="saveSettings()"></select></div>
             <div class="voice-row"><span id="flagV3" class="lang-tag"></span> <select id="selVoiceL3" onchange="saveSettings()"></select></div>
         </div>
 
-        <button class="action-btn" onclick="closeSettings()">Fertig</button>
+        <button class="action-btn" onclick="closeSettings()" data-i18n="btnDone">Fertig</button>
     </div>
 </div>
 
 <div class="header-row">
     <div class="badge">🔥 <span id="streakDisplay">0</span></div>
-    <div class="badge">📚 <span id="wordCount">0</span> Wörter</div>
+    <div class="badge">📚 <span id="wordCount">0</span> <span data-i18n="wordStr">Wörter</span></div>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
 </div>
 
 <div class="nav">
-    <button id="btn1" class="active" onclick="showTab('add')">➕ NEU</button>
-    <button id="btn7" onclick="showTab('live')">🎙️ LIVE</button>
-    <button id="btn6" onclick="showTab('sentences')">📝 SÄTZE</button>
-    <button id="btn5" onclick="showTab('study')">👀 LERNEN</button>
-    <button id="btn2" onclick="showTab('quiz')">🧠 ÜBEN</button>
-    <button id="btn4" onclick="showTab('spiel')">⏱️ SPIEL</button>
-    <button id="btn3" onclick="showTab('list')">📖 LISTE</button>
+    <button id="btn1" class="active" onclick="showTab('add')" data-i18n="btnNew">➕ NEU</button>
+    <button id="btn7" onclick="showTab('live')" data-i18n="btnLive">🎙️ LIVE</button>
+    <button id="btn6" onclick="showTab('sentences')" data-i18n="btnSentences">📝 SÄTZE</button>
+    <button id="btn5" onclick="showTab('study')" data-i18n="btnStudy">👀 LERNEN</button>
+    <button id="btn2" onclick="showTab('quiz')" data-i18n="btnQuiz">🧠 ÜBEN</button>
+    <button id="btn4" onclick="showTab('spiel')" data-i18n="btnGame">⏱️ SPIEL</button>
+    <button id="btn3" onclick="showTab('list')" data-i18n="btnList">📖 LISTE</button>
 </div>
 
 <div id="tabLive" class="card" style="display:none">
     <div style="text-align:center; margin-bottom: 20px;">
-        <p style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">FLIESSENDER LIVE-ÜBERSETZER</p>
-        <p style="font-size:0.8em; color:var(--text); margin-top:5px;">Lass dir Zeit beim Sprechen! Drücke danach auf Übersetzen.</p>
+        <p data-i18n="titleLive" style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">FLIESSENDER LIVE-ÜBERSETZER</p>
+        <p data-i18n="descLive" style="font-size:0.8em; color:var(--text); margin-top:5px;">Lass dir Zeit beim Sprechen! Drücke danach auf Übersetzen.</p>
     </div>
     
     <div style="display:flex; gap:10px; margin-bottom: 15px;">
         <div style="flex:1">
-            <label>Ich spreche</label>
+            <label data-i18n="lblSpeak">Ich spreche</label>
             <select id="liveSrcLang" style="font-weight: bold;">
                 <option value="de">Deutsch</option>
                 <option value="en">Englisch</option>
@@ -213,7 +213,7 @@
             </select>
         </div>
         <div style="flex:1">
-            <label>Übersetze nach</label>
+            <label data-i18n="lblTransTo">Übersetze nach</label>
             <select id="liveTgtLang" style="font-weight: bold;">
                 <option value="sv">Schwedisch</option>
                 <option value="en">Englisch</option>
@@ -224,70 +224,70 @@
 
     <button id="btnLiveRecord" class="action-btn" style="background:var(--primary); margin-bottom: 20px; font-size:1.1em;" onclick="toggleLiveRecord()">🔴 Aufnahme starten</button>
     
-    <label>Gehörter Text</label>
-    <textarea id="liveSourceText" rows="4" placeholder="Hier erscheint dein gesprochener Text..."></textarea>
+    <label data-i18n="lblHeard">Gehörter Text</label>
+    <textarea id="liveSourceText" rows="4" data-i18n-ph="phLiveHeard"></textarea>
     
     <div style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
-        <button class="action-btn" onclick="triggerManualLiveTranslate()" style="background:var(--accent); color:var(--text); flex: 2; margin-top: 0;">🔄 Übersetzen</button>
-        <button class="clear-btn" onclick="clearLive()" style="flex: 1; border-radius: 16px; margin-top: 0;">🗑️ Löschen</button>
+        <button class="action-btn" onclick="triggerManualLiveTranslate()" data-i18n="btnLiveTrans" style="background:var(--accent); color:var(--text); flex: 2; margin-top: 0;">🔄 Übersetzen</button>
+        <button class="clear-btn" onclick="clearLive()" data-i18n="btnLiveClear" style="flex: 1; border-radius: 16px; margin-top: 0;">🗑️ Löschen</button>
     </div>
 
-    <div id="loaderLive" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI übersetzt...</div>
+    <div id="loaderLive" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI...</div>
 
-    <label>Übersetzung</label>
-    <textarea id="liveResultText" rows="4" placeholder="Hier erscheint die Übersetzung..." style="background:#f0fff4; border-color:#48bb78; color:#2f855a; font-weight:bold;"></textarea>
-    <button class="speaker-btn" style="width:100%; margin-top: 10px; border-color:#48bb78; color:#2f855a; font-weight:bold; background:white;" onclick="speakLive()">🔊 Übersetzung vorlesen</button>
+    <label data-i18n="lblLiveTrans">Übersetzung</label>
+    <textarea id="liveResultText" rows="4" data-i18n-ph="phLiveTrans" style="background:#f0fff4; border-color:#48bb78; color:#2f855a; font-weight:bold;"></textarea>
+    <button class="speaker-btn" style="width:100%; margin-top: 10px; border-color:#48bb78; color:#2f855a; font-weight:bold; background:white;" onclick="speakLive()" data-i18n="btnLiveSpeak">🔊 Übersetzung vorlesen</button>
 </div>
 
 <div id="tabSentences" class="card" style="display:none">
     <div style="text-align:center; margin-bottom: 20px;">
-        <p style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">SÄTZE BILDEN & PRÜFEN</p>
+        <p data-i18n="titleSent" style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">SÄTZE BILDEN & PRÜFEN</p>
     </div>
-    <div id="loaderSentences" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI übersetzt...</div>
+    <div id="loaderSentences" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI...</div>
     
-    <label>Mein Satz (Deutsch)</label>
+    <label data-i18n="lblMySent">Mein Satz (Deutsch)</label>
     <div class="input-row">
-        <textarea id="sentBase" rows="2" placeholder="z. B. Warst du gestern einkaufen?"></textarea>
+        <textarea id="sentBase" rows="2" data-i18n-ph="phSentBase"></textarea>
         <button class="mic-btn" onclick="listen(1, 'sentBase', this)" style="height: 100%;">🎤</button>
     </div>
 
-    <label>Zielsprache</label>
+    <label data-i18n="lblTarget">Zielsprache</label>
     <select id="sentTargetLang" style="margin-bottom: 15px; font-weight: bold;">
         <option value="en">Englisch</option>
         <option value="sv">Schwedisch</option>
     </select>
 
-    <label>Meine Übersetzung</label>
+    <label data-i18n="lblMyAttempt">Meine Übersetzung</label>
     <div class="input-row">
-        <textarea id="sentAttempt" rows="2" placeholder="Ich versuche es mal..."></textarea>
+        <textarea id="sentAttempt" rows="2" data-i18n-ph="phSentAtt"></textarea>
         <button class="mic-btn" onclick="listenAttempt('sentAttempt', this)" style="height: 100%;">🎤</button>
     </div>
 
-    <button class="action-btn" onclick="checkSentence()" style="margin-top: 20px;">🔍 Übersetzung prüfen</button>
+    <button class="action-btn" onclick="checkSentence()" data-i18n="btnCheckSent" style="margin-top: 20px;">🔍 Übersetzung prüfen</button>
 
     <div id="sentFeedback" style="display:none; margin-top:20px; padding:20px; border-radius:16px; background:#f0fff4; border:2px solid #48bb78; box-shadow: var(--shadow-soft);">
-        <label style="color: #2f855a;">KI-Korrektur / Vorschlag:</label>
+        <label data-i18n="lblKiSuggest" style="color: #2f855a;">KI-Korrektur / Vorschlag:</label>
         <div id="sentResult" style="font-size: 1.2em; font-weight: 700; color: #2f855a; margin-bottom: 15px; line-height: 1.4;"></div>
-        <button class="speaker-btn" id="spkSent" style="width:100%; background: white; border-color: #48bb78; color: #2f855a; font-weight: bold;">🔊 Anhören</button>
+        <button class="speaker-btn" id="spkSent" data-i18n="btnListen" style="width:100%; background: white; border-color: #48bb78; color: #2f855a; font-weight: bold;">🔊 Anhören</button>
     </div>
 </div>
 
 <div id="tabStudy" class="card" style="display:none">
     <div style="text-align:center; margin-bottom: 20px;">
-        <p style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">VOKABELN LERNEN & SUCHEN</p>
-        <input type="text" id="studySearch" placeholder="🔍 Suchen..." oninput="filterStudyWords()" style="width: 100%; margin-top: 15px; margin-bottom: 10px; font-size: 16px;">
+        <p data-i18n="titleStudy" style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">VOKABELN LERNEN & SUCHEN</p>
+        <input type="text" id="studySearch" data-i18n-ph="searchPh" oninput="filterStudyWords()" style="width: 100%; margin-top: 15px; margin-bottom: 10px; font-size: 16px;">
         <div id="studyWordCount" style="font-size:0.9em; color:var(--primary); font-weight:700;">0 / 0</div>
     </div>
     <div id="studyContainer" style="border-radius: 16px; text-align: left; margin-bottom: 25px;"></div>
     <div style="display: flex; gap: 15px;">
-        <button class="action-btn" style="background:#e2e8f0; color:var(--text); flex:1;" onclick="prevStudyWord()">⬅️ Zurück</button>
-        <button class="action-btn" style="flex:1;" onclick="nextStudyWord()">Weiter ➡️</button>
+        <button class="action-btn" style="background:#e2e8f0; color:var(--text); flex:1;" onclick="prevStudyWord()" data-i18n="btnPrev">⬅️ Zurück</button>
+        <button class="action-btn" style="flex:1;" onclick="nextStudyWord()" data-i18n="btnNext">Weiter ➡️</button>
     </div>
 </div>
 
 <div id="tabAdd" class="card">
-    <h2 id="addTitle">Neues Wort</h2>
-    <div id="loader" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI arbeitet...</div>
+    <h2 id="addTitle" data-i18n="titleAdd">Neues Wort</h2>
+    <div id="loader" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI...</div>
     <input type="hidden" id="editId">
     
     <label id="lblIn1">L1</label>
@@ -297,38 +297,38 @@
     <label id="lblIn3">L3</label>
     <div class="input-row"><input type="text" id="inSv"><button class="mic-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
     
-    <label>Beispielsatz</label>
+    <label data-i18n="lblEx">Beispielsatz</label>
     <input type="text" id="inEx" placeholder="...">
     
-    <button class="action-btn" style="background:#e2e8f0; color:var(--text); font-size:0.9em; padding:12px;" onclick="toggleVerbSection()">📝 Verb-Details anzeigen</button>
+    <button class="action-btn" style="background:#e2e8f0; color:var(--text); font-size:0.9em; padding:12px;" onclick="toggleVerbSection()" data-i18n="btnShowVerbs">📝 Verb-Details anzeigen</button>
     
     <div id="verbSection" class="verb-section">
         <div class="verb-lang-group"><label id="vt1">L1</label><div class="verb-row"><input type="text" id="inDePast" placeholder="Er..."><input type="text" id="inDeFut" placeholder="Er wird..."></div></div>
         <div class="verb-lang-group"><label id="vt2">L2</label><div class="verb-row"><input type="text" id="inEnPast" placeholder="He..."><input type="text" id="inEnFut" placeholder="He will..."></div></div>
         <div class="verb-lang-group"><label id="vt3">L3</label><div class="verb-row"><input type="text" id="inSvPast" placeholder="Han..."><input type="text" id="inSvFut" placeholder="Han kommer att..."></div></div>
-        <button class="action-btn" style="background:var(--accent); color:var(--text); font-size:0.95em; margin-top:10px;" onclick="fetchVerbForms()">⚡ Formen automatisch suchen</button>
+        <button class="action-btn" style="background:var(--accent); color:var(--text); font-size:0.95em; margin-top:10px;" onclick="fetchVerbForms()" data-i18n="btnAutoVerbs">⚡ Formen automatisch suchen</button>
     </div>
 
     <div style="display: flex; gap: 10px; margin-top: 25px;">
-        <button class="action-btn" onclick="handleSmartTranslate()" style="background:var(--accent); color:var(--text); flex:1;">1. Übersetzen</button>
-        <button class="action-btn" style="flex:1;" onclick="manualSave()">2. Speichern</button>
+        <button class="action-btn" onclick="handleSmartTranslate()" style="background:var(--accent); color:var(--text); flex:1;" data-i18n="btnTrans">1. Übersetzen</button>
+        <button class="action-btn" style="flex:1;" onclick="manualSave()" data-i18n="btnSave">2. Speichern</button>
     </div>
-    <button class="action-btn" style="background:#e2e8f0; color:var(--text); margin-top:15px;" onclick="clearInputs()">Felder leeren</button>
-    <button id="cancelEdit" class="action-btn" style="background:var(--text-light); display:none;" onclick="resetForm()">Abbrechen</button>
+    <button class="action-btn" style="background:#e2e8f0; color:var(--text); margin-top:15px;" onclick="clearInputs()" data-i18n="btnClear">Felder leeren</button>
+    <button id="cancelEdit" class="action-btn" style="background:var(--text-light); display:none;" onclick="resetForm()" data-i18n="btnCancel">Abbrechen</button>
 </div>
 
 <div id="tabQuiz" class="card" style="display:none">
     <div style="text-align:center; margin-bottom: 20px;">
-        <div id="audioModeToggle" style="font-size:0.85em; font-weight:700; color:var(--primary); cursor:pointer; margin-bottom:15px; display: inline-block; padding: 5px 10px; background: #eef2f6; border-radius: 15px;" onclick="toggleAudioMode()">🔈 AUDIO: AUS</div>
+        <div id="audioModeToggle" style="font-size:0.85em; font-weight:700; color:var(--primary); cursor:pointer; margin-bottom:15px; display: inline-block; padding: 5px 10px; background: #eef2f6; border-radius: 15px;" onclick="toggleAudioMode()" data-i18n="audioOff">🔈 AUDIO: AUS</div>
         <div id="timer" style="display:none; font-size:1.8em; font-weight:800; color:#e53e3e; margin-bottom: 10px;">⚡ SPIEL</div>
-        <p style="color:var(--text-light); font-size:0.8em; margin:0; font-weight: 700; letter-spacing: 1px;">WAS HEISST...?</p>
+        <p data-i18n="lblWhatMeans" style="color:var(--text-light); font-size:0.8em; margin:0; font-weight: 700; letter-spacing: 1px;">WAS HEISST...?</p>
         <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
              <h1 id="qMainText" style="margin:10px 0; color:var(--primary); font-size: 2em;">---</h1>
              <button class="speaker-btn" id="spkMain" style="font-size: 1.2em;">🔊</button>
         </div>
     </div>
     
-    <label id="lblAns1">ANTWORT 1</label>
+    <label id="lblAns1" data-i18n="lblAns1">ANTWORT 1</label>
     <div class="input-row">
         <input type="text" id="qAns1">
         <button class="mic-btn" id="micAns1">🎤</button>
@@ -337,7 +337,7 @@
     </div>
     <div id="poolAns1" class="letter-pool"></div>
 
-    <label id="lblAns2">ANTWORT 2</label>
+    <label id="lblAns2" data-i18n="lblAns2">ANTWORT 2</label>
     <div class="input-row">
         <input type="text" id="qAns2" onkeypress="if(event.key==='Enter') checkAns()">
         <button class="mic-btn" id="micAns2">🎤</button>
@@ -346,31 +346,40 @@
     </div>
     <div id="poolAns2" class="letter-pool"></div>
     
-    <button class="action-btn" onclick="checkAns()" id="checkBtn" style="margin-top: 25px;">PRÜFEN</button>
+    <button class="action-btn" onclick="checkAns()" id="checkBtn" style="margin-top: 25px;" data-i18n="btnCheck">PRÜFEN</button>
     <div id="qFeed"></div>
-    <button class="action-btn" style="background:#e2e8f0; color:var(--text); display:none; margin-top: 25px;" id="nextBtn" onclick="nextQ()">NÄCHSTES WORT ➡️</button>
+    <button class="action-btn" style="background:#e2e8f0; color:var(--text); display:none; margin-top: 25px;" id="nextBtn" onclick="nextQ()" data-i18n="btnNextWord">NÄCHSTES WORT ➡️</button>
 </div>
 
 <div id="tabList" class="card" style="display:none">
-    <h2>Vokabelheft</h2>
+    <h2 data-i18n="titleList">Vokabelheft</h2>
     <div id="listCont"></div>
     <div style="margin-top:30px; display:flex; gap:15px;">
-        <button class="action-btn" style="font-size:0.9em; background:#e2e8f0; color: var(--text); flex:1;" onclick="exportData()">💾 Backup speichern</button>
-        <button class="action-btn" style="font-size:0.9em; background:#e2e8f0; color: var(--text); flex:1;" onclick="document.getElementById('importFile').click()">📂 Backup laden</button>
+        <button class="action-btn" style="font-size:0.9em; background:#e2e8f0; color: var(--text); flex:1;" onclick="exportData()" data-i18n="btnBackupSave">💾 Backup speichern</button>
+        <button class="action-btn" style="font-size:0.9em; background:#e2e8f0; color: var(--text); flex:1;" onclick="document.getElementById('importFile').click()" data-i18n="btnBackupLoad">📂 Backup laden</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
     </div>
     <div id="importStatus" style="color: var(--primary); font-size: 0.95em; font-weight: 700; margin-top: 20px; display: none; text-align: center; padding: 10px; background: #eef2f6; border-radius: 12px;"></div>
     
-    <button class="action-btn danger-btn" onclick="nukeDatabase()">⚠️ ALLES LÖSCHEN</button>
+    <button class="action-btn danger-btn" onclick="nukeDatabase()" data-i18n="btnDeleteAll">⚠️ ALLES LÖSCHEN</button>
 </div>
 
 <div class="footer-area">
-    <button class="share-btn" onclick="shareApp()">📤 App weiterleiten</button>
+    <div style="margin-bottom: 25px; display: flex; justify-content: center; align-items: center; gap: 10px;">
+        <label style="margin:0; font-size: 0.85em;" data-i18n="appLangStr">App-Sprache:</label>
+        <select id="appLangSelector" onchange="changeAppLang()" style="width: auto; padding: 8px 15px; font-weight: bold; border-radius: 15px; cursor: pointer;">
+            <option value="de">🇩🇪 Deutsch</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="sv">🇸🇪 Svenska</option>
+        </select>
+    </div>
+
+    <button class="share-btn" onclick="shareApp()" data-i18n="btnShare">📤 App weiterleiten</button>
     <div class="footer-version">Family Trainer <span id="versionDisplay"></span></div>
 </div>
 
 <script>
-    const VERSION = "6.1 (Live Fix & Löschen)";
+    const VERSION = "6.2 (Multi-Language UI)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -387,8 +396,94 @@
     let studyWords = []; 
     let studyIndex = 0; 
 
+    // --- DICTIONARY FÜR APP SPRACHE ---
+    const UI_TRANS = {
+        'de': {
+            btnNew: "➕ NEU", btnLive: "🎙️ LIVE", btnSentences: "📝 SÄTZE", btnStudy: "👀 LERNEN", btnQuiz: "🧠 ÜBEN", btnGame: "⏱️ SPIEL", btnList: "📖 LISTE",
+            titleAdd: "Neues Wort", lblEx: "Beispielsatz", btnShowVerbs: "📝 Verb-Details anzeigen", btnAutoVerbs: "⚡ Formen automatisch suchen", btnTrans: "1. Übersetzen", btnSave: "2. Speichern", btnClear: "Felder leeren", btnCancel: "Abbrechen",
+            titleLive: "FLIESSENDER LIVE-ÜBERSETZER", descLive: "Lass dir Zeit beim Sprechen! Drücke danach auf Übersetzen.", lblSpeak: "Ich spreche", lblTransTo: "Übersetze nach", btnStartRec: "🔴 Aufnahme starten", btnStopRec: "⏹️ Aufnahme stoppen", lblHeard: "Gehörter Text", btnLiveTrans: "🔄 Übersetzen", btnLiveClear: "🗑️ Löschen", lblLiveTrans: "Übersetzung", btnLiveSpeak: "🔊 Übersetzung vorlesen", phLiveHeard: "Hier erscheint dein gesprochener Text...", phLiveTrans: "Hier erscheint die Übersetzung...",
+            titleSent: "SÄTZE BILDEN & PRÜFEN", lblMySent: "Mein Satz (Deutsch)", lblTarget: "Zielsprache", lblMyAttempt: "Meine Übersetzung", btnCheckSent: "🔍 Übersetzung prüfen", lblKiSuggest: "KI-Korrektur / Vorschlag:", btnListen: "🔊 Anhören", phSentBase: "z. B. Warst du gestern einkaufen?", phSentAtt: "Ich versuche es mal...",
+            titleStudy: "VOKABELN LERNEN & SUCHEN", searchPh: "🔍 Suchen...", btnPrev: "⬅️ Zurück", btnNext: "Weiter ➡️",
+            audioOff: "🔈 AUDIO: AUS", audioOn: "🔊 AUDIO: AN", lblWhatMeans: "WAS HEISST...?", lblAns1: "ANTWORT 1", lblAns2: "ANTWORT 2", btnCheck: "PRÜFEN", btnNextWord: "NÄCHSTES WORT ➡️",
+            titleList: "Vokabelheft", btnBackupSave: "💾 Backup speichern", btnBackupLoad: "📂 Backup laden", btnDeleteAll: "⚠️ ALLES LÖSCHEN", btnEdit: "✎ Bearbeiten",
+            lblSettings: "⚙️ Einstellungen", lblUser: "👤 Aktiver Benutzer", lblRename: "BENUTZER UMBENENNEN", lblLangs: "Sprachen", lblVoices: "Stimmen (Aussprache)", btnDone: "Fertig",
+            btnShare: "📤 App weiterleiten", appLangStr: "App-Sprache:", wordStr: "Wörter", titleEdit: "Bearbeiten"
+        },
+        'en': {
+            btnNew: "➕ NEW", btnLive: "🎙️ LIVE", btnSentences: "📝 SENTENCES", btnStudy: "👀 STUDY", btnQuiz: "🧠 QUIZ", btnGame: "⏱️ GAME", btnList: "📖 LIST",
+            titleAdd: "New Word", lblEx: "Example sentence", btnShowVerbs: "📝 Show verb details", btnAutoVerbs: "⚡ Find forms automatically", btnTrans: "1. Translate", btnSave: "2. Save", btnClear: "Clear fields", btnCancel: "Cancel",
+            titleLive: "FLUENT LIVE TRANSLATOR", descLive: "Take your time speaking! Then press Translate.", lblSpeak: "I'm speaking", lblTransTo: "Translate to", btnStartRec: "🔴 Start recording", btnStopRec: "⏹️ Stop recording", lblHeard: "Heard text", btnLiveTrans: "🔄 Translate", btnLiveClear: "🗑️ Clear", lblLiveTrans: "Translation", btnLiveSpeak: "🔊 Read translation", phLiveHeard: "Your spoken text will appear here...", phLiveTrans: "Translation will appear here...",
+            titleSent: "BUILD & CHECK SENTENCES", lblMySent: "My sentence", lblTarget: "Target language", lblMyAttempt: "My translation", btnCheckSent: "🔍 Check translation", lblKiSuggest: "AI Correction / Suggestion:", btnListen: "🔊 Listen", phSentBase: "e.g. Did you go shopping yesterday?", phSentAtt: "Let me try...",
+            titleStudy: "STUDY & SEARCH WORDS", searchPh: "🔍 Search...", btnPrev: "⬅️ Back", btnNext: "Next ➡️",
+            audioOff: "🔈 AUDIO: OFF", audioOn: "🔊 AUDIO: ON", lblWhatMeans: "WHAT DOES IT MEAN?", lblAns1: "ANSWER 1", lblAns2: "ANSWER 2", btnCheck: "CHECK", btnNextWord: "NEXT WORD ➡️",
+            titleList: "Vocabulary List", btnBackupSave: "💾 Save Backup", btnBackupLoad: "📂 Load Backup", btnDeleteAll: "⚠️ DELETE ALL", btnEdit: "✎ Edit",
+            lblSettings: "⚙️ Settings", lblUser: "👤 Active User", lblRename: "RENAME USERS", lblLangs: "Languages", lblVoices: "Voices (Pronunciation)", btnDone: "Done",
+            btnShare: "📤 Share App", appLangStr: "App Language:", wordStr: "Words", titleEdit: "Edit Word"
+        },
+        'sv': {
+            btnNew: "➕ NYTT", btnLive: "🎙️ LIVE", btnSentences: "📝 MENINGAR", btnStudy: "👀 PLUGGA", btnQuiz: "🧠 ÖVA", btnGame: "⏱️ SPEL", btnList: "📖 LISTA",
+            titleAdd: "Nytt ord", lblEx: "Exempelmening", btnShowVerbs: "📝 Visa verbdetaljer", btnAutoVerbs: "⚡ Hitta former automatiskt", btnTrans: "1. Översätt", btnSave: "2. Spara", btnClear: "Rensa fält", btnCancel: "Avbryt",
+            titleLive: "FLYTANDE LIVE-ÖVERSÄTTARE", descLive: "Ta din tid när du pratar! Tryck sedan på Översätt.", lblSpeak: "Jag pratar", lblTransTo: "Översätt till", btnStartRec: "🔴 Starta inspelning", btnStopRec: "⏹️ Stoppa inspelning", lblHeard: "Hörd text", btnLiveTrans: "🔄 Översätt", btnLiveClear: "🗑️ Radera", lblLiveTrans: "Översättning", btnLiveSpeak: "🔊 Läs upp översättning", phLiveHeard: "Din talade text visas här...", phLiveTrans: "Översättningen visas här...",
+            titleSent: "SKAPA & TESTA MENINGAR", lblMySent: "Min mening", lblTarget: "Målspråk", lblMyAttempt: "Mitt försök", btnCheckSent: "🔍 Kontrollera översättning", lblKiSuggest: "AI-korrigering / Förslag:", btnListen: "🔊 Lyssna", phSentBase: "t.ex. Var du och handlade igår?", phSentAtt: "Låt mig försöka...",
+            titleStudy: "PLUGGA & SÖK ORD", searchPh: "🔍 Sök...", btnPrev: "⬅️ Tillbaka", btnNext: "Nästa ➡️",
+            audioOff: "🔈 LJUD: AV", audioOn: "🔊 LJUD: PÅ", lblWhatMeans: "VAD BETYDER...?", lblAns1: "SVAR 1", lblAns2: "SVAR 2", btnCheck: "KONTROLLERA", btnNextWord: "NÄSTA ORD ➡️",
+            titleList: "Ordbok", btnBackupSave: "💾 Spara backup", btnBackupLoad: "📂 Ladda backup", btnDeleteAll: "⚠️ RADERA ALLT", btnEdit: "✎ Redigera",
+            lblSettings: "⚙️ Inställningar", lblUser: "👤 Aktiv användare", lblRename: "BYT NAMN PÅ ANVÄNDARE", lblLangs: "Språk", lblVoices: "Röster (Uttal)", btnDone: "Klar",
+            btnShare: "📤 Dela appen", appLangStr: "App-språk:", wordStr: "Ord", titleEdit: "Redigera ord"
+        }
+    };
+    let currentAppLang = 'de';
+
+    function changeAppLang() {
+        currentAppLang = document.getElementById('appLangSelector').value;
+        localStorage.setItem('trainerAppLang', currentAppLang);
+        applyAppLang();
+    }
+
+    function applyAppLang() {
+        const dict = UI_TRANS[currentAppLang];
+        // Labels & Buttons
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (dict[key]) {
+                if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                    // Safety check
+                } else {
+                    el.innerHTML = dict[key];
+                }
+            }
+        });
+        // Placeholders
+        document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+            const key = el.getAttribute('data-i18n-ph');
+            if (dict[key]) el.placeholder = dict[key];
+        });
+
+        // Dynamic elements
+        const recBtn = document.getElementById('btnLiveRecord');
+        if (isLiveRecording) recBtn.innerHTML = dict.btnStopRec;
+        else recBtn.innerHTML = dict.btnStartRec;
+
+        document.getElementById('audioModeToggle').innerText = audioMode ? dict.audioOn : dict.audioOff;
+        
+        const titleEl = document.getElementById('addTitle');
+        if(document.getElementById('editId').value) titleEl.innerText = dict.titleEdit;
+        else titleEl.innerText = dict.titleAdd;
+
+        renderList(); // Update lists to translate Edit buttons
+    }
+    // ----------------------------------
+
     function init() {
         document.getElementById('versionDisplay').innerText = VERSION;
+        
+        // Sprache laden
+        const savedAppLang = localStorage.getItem('trainerAppLang');
+        if(savedAppLang) {
+            currentAppLang = savedAppLang;
+            document.getElementById('appLangSelector').value = currentAppLang;
+        }
+
         const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames);
         renderRenameInputs();
         const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx);
@@ -398,6 +493,7 @@
         loadVoices(); 
         updateInterface(); 
         refreshData();
+        applyAppLang(); // Wende Sprache direkt beim Start an
         showTab('add'); 
     }
 
@@ -514,17 +610,13 @@
         rec.start();
     }
 
-    // --- LIVE ÜBERSETZER LOGIK (FIX FÜR ANDROID DOPPEL-BUG) ---
     let liveRec = null;
     let isLiveRecording = false;
     let liveFinalText = "";
 
     function toggleLiveRecord() {
-        if (isLiveRecording) {
-            stopLiveRecord();
-        } else {
-            startLiveRecord();
-        }
+        if (isLiveRecording) stopLiveRecord();
+        else startLiveRecord();
     }
 
     function clearLive() {
@@ -539,13 +631,11 @@
         
         isLiveRecording = true;
         const btn = document.getElementById('btnLiveRecord');
-        btn.innerHTML = "⏹️ Aufnahme stoppen";
+        btn.innerHTML = UI_TRANS[currentAppLang].btnStopRec;
         btn.style.background = "#e53e3e"; 
         btn.classList.add("mic-active");
 
         liveRec = new SpeechRecognition();
-        // WICHTIG: continuous=false verhindert den 3-fach-Bug auf Handys!
-        // Stattdessen starten wir das Mikrofon nach jeder Pause einfach im Hintergrund neu.
         liveRec.continuous = false; 
         liveRec.interimResults = true;
         
@@ -563,17 +653,12 @@
                     interim += event.results[i][0].transcript;
                 }
             }
-            if (finalStr) {
-                liveFinalText += finalStr;
-            }
+            if (finalStr) liveFinalText += finalStr;
             document.getElementById('liveSourceText').value = liveFinalText + interim;
         };
 
         liveRec.onend = () => {
-            // Automatischer Neustart für den Dauer-Zuhören-Effekt ohne Verdopplung
-            if (isLiveRecording) {
-                try { liveRec.start(); } catch(e){}
-            }
+            if (isLiveRecording) { try { liveRec.start(); } catch(e){} }
         };
 
         try { liveRec.start(); } catch(e){}
@@ -584,7 +669,7 @@
         if (liveRec) { liveRec.stop(); }
         
         const btn = document.getElementById('btnLiveRecord');
-        btn.innerHTML = "🔴 Aufnahme starten / fortsetzen";
+        btn.innerHTML = UI_TRANS[currentAppLang].btnStartRec;
         btn.style.background = "var(--primary)";
         btn.classList.remove("mic-active");
         
@@ -605,7 +690,7 @@
             const result = await translate(text, src, tgt);
             document.getElementById('liveResultText').value = result;
         } catch(e) {
-            alert("Fehler bei der Live-Übersetzung: " + e.message);
+            console.log(e);
         } finally {
             document.getElementById('loaderLive').style.display = "none";
         }
@@ -617,9 +702,8 @@
         const langCode = Object.keys(LANGS).find(k => k === tgt);
         speak(text, langCode);
     }
-    // ----------------------------------
 
-    function toggleAudioMode() { audioMode = !audioMode; document.getElementById('audioModeToggle').innerText = audioMode ? "🔊 AUDIO: AN" : "🔈 AUDIO: AUS"; }
+    function toggleAudioMode() { audioMode = !audioMode; applyAppLang(); }
 
     function cleanResult(txt) {
         if(!txt) return ""; let c = txt.trim();
@@ -647,7 +731,7 @@
         const tgtLang = document.getElementById('sentTargetLang').value; 
         const srcLang = 'de'; 
 
-        if(!base) { alert("Bitte einen deutschen Satz eingeben!"); return; }
+        if(!base) return;
 
         document.getElementById('loaderSentences').style.display = "block";
         document.getElementById('sentFeedback').style.display = "none";
@@ -661,7 +745,7 @@
 
             document.getElementById('sentFeedback').style.display = "block";
         } catch(e) {
-            alert("Fehler bei der Übersetzung: " + e.message);
+            console.log(e);
         } finally {
             document.getElementById('loaderSentences').style.display = "none";
         }
@@ -670,7 +754,7 @@
     async function handleSmartTranslate() {
         const i1 = document.getElementById('inDe').value.trim(), i2 = document.getElementById('inEn').value.trim(), i3 = document.getElementById('inSv').value.trim();
         let txt = i1 || i2 || i3; let src = i1 ? conf.l1 : (i2 ? conf.l2 : conf.l3);
-        if(!txt) { alert("Bitte Wort eingeben!"); return; }
+        if(!txt) return;
         document.getElementById('loader').style.display = "block";
         try {
             const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}];
@@ -683,7 +767,7 @@
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
-        if(!baseDe || !baseEn) return alert("Bitte erst Deutsch und Englisch ausfüllen.");
+        if(!baseDe || !baseEn) return;
         
         document.getElementById('loader').style.display = "block";
         
@@ -698,11 +782,8 @@
                 const lowerText = rawText.toLowerCase();
                 const lowerPronoun = pronoun.toLowerCase();
                 const index = lowerText.indexOf(lowerPronoun);
-                if (index !== -1) {
-                    return rawText.substring(index).trim().replace(/[.!]$/, "");
-                } else {
-                    return pronoun + " " + rawText.trim().replace(/[.!]$/, "");
-                }
+                if (index !== -1) { return rawText.substring(index).trim().replace(/[.!]$/, ""); } 
+                else { return pronoun + " " + rawText.trim().replace(/[.!]$/, ""); }
             };
 
             document.getElementById('inEnPast').value = anchorClean(finalEnPast, "He");
@@ -714,7 +795,6 @@
             document.getElementById('inSvFut').value = anchorClean(rawSvFut, "Han");
 
         } catch(e) { 
-            alert("Fehler: " + e.message);
         } finally { 
             document.getElementById('loader').style.display = "none"; 
         }
@@ -723,24 +803,20 @@
     function manualSave() {
         const vData = { deP: document.getElementById('inDePast').value, enP: document.getElementById('inEnPast').value, svP: document.getElementById('inSvPast').value, deF: document.getElementById('inDeFut').value, enF: document.getElementById('inEnFut').value, svF: document.getElementById('inSvFut').value };
         const data = { de: document.getElementById('inDe').value, en: document.getElementById('inEn').value, sv: document.getElementById('inSv').value, ex: document.getElementById('inEx').value, ...vData, ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0 };
-        if(!data.de || !data.sv) { alert(`Bitte Wörter eingeben.`); return; }
+        if(!data.de || !data.sv) return;
         
         const eid = document.getElementById('editId').value;
-        
         if (!eid) { 
             const isDuplicate = allWords.some(word => word.de.toLowerCase() === data.de.trim().toLowerCase());
-            if (isDuplicate) {
-                alert("⚠️ Das Wort '" + data.de + "' existiert bereits in der Liste!");
-                return;
-            }
+            if (isDuplicate) { return; }
         }
 
         const coll = COLLECTIONS[currentCollIndex];
         const op = eid ? db.collection(coll).doc(eid).update(data) : db.collection(coll).add(data);
-        op.then(() => { refreshData(); clearInputs(); if(eid) showTab('list'); }).catch(e => alert("Fehler: "+e.message));
+        op.then(() => { refreshData(); clearInputs(); if(eid) showTab('list'); });
     }
 
-    async function nukeDatabase() { if(!confirm(`ALLES LÖSCHEN?`)) return; if(!confirm("Sicher?")) return; const coll = COLLECTIONS[currentCollIndex]; const s = await db.collection(coll).get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); alert("Gelöscht."); }
+    async function nukeDatabase() { if(!confirm(`ALLES LÖSCHEN?`)) return; if(!confirm("Sicher?")) return; const coll = COLLECTIONS[currentCollIndex]; const s = await db.collection(coll).get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); }
     
     async function refreshData() { 
         const coll = COLLECTIONS[currentCollIndex]; 
@@ -752,6 +828,7 @@
     }
     
     function renderList() {
+        const editTxt = UI_TRANS[currentAppLang].btnEdit;
         document.getElementById('listCont').innerHTML = allWords.map(w => `
             <div class="word-item">
                 <div style="display:flex; align-items:center;">
@@ -763,13 +840,13 @@
                     <div style="display:flex; align-items:center; margin-top:5px;"><span class="lang-tag">${LANGS[conf.l2].flag}</span> ${w.en} <button class="speaker-btn" onclick="speak('${w.en}','${conf.l2}')" style="padding:6px; font-size:12px; margin-left:10px;">🔊</button></div>
                 </div>
                 <div style="position:absolute; right:10px; top:15px;">
-                    <button class="list-btn" onclick="editWord('${w.id}')">✎ Bearbeiten</button> 
+                    <button class="list-btn" onclick="editWord('${w.id}')">${editTxt}</button> 
                     <button class="list-btn" onclick="del('${w.id}')" style="color:#e53e3e;">X</button>
                 </div>
             </div>`).join('');
     }
 
-    function clearInputs() { ['inDe','inEn','inSv','inEx','editId','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inSvFut'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=""; }); document.getElementById('addTitle').innerText="Neues Wort"; document.getElementById('cancelEdit').style.display="none"; document.getElementById('verbSection').style.display="none"; }
+    function clearInputs() { ['inDe','inEn','inSv','inEx','editId','inDePast','inEnPast','inSvPast','inDeFut','inEnFut','inSvFut'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=""; }); applyAppLang(); document.getElementById('cancelEdit').style.display="none"; document.getElementById('verbSection').style.display="none"; }
     function toggleVerbSection() { const el=document.getElementById('verbSection'); el.style.display = (el.style.display==="block")?"none":"block"; }
     
     function showTab(n) { 
@@ -814,7 +891,7 @@
 
     function renderStudyWord() {
         if(studyWords.length === 0) {
-            document.getElementById('studyContainer').innerHTML = "<p style='text-align:center; color:var(--text-light); font-weight:600;'>Keine passenden Vokabeln gefunden.</p>";
+            document.getElementById('studyContainer').innerHTML = "<p style='text-align:center; color:var(--text-light); font-weight:600;'>-</p>";
             document.getElementById('studyWordCount').innerText = "0 / 0";
             return;
         }
@@ -822,7 +899,7 @@
         if(studyIndex >= studyWords.length) studyIndex = 0;
         
         const w = studyWords[studyIndex];
-        document.getElementById('studyWordCount').innerText = `Wort ${studyIndex + 1} von ${studyWords.length}`;
+        document.getElementById('studyWordCount').innerText = `${studyIndex + 1} / ${studyWords.length}`;
         
         const vL2 = w.enP ? `<div style="font-size:0.75em; color:var(--text-light); margin-top:8px; margin-left:45px; font-weight:600;">🕒 ${w.enP} | 🔮 ${w.enF}</div>` : "";
         const vL3 = w.svP ? `<div style="font-size:0.75em; color:var(--text-light); margin-top:8px; margin-left:45px; font-weight:600;">🕒 ${w.svP} | 🔮 ${w.svF}</div>` : "";
@@ -968,7 +1045,7 @@
     }
 
     function updateLevel(id, correct) { db.collection(COLLECTIONS[currentCollIndex]).doc(id).update({ level: Math.max(0, Math.min(3, (curWord.level||0) + (correct?1:-1))) }); }
-    function editWord(id) { const w = allWords.find(x=>x.id===id); document.getElementById('editId').value=w.id; document.getElementById('inDe').value=w.de; document.getElementById('inEn').value=w.en; document.getElementById('inSv').value=w.sv; document.getElementById('inEx').value=w.ex||""; document.getElementById('inDePast').value=w.deP||""; document.getElementById('inDeFut').value=w.deF||""; document.getElementById('inEnPast').value=w.enP||""; document.getElementById('inEnFut').value=w.enF||""; document.getElementById('inSvPast').value=w.svP||""; document.getElementById('inSvFut').value=w.svF||""; document.getElementById('addTitle').innerText="Bearbeiten"; document.getElementById('cancelEdit').style.display="block"; if(w.svP) document.getElementById('verbSection').style.display="block"; showTab('add'); }
+    function editWord(id) { const w = allWords.find(x=>x.id===id); document.getElementById('editId').value=w.id; document.getElementById('inDe').value=w.de; document.getElementById('inEn').value=w.en; document.getElementById('inSv').value=w.sv; document.getElementById('inEx').value=w.ex||""; document.getElementById('inDePast').value=w.deP||""; document.getElementById('inDeFut').value=w.deF||""; document.getElementById('inEnPast').value=w.enP||""; document.getElementById('inEnFut').value=w.enF||""; document.getElementById('inSvPast').value=w.svP||""; document.getElementById('inSvFut').value=w.svF||""; document.getElementById('addTitle').innerText=UI_TRANS[currentAppLang].titleEdit; document.getElementById('cancelEdit').style.display="block"; if(w.svP) document.getElementById('verbSection').style.display="block"; showTab('add'); }
     function del(id) { if(confirm("Löschen?")) db.collection(COLLECTIONS[currentCollIndex]).doc(id).delete().then(refreshData); }
     function exportData() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allWords)); const a = document.createElement('a'); a.href = d; a.download = "backup.json"; a.click(); }
     
@@ -1018,7 +1095,7 @@
                 url: window.location.href
             }).catch((error) => console.log('Fehler beim Teilen:', error));
         } else {
-            alert('Teilen wird von diesem Gerät leider nicht direkt unterstützt. Kopiere einfach den Link aus der Suchleiste!');
+            alert('Teilen wird von diesem Gerät leider inte direkt understött. Kopiera bara länken i webbläsaren!');
         }
     }
 
