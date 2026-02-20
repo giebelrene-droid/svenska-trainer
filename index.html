@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 5.2 (Bessere Sätze & Layout Fix)</title>
+    <title>Family Trainer 6.0 (Live-Übersetzer integriert)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -37,20 +37,19 @@
         .settings-btn { background: var(--card-bg); border: 1px solid var(--border-soft); font-size: 1.3em; cursor: pointer; padding: 6px 12px; border-radius: 50%; box-shadow: var(--shadow-soft); color: var(--text); transition: all 0.2s; }
         .settings-btn:hover { background: #edf2f7; }
 
-        /* NAV: Angepasst für mehr Platz und Umbrüche */
         .nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 25px; }
         .nav button { 
             background: transparent; 
-            flex: 1 1 calc(30% - 8px); 
+            flex: 1 1 calc(25% - 8px); 
             padding: 10px 5px; 
-            font-size: 12px; 
+            font-size: 11px; 
             color: var(--text-light); 
             border: 2px solid transparent; 
             border-radius: 15px; 
             cursor: pointer; 
             font-weight: 700; 
             white-space: normal; 
-            min-width: 80px;
+            min-width: 75px;
             transition: all 0.2s;
         }
         .nav button.active { 
@@ -125,18 +124,7 @@
         .challenge-mode { border: 3px solid #e53e3e; }
 
         .letter-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; margin-top: 10px; justify-content: center; }
-        .letter-btn { 
-            background: white; 
-            border: 2px solid var(--border-soft); 
-            border-radius: 12px; 
-            padding: 10px 16px; 
-            font-size: 1.2em; 
-            font-weight: 700; 
-            cursor: pointer; 
-            color: var(--text); 
-            transition: all 0.15s; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
-        }
+        .letter-btn { background: white; border: 2px solid var(--border-soft); border-radius: 12px; padding: 10px 16px; font-size: 1.2em; font-weight: 700; cursor: pointer; color: var(--text); transition: all 0.15s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .letter-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
         .letter-btn:active { transform: scale(0.95) translateY(0); }
         .letter-btn.used { background: #edf2f7; color: #a0aec0; border-color: #edf2f7; cursor: not-allowed; transform: none !important; box-shadow: none; }
@@ -189,9 +177,6 @@
             <div class="voice-row"><span id="flagV3" class="lang-tag"></span> <select id="selVoiceL3" onchange="saveSettings()"></select></div>
         </div>
 
-        <label style="margin-top:25px; border-top:1px solid var(--border-soft); padding-top:15px;">🔧 KI-Diagnose</label>
-        <div id="debugBox"></div>
-
         <button class="action-btn" onclick="closeSettings()">Fertig</button>
     </div>
 </div>
@@ -204,11 +189,50 @@
 
 <div class="nav">
     <button id="btn1" class="active" onclick="showTab('add')">➕ NEU</button>
+    <button id="btn7" onclick="showTab('live')">🎙️ LIVE</button>
     <button id="btn6" onclick="showTab('sentences')">📝 SÄTZE</button>
     <button id="btn5" onclick="showTab('study')">👀 LERNEN</button>
     <button id="btn2" onclick="showTab('quiz')">🧠 ÜBEN</button>
     <button id="btn4" onclick="showTab('spiel')">⏱️ SPIEL</button>
     <button id="btn3" onclick="showTab('list')">📖 LISTE</button>
+</div>
+
+<div id="tabLive" class="card" style="display:none">
+    <div style="text-align:center; margin-bottom: 20px;">
+        <p style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">FLIESSENDER LIVE-ÜBERSETZER</p>
+        <p style="font-size:0.8em; color:var(--text); margin-top:5px;">Lass dir Zeit beim Sprechen! Das Mikrofon bleibt so lange an, bis du es stoppst.</p>
+    </div>
+    
+    <div style="display:flex; gap:10px; margin-bottom: 15px;">
+        <div style="flex:1">
+            <label>Ich spreche</label>
+            <select id="liveSrcLang" style="font-weight: bold;">
+                <option value="de">Deutsch</option>
+                <option value="en">Englisch</option>
+                <option value="sv">Schwedisch</option>
+            </select>
+        </div>
+        <div style="flex:1">
+            <label>Übersetze nach</label>
+            <select id="liveTgtLang" style="font-weight: bold;">
+                <option value="sv">Schwedisch</option>
+                <option value="en">Englisch</option>
+                <option value="de">Deutsch</option>
+            </select>
+        </div>
+    </div>
+
+    <button id="btnLiveRecord" class="action-btn" style="background:var(--primary); margin-bottom: 20px; font-size:1.1em;" onclick="toggleLiveRecord()">🔴 Aufnahme starten</button>
+    
+    <label>Gehörter Text</label>
+    <textarea id="liveSourceText" rows="4" placeholder="Hier erscheint dein gesprochener Text..."></textarea>
+    
+    <button class="action-btn" onclick="triggerManualLiveTranslate()" style="background:var(--accent); color:var(--text); margin-top: 15px; margin-bottom: 15px;">🔄 Text jetzt übersetzen</button>
+    <div id="loaderLive" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI übersetzt...</div>
+
+    <label>Übersetzung</label>
+    <textarea id="liveResultText" rows="4" placeholder="Hier erscheint die Übersetzung..." style="background:#f0fff4; border-color:#48bb78; color:#2f855a; font-weight:bold;"></textarea>
+    <button class="speaker-btn" style="width:100%; margin-top: 10px; border-color:#48bb78; color:#2f855a; font-weight:bold; background:white;" onclick="speakLive()">🔊 Übersetzung vorlesen</button>
 </div>
 
 <div id="tabSentences" class="card" style="display:none">
@@ -250,10 +274,7 @@
         <input type="text" id="studySearch" placeholder="🔍 Suchen..." oninput="filterStudyWords()" style="width: 100%; margin-top: 15px; margin-bottom: 10px; font-size: 16px;">
         <div id="studyWordCount" style="font-size:0.9em; color:var(--primary); font-weight:700;">0 / 0</div>
     </div>
-    
-    <div id="studyContainer" style="border-radius: 16px; text-align: left; margin-bottom: 25px;">
-    </div>
-
+    <div id="studyContainer" style="border-radius: 16px; text-align: left; margin-bottom: 25px;"></div>
     <div style="display: flex; gap: 15px;">
         <button class="action-btn" style="background:#e2e8f0; color:var(--text); flex:1;" onclick="prevStudyWord()">⬅️ Zurück</button>
         <button class="action-btn" style="flex:1;" onclick="nextStudyWord()">Weiter ➡️</button>
@@ -345,7 +366,7 @@
 </div>
 
 <script>
-    const VERSION = "5.2 (Sätze & Layout Fix)";
+    const VERSION = "6.0 (Live-Übersetzer integriert)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -428,10 +449,6 @@
         document.getElementById('vt1').innerText = `${LANGS[conf.l1].flag} ${LANGS[conf.l1].name}`; 
         document.getElementById('vt2').innerText = `${LANGS[conf.l2].flag} ${LANGS[conf.l2].name}`; 
         document.getElementById('vt3').innerText = `${LANGS[conf.l3].flag} ${LANGS[conf.l3].name}`; 
-        
-        document.getElementById('flagV1').innerText = LANGS[conf.l1].flag;
-        document.getElementById('flagV2').innerText = LANGS[conf.l2].flag;
-        document.getElementById('flagV3').innerText = LANGS[conf.l3].flag;
     }
     
     function loadVoices() { 
@@ -444,27 +461,15 @@
 
     function populateVoiceSelects() {
         if(voices.length === 0) return;
-        
         const buildOptions = (langCode, confKey, elId) => {
             const el = document.getElementById(elId);
             const prefix = LANGS[langCode].tts.split('-')[0]; 
             const available = voices.filter(v => v.lang.startsWith(prefix));
-            
-            if(available.length === 0) {
-                el.innerHTML = '<option value="">Standard Stimme (Gerät)</option>';
-                return;
-            }
-            
+            if(available.length === 0) { el.innerHTML = '<option value="">Standard Stimme (Gerät)</option>'; return; }
             el.innerHTML = available.map(v => `<option value="${v.voiceURI}">${v.name}</option>`).join('');
-            
-            if(confKey && available.some(v => v.voiceURI === confKey)) {
-                el.value = confKey;
-            } else {
-                let best = available.find(v => v.name.includes("Premium") || v.name.includes("Natural")) || available[0];
-                el.value = best.voiceURI;
-            }
+            if(confKey && available.some(v => v.voiceURI === confKey)) { el.value = confKey; } 
+            else { let best = available.find(v => v.name.includes("Premium") || v.name.includes("Natural")) || available[0]; el.value = best.voiceURI; }
         };
-
         buildOptions(conf.l1, conf.v1, 'selVoiceL1');
         buildOptions(conf.l2, conf.v2, 'selVoiceL2');
         buildOptions(conf.l3, conf.v3, 'selVoiceL3');
@@ -483,7 +488,6 @@
 
         let v = null;
         if (selectedURI) v = voices.find(vo => vo.voiceURI === selectedURI);
-        
         if(!v) v = voices.find(vo => vo.lang === ttsCode && (vo.name.includes("Premium") || vo.name.includes("Natural"))); 
         if(!v) v = voices.find(vo => vo.lang.startsWith(ttsCode.split('-')[0])); 
         
@@ -493,8 +497,10 @@
         window.speechSynthesis.speak(ut); 
     }
     
+    // Einfache Spracherkennung (Kurz)
     function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; } const rec = new SpeechRecognition(); const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3); rec.lang = LANGS[langKey].tts; btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; btn.classList.remove('mic-active'); }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
     
+    // Spracherkennung Sätze (Kurz)
     function listenAttempt(targetId, btn) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; }
@@ -507,6 +513,105 @@
         rec.start();
     }
 
+    // --- NEU: LIVE ÜBERSETZER LOGIK ---
+    let liveRec = null;
+    let isLiveRecording = false;
+    let liveFinalTranscript = "";
+
+    function toggleLiveRecord() {
+        if (isLiveRecording) {
+            stopLiveRecord();
+        } else {
+            liveFinalTranscript = ""; 
+            document.getElementById('liveSourceText').value = "";
+            document.getElementById('liveResultText').value = "";
+            startLiveRecord();
+        }
+    }
+
+    function startLiveRecord() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) { alert("Kein Mikrofon-Support in diesem Browser."); return; }
+        
+        isLiveRecording = true;
+        const btn = document.getElementById('btnLiveRecord');
+        btn.innerHTML = "⏹️ Aufnahme stoppen (hört zu...)";
+        btn.style.background = "#e53e3e"; 
+        btn.classList.add("mic-active");
+
+        liveRec = new SpeechRecognition();
+        liveRec.continuous = true; // Wichtig für Pausen
+        liveRec.interimResults = true; // Text sofort anzeigen
+        
+        const srcVal = document.getElementById('liveSrcLang').value;
+        const langCode = Object.keys(LANGS).find(k => k === srcVal);
+        liveRec.lang = LANGS[langCode].tts;
+
+        liveRec.onresult = (event) => {
+            let interim = '';
+            let newFinal = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    newFinal += event.results[i][0].transcript + ' ';
+                } else {
+                    interim += event.results[i][0].transcript;
+                }
+            }
+            liveFinalTranscript += newFinal;
+            document.getElementById('liveSourceText').value = liveFinalTranscript + interim;
+        };
+
+        liveRec.onend = () => {
+            // Wenn man nicht selbst gestoppt hat, aber der Browser abbricht (z.B. durch lange Stille), direkt neu starten!
+            if (isLiveRecording) {
+                try { liveRec.start(); } catch(e){}
+            }
+        };
+
+        try { liveRec.start(); } catch(e){}
+    }
+
+    function stopLiveRecord() {
+        isLiveRecording = false;
+        if (liveRec) { liveRec.stop(); }
+        
+        const btn = document.getElementById('btnLiveRecord');
+        btn.innerHTML = "🔴 Aufnahme starten";
+        btn.style.background = "var(--primary)";
+        btn.classList.remove("mic-active");
+        
+        // Automatisch übersetzen, wenn gestoppt wird und Text da ist
+        if(document.getElementById('liveSourceText').value.trim() !== "") {
+            triggerManualLiveTranslate();
+        }
+    }
+
+    async function triggerManualLiveTranslate() {
+        const text = document.getElementById('liveSourceText').value.trim();
+        if (!text) return;
+        
+        const src = document.getElementById('liveSrcLang').value;
+        const tgt = document.getElementById('liveTgtLang').value;
+        
+        document.getElementById('loaderLive').style.display = "block";
+        try {
+            const result = await translate(text, src, tgt);
+            document.getElementById('liveResultText').value = result;
+        } catch(e) {
+            alert("Fehler bei der Live-Übersetzung: " + e.message);
+        } finally {
+            document.getElementById('loaderLive').style.display = "none";
+        }
+    }
+
+    function speakLive() {
+        const text = document.getElementById('liveResultText').value;
+        const tgt = document.getElementById('liveTgtLang').value;
+        const langCode = Object.keys(LANGS).find(k => k === tgt);
+        speak(text, langCode);
+    }
+    // ----------------------------------
+
     function toggleAudioMode() { audioMode = !audioMode; document.getElementById('audioModeToggle').innerText = audioMode ? "🔊 AUDIO: AN" : "🔈 AUDIO: AUS"; }
 
     function cleanResult(txt) {
@@ -518,7 +623,7 @@
         return c;
     }
 
-    // NEU: Google Translate API (viel bessere Qualität bei ganzen Sätzen)
+    // Google Translate API (beste Qualität für Sätze)
     async function translate(txt, src, tgt) {
         const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${src}&tl=${tgt}&dt=t&q=${encodeURIComponent(txt)}`;
         try {
@@ -572,11 +677,8 @@
     async function fetchVerbForms() {
         const baseDe = document.getElementById('inDe').value.trim();
         const baseEn = document.getElementById('inEn').value.trim();
-        const debug = document.getElementById('debugBox');
         if(!baseDe || !baseEn) return alert("Bitte erst Deutsch und Englisch ausfüllen.");
         
-        debug.style.display = "block";
-        debug.innerHTML = "⏳ KI wird abgefragt...";
         document.getElementById('loader').style.display = "block";
         
         try {
@@ -584,8 +686,6 @@
             let finalEnPast = await translate(tempDE, 'de', 'en');
             let finalDePast = await translate(finalEnPast, 'en', 'de');
             let finalSvPast = await translate(finalEnPast, 'en', 'sv');
-
-            debug.innerHTML = "<b>KI BUMERANG-LOGIK:</b>\n1. 'Did' -> Temp: " + tempDE + "\n2. Clean EN: " + finalEnPast + "\n3. Clean DE: " + finalDePast + "\n4. Clean SV: " + finalSvPast;
 
             const anchorClean = (rawText, pronoun) => {
                 if (!rawText) return pronoun + " ...";
@@ -608,7 +708,7 @@
             document.getElementById('inSvFut').value = anchorClean(rawSvFut, "Han");
 
         } catch(e) { 
-            debug.innerHTML = "❌ Fehler: " + e.message;
+            alert("Fehler: " + e.message);
         } finally { 
             document.getElementById('loader').style.display = "none"; 
         }
@@ -667,8 +767,12 @@
     function toggleVerbSection() { const el=document.getElementById('verbSection'); el.style.display = (el.style.display==="block")?"none":"block"; }
     
     function showTab(n) { 
+        // Stop live recording instantly when leaving the tab
+        if (n !== 'live' && isLiveRecording) { stopLiveRecord(); }
+
         document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); 
         document.getElementById('tabAdd').style.display=(n==='add')?'block':'none'; 
+        document.getElementById('tabLive').style.display=(n==='live')?'block':'none';
         document.getElementById('tabSentences').style.display=(n==='sentences')?'block':'none';
         document.getElementById('tabStudy').style.display=(n==='study')?'block':'none'; 
         document.getElementById('tabQuiz').style.display=(n==='quiz'||n==='spiel')?'block':'none'; 
@@ -680,6 +784,7 @@
         isSpiel = (n === 'spiel');
         
         if(n === 'add') document.getElementById('btn1').classList.add('active');
+        if(n === 'live') document.getElementById('btn7').classList.add('active');
         if(n === 'sentences') document.getElementById('btn6').classList.add('active');
         if(n === 'study') { document.getElementById('btn5').classList.add('active'); renderStudyWord(); }
         if(n === 'quiz') document.getElementById('btn2').classList.add('active');
@@ -696,20 +801,10 @@
     
     function filterStudyWords() {
         const query = document.getElementById('studySearch').value.toLowerCase().trim();
-        if (!query) {
-            studyWords = [...allWords];
-        } else {
-            studyWords = allWords.filter(w => 
-                (w.de && w.de.toLowerCase().includes(query)) || 
-                (w.en && w.en.toLowerCase().includes(query)) || 
-                (w.sv && w.sv.toLowerCase().includes(query))
-            );
-        }
+        if (!query) { studyWords = [...allWords]; } 
+        else { studyWords = allWords.filter(w => (w.de && w.de.toLowerCase().includes(query)) || (w.en && w.en.toLowerCase().includes(query)) || (w.sv && w.sv.toLowerCase().includes(query)) ); }
         studyIndex = 0;
-        
-        if (document.getElementById('tabStudy').style.display === 'block') {
-            renderStudyWord();
-        }
+        if (document.getElementById('tabStudy').style.display === 'block') { renderStudyWord(); }
     }
 
     function renderStudyWord() {
@@ -718,7 +813,6 @@
             document.getElementById('studyWordCount').innerText = "0 / 0";
             return;
         }
-        
         if(studyIndex < 0) studyIndex = studyWords.length - 1;
         if(studyIndex >= studyWords.length) studyIndex = 0;
         
