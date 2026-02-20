@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 6.0 (Live-Übersetzer integriert)</title>
+    <title>Family Trainer 6.1 (Live Fix & Löschen)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -200,7 +200,7 @@
 <div id="tabLive" class="card" style="display:none">
     <div style="text-align:center; margin-bottom: 20px;">
         <p style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">FLIESSENDER LIVE-ÜBERSETZER</p>
-        <p style="font-size:0.8em; color:var(--text); margin-top:5px;">Lass dir Zeit beim Sprechen! Das Mikrofon bleibt so lange an, bis du es stoppst.</p>
+        <p style="font-size:0.8em; color:var(--text); margin-top:5px;">Lass dir Zeit beim Sprechen! Drücke danach auf Übersetzen.</p>
     </div>
     
     <div style="display:flex; gap:10px; margin-bottom: 15px;">
@@ -227,7 +227,11 @@
     <label>Gehörter Text</label>
     <textarea id="liveSourceText" rows="4" placeholder="Hier erscheint dein gesprochener Text..."></textarea>
     
-    <button class="action-btn" onclick="triggerManualLiveTranslate()" style="background:var(--accent); color:var(--text); margin-top: 15px; margin-bottom: 15px;">🔄 Text jetzt übersetzen</button>
+    <div style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
+        <button class="action-btn" onclick="triggerManualLiveTranslate()" style="background:var(--accent); color:var(--text); flex: 2; margin-top: 0;">🔄 Übersetzen</button>
+        <button class="clear-btn" onclick="clearLive()" style="flex: 1; border-radius: 16px; margin-top: 0;">🗑️ Löschen</button>
+    </div>
+
     <div id="loaderLive" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI übersetzt...</div>
 
     <label>Übersetzung</label>
@@ -366,7 +370,7 @@
 </div>
 
 <script>
-    const VERSION = "6.0 (Live-Übersetzer integriert)";
+    const VERSION = "6.1 (Live Fix & Löschen)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -497,10 +501,7 @@
         window.speechSynthesis.speak(ut); 
     }
     
-    // Einfache Spracherkennung (Kurz)
     function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; } const rec = new SpeechRecognition(); const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3); rec.lang = LANGS[langKey].tts; btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; btn.classList.remove('mic-active'); }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
-    
-    // Spracherkennung Sätze (Kurz)
     function listenAttempt(targetId, btn) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; }
@@ -513,20 +514,23 @@
         rec.start();
     }
 
-    // --- NEU: LIVE ÜBERSETZER LOGIK ---
+    // --- LIVE ÜBERSETZER LOGIK (FIX FÜR ANDROID DOPPEL-BUG) ---
     let liveRec = null;
     let isLiveRecording = false;
-    let liveFinalTranscript = "";
+    let liveFinalText = "";
 
     function toggleLiveRecord() {
         if (isLiveRecording) {
             stopLiveRecord();
         } else {
-            liveFinalTranscript = ""; 
-            document.getElementById('liveSourceText').value = "";
-            document.getElementById('liveResultText').value = "";
             startLiveRecord();
         }
+    }
+
+    function clearLive() {
+        liveFinalText = "";
+        document.getElementById('liveSourceText').value = "";
+        document.getElementById('liveResultText').value = "";
     }
 
     function startLiveRecord() {
@@ -535,13 +539,15 @@
         
         isLiveRecording = true;
         const btn = document.getElementById('btnLiveRecord');
-        btn.innerHTML = "⏹️ Aufnahme stoppen (hört zu...)";
+        btn.innerHTML = "⏹️ Aufnahme stoppen";
         btn.style.background = "#e53e3e"; 
         btn.classList.add("mic-active");
 
         liveRec = new SpeechRecognition();
-        liveRec.continuous = true; // Wichtig für Pausen
-        liveRec.interimResults = true; // Text sofort anzeigen
+        // WICHTIG: continuous=false verhindert den 3-fach-Bug auf Handys!
+        // Stattdessen starten wir das Mikrofon nach jeder Pause einfach im Hintergrund neu.
+        liveRec.continuous = false; 
+        liveRec.interimResults = true;
         
         const srcVal = document.getElementById('liveSrcLang').value;
         const langCode = Object.keys(LANGS).find(k => k === srcVal);
@@ -549,20 +555,22 @@
 
         liveRec.onresult = (event) => {
             let interim = '';
-            let newFinal = '';
+            let finalStr = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
-                    newFinal += event.results[i][0].transcript + ' ';
+                    finalStr += event.results[i][0].transcript + ' ';
                 } else {
                     interim += event.results[i][0].transcript;
                 }
             }
-            liveFinalTranscript += newFinal;
-            document.getElementById('liveSourceText').value = liveFinalTranscript + interim;
+            if (finalStr) {
+                liveFinalText += finalStr;
+            }
+            document.getElementById('liveSourceText').value = liveFinalText + interim;
         };
 
         liveRec.onend = () => {
-            // Wenn man nicht selbst gestoppt hat, aber der Browser abbricht (z.B. durch lange Stille), direkt neu starten!
+            // Automatischer Neustart für den Dauer-Zuhören-Effekt ohne Verdopplung
             if (isLiveRecording) {
                 try { liveRec.start(); } catch(e){}
             }
@@ -576,11 +584,10 @@
         if (liveRec) { liveRec.stop(); }
         
         const btn = document.getElementById('btnLiveRecord');
-        btn.innerHTML = "🔴 Aufnahme starten";
+        btn.innerHTML = "🔴 Aufnahme starten / fortsetzen";
         btn.style.background = "var(--primary)";
         btn.classList.remove("mic-active");
         
-        // Automatisch übersetzen, wenn gestoppt wird und Text da ist
         if(document.getElementById('liveSourceText').value.trim() !== "") {
             triggerManualLiveTranslate();
         }
@@ -623,7 +630,6 @@
         return c;
     }
 
-    // Google Translate API (beste Qualität für Sätze)
     async function translate(txt, src, tgt) {
         const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${src}&tl=${tgt}&dt=t&q=${encodeURIComponent(txt)}`;
         try {
@@ -767,7 +773,6 @@
     function toggleVerbSection() { const el=document.getElementById('verbSection'); el.style.display = (el.style.display==="block")?"none":"block"; }
     
     function showTab(n) { 
-        // Stop live recording instantly when leaving the tab
         if (n !== 'live' && isLiveRecording) { stopLiveRecord(); }
 
         document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); 
