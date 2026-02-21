@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 6.2 (Multi-Language UI)</title>
+    <title>Family Trainer 6.3 (Auto-Live-Übersetzer)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -200,10 +200,10 @@
 <div id="tabLive" class="card" style="display:none">
     <div style="text-align:center; margin-bottom: 20px;">
         <p data-i18n="titleLive" style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">FLIESSENDER LIVE-ÜBERSETZER</p>
-        <p data-i18n="descLive" style="font-size:0.8em; color:var(--text); margin-top:5px;">Lass dir Zeit beim Sprechen! Drücke danach auf Übersetzen.</p>
+        <p data-i18n="descLive" style="font-size:0.8em; color:var(--text); margin-top:5px;">Die App übersetzt bei jeder Sprechpause automatisch.</p>
     </div>
     
-    <div style="display:flex; gap:10px; margin-bottom: 15px;">
+    <div style="display:flex; gap:10px; margin-bottom: 20px;">
         <div style="flex:1">
             <label data-i18n="lblSpeak">Ich spreche</label>
             <select id="liveSrcLang" style="font-weight: bold;">
@@ -222,21 +222,26 @@
         </div>
     </div>
 
-    <button id="btnLiveRecord" class="action-btn" style="background:var(--primary); margin-bottom: 20px; font-size:1.1em;" onclick="toggleLiveRecord()">🔴 Aufnahme starten</button>
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button id="btnLiveRecord" class="action-btn" style="background:var(--primary); margin-top: 0; flex: 1; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="toggleLiveRecord()">
+            <span id="liveRecIcon">🎤</span> <span id="liveRecText" data-i18n="btnStartRec">Start</span>
+        </button>
+        <button class="action-btn" style="background: white; border: 2px solid var(--border-soft); color: var(--text); margin-top: 0; flex: 0 0 60px; font-size: 1.5em; padding: 0;" onclick="speakLive()" title="Übersetzung vorlesen">
+            🔊
+        </button>
+    </div>
     
     <label data-i18n="lblHeard">Gehörter Text</label>
-    <textarea id="liveSourceText" rows="4" data-i18n-ph="phLiveHeard"></textarea>
+    <textarea id="liveSourceText" rows="3" data-i18n-ph="phLiveHeard"></textarea>
     
-    <div style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
-        <button class="action-btn" onclick="triggerManualLiveTranslate()" data-i18n="btnLiveTrans" style="background:var(--accent); color:var(--text); flex: 2; margin-top: 0;">🔄 Übersetzen</button>
-        <button class="clear-btn" onclick="clearLive()" data-i18n="btnLiveClear" style="flex: 1; border-radius: 16px; margin-top: 0;">🗑️ Löschen</button>
+    <div style="display: flex; gap: 10px; margin-top: 10px; margin-bottom: 20px;">
+        <button class="clear-btn" onclick="clearLive()" data-i18n="btnLiveClear" style="flex: 1; border-radius: 12px; margin-top: 0;">🗑️ Text löschen</button>
     </div>
 
-    <div id="loaderLive" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI...</div>
+    <div id="loaderLive" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI übersetzt...</div>
 
-    <label data-i18n="lblLiveTrans">Übersetzung</label>
+    <label data-i18n="lblLiveTrans">Übersetzung (wird automatisch erstellt)</label>
     <textarea id="liveResultText" rows="4" data-i18n-ph="phLiveTrans" style="background:#f0fff4; border-color:#48bb78; color:#2f855a; font-weight:bold;"></textarea>
-    <button class="speaker-btn" style="width:100%; margin-top: 10px; border-color:#48bb78; color:#2f855a; font-weight:bold; background:white;" onclick="speakLive()" data-i18n="btnLiveSpeak">🔊 Übersetzung vorlesen</button>
 </div>
 
 <div id="tabSentences" class="card" style="display:none">
@@ -379,7 +384,7 @@
 </div>
 
 <script>
-    const VERSION = "6.2 (Multi-Language UI)";
+    const VERSION = "6.3 (Auto-Live & Speaker)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -401,7 +406,7 @@
         'de': {
             btnNew: "➕ NEU", btnLive: "🎙️ LIVE", btnSentences: "📝 SÄTZE", btnStudy: "👀 LERNEN", btnQuiz: "🧠 ÜBEN", btnGame: "⏱️ SPIEL", btnList: "📖 LISTE",
             titleAdd: "Neues Wort", lblEx: "Beispielsatz", btnShowVerbs: "📝 Verb-Details anzeigen", btnAutoVerbs: "⚡ Formen automatisch suchen", btnTrans: "1. Übersetzen", btnSave: "2. Speichern", btnClear: "Felder leeren", btnCancel: "Abbrechen",
-            titleLive: "FLIESSENDER LIVE-ÜBERSETZER", descLive: "Lass dir Zeit beim Sprechen! Drücke danach auf Übersetzen.", lblSpeak: "Ich spreche", lblTransTo: "Übersetze nach", btnStartRec: "🔴 Aufnahme starten", btnStopRec: "⏹️ Aufnahme stoppen", lblHeard: "Gehörter Text", btnLiveTrans: "🔄 Übersetzen", btnLiveClear: "🗑️ Löschen", lblLiveTrans: "Übersetzung", btnLiveSpeak: "🔊 Übersetzung vorlesen", phLiveHeard: "Hier erscheint dein gesprochener Text...", phLiveTrans: "Hier erscheint die Übersetzung...",
+            titleLive: "FLIESSENDER LIVE-ÜBERSETZER", descLive: "Die App übersetzt bei jeder Sprechpause automatisch.", lblSpeak: "Ich spreche", lblTransTo: "Übersetze nach", btnStartRec: "🎤 Start", btnStopRec: "⏹️ Stopp", lblHeard: "Gehörter Text", btnLiveClear: "🗑️ Löschen", lblLiveTrans: "Übersetzung (automatisch)", phLiveHeard: "Dein gesprochener Text...", phLiveTrans: "Die Übersetzung erscheint hier...",
             titleSent: "SÄTZE BILDEN & PRÜFEN", lblMySent: "Mein Satz (Deutsch)", lblTarget: "Zielsprache", lblMyAttempt: "Meine Übersetzung", btnCheckSent: "🔍 Übersetzung prüfen", lblKiSuggest: "KI-Korrektur / Vorschlag:", btnListen: "🔊 Anhören", phSentBase: "z. B. Warst du gestern einkaufen?", phSentAtt: "Ich versuche es mal...",
             titleStudy: "VOKABELN LERNEN & SUCHEN", searchPh: "🔍 Suchen...", btnPrev: "⬅️ Zurück", btnNext: "Weiter ➡️",
             audioOff: "🔈 AUDIO: AUS", audioOn: "🔊 AUDIO: AN", lblWhatMeans: "WAS HEISST...?", lblAns1: "ANTWORT 1", lblAns2: "ANTWORT 2", btnCheck: "PRÜFEN", btnNextWord: "NÄCHSTES WORT ➡️",
@@ -412,7 +417,7 @@
         'en': {
             btnNew: "➕ NEW", btnLive: "🎙️ LIVE", btnSentences: "📝 SENTENCES", btnStudy: "👀 STUDY", btnQuiz: "🧠 QUIZ", btnGame: "⏱️ GAME", btnList: "📖 LIST",
             titleAdd: "New Word", lblEx: "Example sentence", btnShowVerbs: "📝 Show verb details", btnAutoVerbs: "⚡ Find forms automatically", btnTrans: "1. Translate", btnSave: "2. Save", btnClear: "Clear fields", btnCancel: "Cancel",
-            titleLive: "FLUENT LIVE TRANSLATOR", descLive: "Take your time speaking! Then press Translate.", lblSpeak: "I'm speaking", lblTransTo: "Translate to", btnStartRec: "🔴 Start recording", btnStopRec: "⏹️ Stop recording", lblHeard: "Heard text", btnLiveTrans: "🔄 Translate", btnLiveClear: "🗑️ Clear", lblLiveTrans: "Translation", btnLiveSpeak: "🔊 Read translation", phLiveHeard: "Your spoken text will appear here...", phLiveTrans: "Translation will appear here...",
+            titleLive: "FLUENT LIVE TRANSLATOR", descLive: "App translates automatically when you pause speaking.", lblSpeak: "I'm speaking", lblTransTo: "Translate to", btnStartRec: "🎤 Start", btnStopRec: "⏹️ Stop", lblHeard: "Heard text", btnLiveClear: "🗑️ Clear", lblLiveTrans: "Translation (Automatic)", phLiveHeard: "Your text...", phLiveTrans: "Translation will appear here...",
             titleSent: "BUILD & CHECK SENTENCES", lblMySent: "My sentence", lblTarget: "Target language", lblMyAttempt: "My translation", btnCheckSent: "🔍 Check translation", lblKiSuggest: "AI Correction / Suggestion:", btnListen: "🔊 Listen", phSentBase: "e.g. Did you go shopping yesterday?", phSentAtt: "Let me try...",
             titleStudy: "STUDY & SEARCH WORDS", searchPh: "🔍 Search...", btnPrev: "⬅️ Back", btnNext: "Next ➡️",
             audioOff: "🔈 AUDIO: OFF", audioOn: "🔊 AUDIO: ON", lblWhatMeans: "WHAT DOES IT MEAN?", lblAns1: "ANSWER 1", lblAns2: "ANSWER 2", btnCheck: "CHECK", btnNextWord: "NEXT WORD ➡️",
@@ -423,8 +428,8 @@
         'sv': {
             btnNew: "➕ NYTT", btnLive: "🎙️ LIVE", btnSentences: "📝 MENINGAR", btnStudy: "👀 PLUGGA", btnQuiz: "🧠 ÖVA", btnGame: "⏱️ SPEL", btnList: "📖 LISTA",
             titleAdd: "Nytt ord", lblEx: "Exempelmening", btnShowVerbs: "📝 Visa verbdetaljer", btnAutoVerbs: "⚡ Hitta former automatiskt", btnTrans: "1. Översätt", btnSave: "2. Spara", btnClear: "Rensa fält", btnCancel: "Avbryt",
-            titleLive: "FLYTANDE LIVE-ÖVERSÄTTARE", descLive: "Ta din tid när du pratar! Tryck sedan på Översätt.", lblSpeak: "Jag pratar", lblTransTo: "Översätt till", btnStartRec: "🔴 Starta inspelning", btnStopRec: "⏹️ Stoppa inspelning", lblHeard: "Hörd text", btnLiveTrans: "🔄 Översätt", btnLiveClear: "🗑️ Radera", lblLiveTrans: "Översättning", btnLiveSpeak: "🔊 Läs upp översättning", phLiveHeard: "Din talade text visas här...", phLiveTrans: "Översättningen visas här...",
-            titleSent: "SKAPA & TESTA MENINGAR", lblMySent: "Min mening", lblTarget: "Målspråk", lblMyAttempt: "Mitt försök", btnCheckSent: "🔍 Kontrollera översättning", lblKiSuggest: "AI-korrigering / Förslag:", btnListen: "🔊 Lyssna", phSentBase: "t.ex. Var du och handlade igår?", phSentAtt: "Låt mig försöka...",
+            titleLive: "FLYTANDE LIVE-ÖVERSÄTTARE", descLive: "Appen översätter automatiskt när du pausar.", lblSpeak: "Jag pratar", lblTransTo: "Översätt till", btnStartRec: "🎤 Starta", btnStopRec: "⏹️ Stopp", lblHeard: "Hörd text", btnLiveClear: "🗑️ Radera", lblLiveTrans: "Översättning (automatisk)", phLiveHeard: "Din text...", phLiveTrans: "Översättningen visas här...",
+            titleSent: "SKAPA & TESTA MENINGAR", lblMySent: "Min mening", lblTarget: "Målspråk", lblMyAttempt: "Mitt försök", btnCheckSent: "🔍 Kolla översättning", lblKiSuggest: "AI-korrigering / Förslag:", btnListen: "🔊 Lyssna", phSentBase: "t.ex. Var du och handlade igår?", phSentAtt: "Låt mig försöka...",
             titleStudy: "PLUGGA & SÖK ORD", searchPh: "🔍 Sök...", btnPrev: "⬅️ Tillbaka", btnNext: "Nästa ➡️",
             audioOff: "🔈 LJUD: AV", audioOn: "🔊 LJUD: PÅ", lblWhatMeans: "VAD BETYDER...?", lblAns1: "SVAR 1", lblAns2: "SVAR 2", btnCheck: "KONTROLLERA", btnNextWord: "NÄSTA ORD ➡️",
             titleList: "Ordbok", btnBackupSave: "💾 Spara backup", btnBackupLoad: "📂 Ladda backup", btnDeleteAll: "⚠️ RADERA ALLT", btnEdit: "✎ Redigera",
@@ -442,27 +447,22 @@
 
     function applyAppLang() {
         const dict = UI_TRANS[currentAppLang];
-        // Labels & Buttons
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
-            if (dict[key]) {
-                if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                    // Safety check
-                } else {
-                    el.innerHTML = dict[key];
-                }
+            if (dict[key] && el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') {
+                el.innerHTML = dict[key];
             }
         });
-        // Placeholders
         document.querySelectorAll('[data-i18n-ph]').forEach(el => {
             const key = el.getAttribute('data-i18n-ph');
             if (dict[key]) el.placeholder = dict[key];
         });
 
-        // Dynamic elements
-        const recBtn = document.getElementById('btnLiveRecord');
-        if (isLiveRecording) recBtn.innerHTML = dict.btnStopRec;
-        else recBtn.innerHTML = dict.btnStartRec;
+        // Dynamic elements updating
+        const recText = document.getElementById('liveRecText');
+        if(recText) {
+            recText.innerHTML = isLiveRecording ? dict.btnStopRec : dict.btnStartRec;
+        }
 
         document.getElementById('audioModeToggle').innerText = audioMode ? dict.audioOn : dict.audioOff;
         
@@ -470,14 +470,13 @@
         if(document.getElementById('editId').value) titleEl.innerText = dict.titleEdit;
         else titleEl.innerText = dict.titleAdd;
 
-        renderList(); // Update lists to translate Edit buttons
+        renderList(); 
     }
     // ----------------------------------
 
     function init() {
         document.getElementById('versionDisplay').innerText = VERSION;
         
-        // Sprache laden
         const savedAppLang = localStorage.getItem('trainerAppLang');
         if(savedAppLang) {
             currentAppLang = savedAppLang;
@@ -493,7 +492,7 @@
         loadVoices(); 
         updateInterface(); 
         refreshData();
-        applyAppLang(); // Wende Sprache direkt beim Start an
+        applyAppLang(); 
         showTab('add'); 
     }
 
@@ -610,9 +609,11 @@
         rec.start();
     }
 
+    // --- LIVE ÜBERSETZER LOGIK (AUTO-TRANSLATE) ---
     let liveRec = null;
     let isLiveRecording = false;
     let liveFinalText = "";
+    let liveTranslateTimeout = null;
 
     function toggleLiveRecord() {
         if (isLiveRecording) stopLiveRecord();
@@ -631,7 +632,7 @@
         
         isLiveRecording = true;
         const btn = document.getElementById('btnLiveRecord');
-        btn.innerHTML = UI_TRANS[currentAppLang].btnStopRec;
+        document.getElementById('liveRecText').innerHTML = UI_TRANS[currentAppLang].btnStopRec;
         btn.style.background = "#e53e3e"; 
         btn.classList.add("mic-active");
 
@@ -655,6 +656,14 @@
             }
             if (finalStr) liveFinalText += finalStr;
             document.getElementById('liveSourceText').value = liveFinalText + interim;
+
+            // NEU: Automatische Übersetzung nach 1 Sekunde Pause
+            clearTimeout(liveTranslateTimeout);
+            liveTranslateTimeout = setTimeout(() => {
+                if(document.getElementById('liveSourceText').value.trim() !== "") {
+                    triggerManualLiveTranslate();
+                }
+            }, 1000);
         };
 
         liveRec.onend = () => {
@@ -669,7 +678,7 @@
         if (liveRec) { liveRec.stop(); }
         
         const btn = document.getElementById('btnLiveRecord');
-        btn.innerHTML = UI_TRANS[currentAppLang].btnStartRec;
+        document.getElementById('liveRecText').innerHTML = UI_TRANS[currentAppLang].btnStartRec;
         btn.style.background = "var(--primary)";
         btn.classList.remove("mic-active");
         
@@ -698,6 +707,7 @@
 
     function speakLive() {
         const text = document.getElementById('liveResultText').value;
+        if(!text) return;
         const tgt = document.getElementById('liveTgtLang').value;
         const langCode = Object.keys(LANGS).find(k => k === tgt);
         speak(text, langCode);
