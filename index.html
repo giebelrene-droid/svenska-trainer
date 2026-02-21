@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 6.3 (Auto-Live-Übersetzer)</title>
+    <title>Family Trainer 6.4 (Global Audio & Sounds)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -155,6 +155,13 @@
 <div id="settingsOverlay">
     <div class="settings-box">
         <h2 data-i18n="lblSettings">⚙️ Einstellungen</h2>
+        
+        <label data-i18n="lblSound">Ton & Stimme</label>
+        <select id="selGlobalAudio" onchange="changeGlobalAudio()" style="width:100%; padding:12px; margin-bottom:20px; font-weight:bold; border: 2px solid var(--border-soft); border-radius: 12px; cursor: pointer; background: #eef2f6;">
+            <option value="on" data-i18n="soundOn">🔊 Töne An</option>
+            <option value="off" data-i18n="soundOff">🔇 Töne Aus</option>
+        </select>
+
         <label data-i18n="lblUser">👤 Aktiver Benutzer</label>
         <select id="selUser" onchange="switchUser()" style="width:100%; padding:12px; margin-bottom:20px; font-weight:bold; border: 2px solid var(--primary);"></select>
         
@@ -296,11 +303,23 @@
     <input type="hidden" id="editId">
     
     <label id="lblIn1">L1</label>
-    <div class="input-row"><input type="text" id="inDe"><button class="mic-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
+    <div class="input-row">
+        <input type="text" id="inDe">
+        <button class="mic-btn" onclick="listen(1, 'inDe', this)">🎤</button>
+        <button class="speaker-btn" onclick="speak(document.getElementById('inDe').value, conf.l1)">🔊</button>
+    </div>
     <label id="lblIn2">L2</label>
-    <div class="input-row"><input type="text" id="inEn"><button class="mic-btn" onclick="listen(2, 'inEn', this)">🎤</button></div>
+    <div class="input-row">
+        <input type="text" id="inEn">
+        <button class="mic-btn" onclick="listen(2, 'inEn', this)">🎤</button>
+        <button class="speaker-btn" onclick="speak(document.getElementById('inEn').value, conf.l2)">🔊</button>
+    </div>
     <label id="lblIn3">L3</label>
-    <div class="input-row"><input type="text" id="inSv"><button class="mic-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
+    <div class="input-row">
+        <input type="text" id="inSv">
+        <button class="mic-btn" onclick="listen(3, 'inSv', this)">🎤</button>
+        <button class="speaker-btn" onclick="speak(document.getElementById('inSv').value, conf.l3)">🔊</button>
+    </div>
     
     <label data-i18n="lblEx">Beispielsatz</label>
     <input type="text" id="inEx" placeholder="...">
@@ -384,7 +403,7 @@
 </div>
 
 <script>
-    const VERSION = "6.3 (Auto-Live & Speaker)";
+    const VERSION = "6.4 (Global Audio & Sounds)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -401,6 +420,9 @@
     let studyWords = []; 
     let studyIndex = 0; 
 
+    // NEU: Globale Ton-Einstellung
+    let globalAudioEnabled = true;
+
     // --- DICTIONARY FÜR APP SPRACHE ---
     const UI_TRANS = {
         'de': {
@@ -411,7 +433,7 @@
             titleStudy: "VOKABELN LERNEN & SUCHEN", searchPh: "🔍 Suchen...", btnPrev: "⬅️ Zurück", btnNext: "Weiter ➡️",
             audioOff: "🔈 AUDIO: AUS", audioOn: "🔊 AUDIO: AN", lblWhatMeans: "WAS HEISST...?", lblAns1: "ANTWORT 1", lblAns2: "ANTWORT 2", btnCheck: "PRÜFEN", btnNextWord: "NÄCHSTES WORT ➡️",
             titleList: "Vokabelheft", btnBackupSave: "💾 Backup speichern", btnBackupLoad: "📂 Backup laden", btnDeleteAll: "⚠️ ALLES LÖSCHEN", btnEdit: "✎ Bearbeiten",
-            lblSettings: "⚙️ Einstellungen", lblUser: "👤 Aktiver Benutzer", lblRename: "BENUTZER UMBENENNEN", lblLangs: "Sprachen", lblVoices: "Stimmen (Aussprache)", btnDone: "Fertig",
+            lblSettings: "⚙️ Einstellungen", lblSound: "Ton & Stimme", soundOn: "🔊 Töne An", soundOff: "🔇 Töne Aus", lblUser: "👤 Aktiver Benutzer", lblRename: "BENUTZER UMBENENNEN", lblLangs: "Sprachen", lblVoices: "Stimmen (Aussprache)", btnDone: "Fertig",
             btnShare: "📤 App weiterleiten", appLangStr: "App-Sprache:", wordStr: "Wörter", titleEdit: "Bearbeiten"
         },
         'en': {
@@ -422,7 +444,7 @@
             titleStudy: "STUDY & SEARCH WORDS", searchPh: "🔍 Search...", btnPrev: "⬅️ Back", btnNext: "Next ➡️",
             audioOff: "🔈 AUDIO: OFF", audioOn: "🔊 AUDIO: ON", lblWhatMeans: "WHAT DOES IT MEAN?", lblAns1: "ANSWER 1", lblAns2: "ANSWER 2", btnCheck: "CHECK", btnNextWord: "NEXT WORD ➡️",
             titleList: "Vocabulary List", btnBackupSave: "💾 Save Backup", btnBackupLoad: "📂 Load Backup", btnDeleteAll: "⚠️ DELETE ALL", btnEdit: "✎ Edit",
-            lblSettings: "⚙️ Settings", lblUser: "👤 Active User", lblRename: "RENAME USERS", lblLangs: "Languages", lblVoices: "Voices (Pronunciation)", btnDone: "Done",
+            lblSettings: "⚙️ Settings", lblSound: "Sound & Voice", soundOn: "🔊 Sound On", soundOff: "🔇 Sound Off", lblUser: "👤 Active User", lblRename: "RENAME USERS", lblLangs: "Languages", lblVoices: "Voices (Pronunciation)", btnDone: "Done",
             btnShare: "📤 Share App", appLangStr: "App Language:", wordStr: "Words", titleEdit: "Edit Word"
         },
         'sv': {
@@ -433,7 +455,7 @@
             titleStudy: "PLUGGA & SÖK ORD", searchPh: "🔍 Sök...", btnPrev: "⬅️ Tillbaka", btnNext: "Nästa ➡️",
             audioOff: "🔈 LJUD: AV", audioOn: "🔊 LJUD: PÅ", lblWhatMeans: "VAD BETYDER...?", lblAns1: "SVAR 1", lblAns2: "SVAR 2", btnCheck: "KONTROLLERA", btnNextWord: "NÄSTA ORD ➡️",
             titleList: "Ordbok", btnBackupSave: "💾 Spara backup", btnBackupLoad: "📂 Ladda backup", btnDeleteAll: "⚠️ RADERA ALLT", btnEdit: "✎ Redigera",
-            lblSettings: "⚙️ Inställningar", lblUser: "👤 Aktiv användare", lblRename: "BYT NAMN PÅ ANVÄNDARE", lblLangs: "Språk", lblVoices: "Röster (Uttal)", btnDone: "Klar",
+            lblSettings: "⚙️ Inställningar", lblSound: "Ljud & Röst", soundOn: "🔊 Ljud På", soundOff: "🔇 Ljud Av", lblUser: "👤 Aktiv användare", lblRename: "BYT NAMN PÅ ANVÄNDARE", lblLangs: "Språk", lblVoices: "Röster (Uttal)", btnDone: "Klar",
             btnShare: "📤 Dela appen", appLangStr: "App-språk:", wordStr: "Ord", titleEdit: "Redigera ord"
         }
     };
@@ -458,7 +480,6 @@
             if (dict[key]) el.placeholder = dict[key];
         });
 
-        // Dynamic elements updating
         const recText = document.getElementById('liveRecText');
         if(recText) {
             recText.innerHTML = isLiveRecording ? dict.btnStopRec : dict.btnStartRec;
@@ -474,9 +495,53 @@
     }
     // ----------------------------------
 
+    // NEU: Sound Feedback Funktion (generiert einfache Systemtöne)
+    function playTone(type) {
+        if (!globalAudioEnabled) return;
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                osc.start(); osc.stop(ctx.currentTime + 0.15);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                osc.start(); osc.stop(ctx.currentTime + 0.25);
+            } else if (type === 'save') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.05, ctx.currentTime);
+                osc.start(); osc.stop(ctx.currentTime + 0.15);
+            }
+        } catch(e) {}
+    }
+
+    function changeGlobalAudio() {
+        globalAudioEnabled = document.getElementById('selGlobalAudio').value === 'on';
+        localStorage.setItem('trainerAudio', globalAudioEnabled ? 'on' : 'off');
+    }
+
     function init() {
         document.getElementById('versionDisplay').innerText = VERSION;
         
+        // Globale Audio Settings laden
+        const savedAudio = localStorage.getItem('trainerAudio');
+        if (savedAudio === 'off') { globalAudioEnabled = false; }
+        document.getElementById('selGlobalAudio').value = globalAudioEnabled ? 'on' : 'off';
+
         const savedAppLang = localStorage.getItem('trainerAppLang');
         if(savedAppLang) {
             currentAppLang = savedAppLang;
@@ -575,7 +640,7 @@
     }
 
     function speak(txt, langCode) { 
-        if (!txt) return; 
+        if (!txt || !globalAudioEnabled) return; 
         window.speechSynthesis.cancel(); 
         const ut = new SpeechSynthesisUtterance(txt); 
         const ttsCode = LANGS[langCode] ? LANGS[langCode].tts : 'en-US'; 
@@ -657,7 +722,6 @@
             if (finalStr) liveFinalText += finalStr;
             document.getElementById('liveSourceText').value = liveFinalText + interim;
 
-            // NEU: Automatische Übersetzung nach 1 Sekunde Pause
             clearTimeout(liveTranslateTimeout);
             liveTranslateTimeout = setTimeout(() => {
                 if(document.getElementById('liveSourceText').value.trim() !== "") {
@@ -823,7 +887,12 @@
 
         const coll = COLLECTIONS[currentCollIndex];
         const op = eid ? db.collection(coll).doc(eid).update(data) : db.collection(coll).add(data);
-        op.then(() => { refreshData(); clearInputs(); if(eid) showTab('list'); });
+        op.then(() => { 
+            playTone('save'); // Sound abspielen
+            refreshData(); 
+            clearInputs(); 
+            if(eid) showTab('list'); 
+        });
     }
 
     async function nukeDatabase() { if(!confirm(`ALLES LÖSCHEN?`)) return; if(!confirm("Sicher?")) return; const coll = COLLECTIONS[currentCollIndex]; const s = await db.collection(coll).get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); }
@@ -1043,6 +1112,15 @@
         </div>`; 
         document.getElementById('qFeed').innerHTML = html; 
         
+        if(r1 && r2) { 
+            playTone('correct');
+            updateLevel(curWord.id, true); 
+            speak(curWord.sv, conf.l3); 
+        } else { 
+            playTone('wrong');
+            updateLevel(curWord.id, false); 
+        } 
+
         if(isSpiel) {
             document.getElementById('checkBtn').style.display="none";
             setTimeout(nextQ, 2500); 
@@ -1050,8 +1128,6 @@
             document.getElementById('nextBtn').style.display="block"; 
             document.getElementById('checkBtn').style.display="none"; 
         }
-        if(r1 && r2) { updateLevel(curWord.id, true); speak(curWord.sv, conf.l3); } 
-        else { updateLevel(curWord.id, false); } 
     }
 
     function updateLevel(id, correct) { db.collection(COLLECTIONS[currentCollIndex]).doc(id).update({ level: Math.max(0, Math.min(3, (curWord.level||0) + (correct?1:-1))) }); }
