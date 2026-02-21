@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 6.8 (Auto-Loop Gesprächsmodus)</title>
+    <title>Family Trainer 6.9 (Einstellbarer Live-Timer)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -241,8 +241,17 @@
         </button>
     </div>
     
-    <label data-i18n="lblHeard">Gehörter Text</label>
-    <textarea id="liveSourceText" rows="3" data-i18n-ph="phLiveHeard" style="background:#fff5f5; border-color:#feb2b2; color:#c53030; font-weight:bold;"></textarea>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4px;">
+        <label data-i18n="lblHeard" style="margin-bottom: 0;">Gehörter Text</label>
+        <select id="liveClearDelay" onchange="saveLiveDelay()" style="padding: 4px 8px; font-size: 0.75em; border-radius: 8px; border: 1px solid var(--border-soft); background: white; font-weight: bold; cursor: pointer; color: var(--text-light);">
+            <option value="5000">⏱ 5 Sek</option>
+            <option value="10000">⏱ 10 Sek</option>
+            <option value="15000" selected>⏱ 15 Sek</option>
+            <option value="30000">⏱ 30 Sek</option>
+            <option value="0">⏱ Manuell (Nie)</option>
+        </select>
+    </div>
+    <textarea id="liveSourceText" rows="3" data-i18n-ph="phLiveHeard" style="background:#fff5f5; border-color:#feb2b2; color:#c53030; font-weight:bold; margin-bottom:0;"></textarea>
     
     <div style="display: flex; gap: 10px; margin-top: 10px; margin-bottom: 20px;">
         <button class="clear-btn" onclick="clearLive()" data-i18n="btnLiveClear" style="flex: 1; border-radius: 12px; margin-top: 0;">🗑️ Gespräch löschen</button>
@@ -412,7 +421,7 @@
 </div>
 
 <script>
-    const VERSION = "6.8 (Auto-Loop Gesprächsmodus)";
+    const VERSION = "6.9 (Einstellbarer Live-Timer)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -539,6 +548,11 @@
         localStorage.setItem('trainerAudio', globalAudioEnabled ? 'on' : 'off');
     }
 
+    // NEU: Verzögerung in localStorage speichern
+    function saveLiveDelay() {
+        localStorage.setItem('trainerLiveDelay', document.getElementById('liveClearDelay').value);
+    }
+
     function init() {
         document.getElementById('versionDisplay').innerText = VERSION;
         
@@ -551,6 +565,10 @@
             currentAppLang = savedAppLang;
             document.getElementById('appLangSelector').value = currentAppLang;
         }
+
+        // NEU: Gespeicherten Live-Timer laden
+        const savedDelay = localStorage.getItem('trainerLiveDelay');
+        if(savedDelay) document.getElementById('liveClearDelay').value = savedDelay;
 
         const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames);
         renderRenameInputs();
@@ -678,7 +696,7 @@
         rec.start();
     }
 
-    // --- GESPRÄCHS-LOOP (15s Timer & Reset) ---
+    // --- GESPRÄCHS-LOOP MIT EINSTELLBAREM TIMER ---
     let liveRec = null;
     let isLiveRecording = false;
     let liveFinalText = "";
@@ -710,12 +728,18 @@
 
     function resetClearSourceTimer() {
         clearTimeout(clearSourceTimeout);
+        
+        // NEU: Holt sich die Zeit aus dem Dropdown
+        const delayVal = document.getElementById('liveClearDelay').value;
+        if (delayVal === "0") return; // Wenn auf "Manuell" (0) gestellt ist, starte keinen Timer
+        
+        const delayMs = parseInt(delayVal, 10);
+        
         clearSourceTimeout = setTimeout(() => {
-            // Nach 15 Sekunden Stille: Roten Text löschen, bereit machen für neue Schleife
             liveFinalText = ""; 
             document.getElementById('liveSourceText').value = ""; 
             isWaitingForNewLoop = true; 
-        }, 15000);
+        }, delayMs);
     }
 
     function startLiveRecord() {
@@ -739,7 +763,6 @@
         liveRec.onresult = (event) => {
             resetClearSourceTimer();
 
-            // NEU: Wenn ein neuer Satz anfängt, lösche das grüne Feld
             if (isWaitingForNewLoop) {
                 liveTranslatedText = "";
                 document.getElementById('liveResultText').value = "";
