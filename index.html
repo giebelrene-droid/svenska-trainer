@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 6.5 (Neues Design & Positionen)</title>
+    <title>Family Trainer 6.6 (Schnellere Live-Übersetzung)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -13,7 +13,7 @@
         :root {
             --primary: #006aa7; 
             --accent: #fecc00;  
-            --bg: #fefae0; /* NEU: Heller Gelbton statt Grau */
+            --bg: #fefae0;      
             --card-bg: #ffffff; 
             --text: #2d3748;    
             --text-light: #718096; 
@@ -32,7 +32,6 @@
             line-height: 1.5;
         }
         
-        /* Header jetzt rechtsbündig für das Zahnrad */
         .header-row { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 25px; }
         
         .badge { background: var(--card-bg); padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.85em; box-shadow: var(--shadow-soft); border: 1px solid var(--border-soft); }
@@ -409,7 +408,7 @@
 </div>
 
 <script>
-    const VERSION = "6.5 (Neues Design & Positionen)";
+    const VERSION = "6.6 (Schnellere Live-Übersetzung)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -497,7 +496,6 @@
 
         renderList(); 
     }
-    // ----------------------------------
 
     function playTone(type) {
         if (!globalAudioEnabled) return;
@@ -676,7 +674,6 @@
         rec.start();
     }
 
-    // --- LIVE ÜBERSETZER LOGIK (AUTO-TRANSLATE) ---
     let liveRec = null;
     let isLiveRecording = false;
     let liveFinalText = "";
@@ -729,7 +726,8 @@
                 if(document.getElementById('liveSourceText').value.trim() !== "") {
                     triggerManualLiveTranslate();
                 }
-            }, 1000);
+            // HIER WURDE DIE ZEIT VON 1000 AUF 300 VERKÜRZT
+            }, 300); 
         };
 
         liveRec.onend = () => {
@@ -890,7 +888,7 @@
         const coll = COLLECTIONS[currentCollIndex];
         const op = eid ? db.collection(coll).doc(eid).update(data) : db.collection(coll).add(data);
         op.then(() => { 
-            playTone('save'); // Sound abspielen
+            playTone('save'); 
             refreshData(); 
             clearInputs(); 
             if(eid) showTab('list'); 
