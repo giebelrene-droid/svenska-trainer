@@ -1,9 +1,9 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 6.9 (Einstellbarer Live-Timer)</title>
+    <title>Family Trainer 7.0 (Perfekter Gesprächs-Loop)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -241,26 +241,39 @@
         </button>
     </div>
     
-    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4px;">
-        <label data-i18n="lblHeard" style="margin-bottom: 0;">Gehörter Text</label>
-        <select id="liveClearDelay" onchange="saveLiveDelay()" style="padding: 4px 8px; font-size: 0.75em; border-radius: 8px; border: 1px solid var(--border-soft); background: white; font-weight: bold; cursor: pointer; color: var(--text-light);">
-            <option value="5000">⏱ 5 Sek</option>
-            <option value="10000">⏱ 10 Sek</option>
-            <option value="15000" selected>⏱ 15 Sek</option>
-            <option value="30000">⏱ 30 Sek</option>
-            <option value="0">⏱ Manuell (Nie)</option>
-        </select>
-    </div>
-    <textarea id="liveSourceText" rows="3" data-i18n-ph="phLiveHeard" style="background:#fff5f5; border-color:#feb2b2; color:#c53030; font-weight:bold; margin-bottom:0;"></textarea>
+    <label data-i18n="lblHeard">Gehörter Text</label>
+    <textarea id="liveSourceText" rows="3" data-i18n-ph="phLiveHeard" style="background:#fff5f5; border-color:#feb2b2; color:#c53030; font-weight:bold; margin-bottom: 5px;"></textarea>
     
-    <div style="display: flex; gap: 10px; margin-top: 10px; margin-bottom: 20px;">
-        <button class="clear-btn" onclick="clearLive()" data-i18n="btnLiveClear" style="flex: 1; border-radius: 12px; margin-top: 0;">🗑️ Gespräch löschen</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="font-size: 0.8em; color: var(--text-light); font-weight: bold;" data-i18n="lblClearAfter">Löschen nach:</div>
+        <select id="liveClearDelay" onchange="saveLiveDelay()" style="padding: 6px 10px; font-size: 0.85em; border-radius: 8px; border: 1px solid var(--border-soft); background: white; font-weight: bold; cursor: pointer; color: var(--text);">
+            <option value="2000" data-i18n="opt2s">⏱ 2 Sek</option>
+            <option value="5000" data-i18n="opt5s">⏱ 5 Sek</option>
+            <option value="10000" data-i18n="opt10s">⏱ 10 Sek</option>
+            <option value="15000" data-i18n="opt15s" selected>⏱ 15 Sek</option>
+            <option value="0" data-i18n="optManual">✋ Manuell</option>
+        </select>
     </div>
 
     <div id="loaderLive" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI übersetzt...</div>
 
     <label data-i18n="lblLiveTrans">Übersetzung (Instant)</label>
-    <textarea id="liveResultText" rows="4" data-i18n-ph="phLiveTrans" style="background:#f0fff4; border-color:#48bb78; color:#2f855a; font-weight:bold;"></textarea>
+    <textarea id="liveResultText" rows="4" data-i18n-ph="phLiveTrans" style="background:#f0fff4; border-color:#48bb78; color:#2f855a; font-weight:bold; margin-bottom: 5px;"></textarea>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="font-size: 0.8em; color: var(--text-light); font-weight: bold;" data-i18n="lblClearAfter">Löschen nach:</div>
+        <select id="liveClearDelayTrans" onchange="saveLiveDelayTrans()" style="padding: 6px 10px; font-size: 0.85em; border-radius: 8px; border: 1px solid var(--border-soft); background: white; font-weight: bold; cursor: pointer; color: var(--text);">
+            <option value="auto" data-i18n="optAuto" selected>🔄 Bei neuem Satz</option>
+            <option value="2000" data-i18n="opt2s">⏱ 2 Sek</option>
+            <option value="5000" data-i18n="opt5s">⏱ 5 Sek</option>
+            <option value="10000" data-i18n="opt10s">⏱ 10 Sek</option>
+            <option value="15000" data-i18n="opt15s">⏱ 15 Sek</option>
+            <option value="0" data-i18n="optManual">✋ Manuell</option>
+        </select>
+    </div>
+
+    <button class="clear-btn" onclick="clearLive()" data-i18n="btnLiveClear" style="width: 100%; border-radius: 12px; margin-top: 10px;">🗑️ Alles löschen</button>
+
 </div>
 
 <div id="tabSentences" class="card" style="display:none">
@@ -421,7 +434,7 @@
 </div>
 
 <script>
-    const VERSION = "6.9 (Einstellbarer Live-Timer)";
+    const VERSION = "7.0 (Perfekter Gesprächs-Loop)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -444,7 +457,7 @@
         'de': {
             btnNew: "➕ NEU", btnLive: "🎙️ LIVE", btnSentences: "📝 SÄTZE", btnStudy: "👀 LERNEN", btnQuiz: "🧠 ÜBEN", btnGame: "⏱️ SPIEL", btnList: "📖 LISTE",
             titleAdd: "Neues Wort", lblEx: "Beispielsatz", btnShowVerbs: "📝 Verb-Details anzeigen", btnAutoVerbs: "⚡ Formen automatisch suchen", btnTrans: "1. Übersetzen", btnSave: "2. Speichern", btnClear: "Felder leeren", btnCancel: "Abbrechen",
-            titleLive: "FLIESSENDER LIVE-ÜBERSETZER", descLive: "Perfekt für echte Gespräche (Auto-Loop)", lblSpeak: "Ich spreche", lblTransTo: "Übersetze nach", btnStartRec: "🎤 Start", btnStopRec: "⏹️ Stopp", lblHeard: "Gehörter Text", btnLiveClear: "🗑️ Gespräch löschen", lblLiveTrans: "Übersetzung (Instant)", phLiveHeard: "Dein gesprochener Text...", phLiveTrans: "Die Übersetzung erscheint hier...", btnQuickEnDe: "⚡ Quick-Start: Englisch ➡️ Deutsch",
+            titleLive: "FLIESSENDER LIVE-ÜBERSETZER", descLive: "Perfekt für echte Gespräche (Auto-Loop)", lblSpeak: "Ich spreche", lblTransTo: "Übersetze nach", btnStartRec: "🎤 Start", btnStopRec: "⏹️ Stopp", lblHeard: "Gehörter Text", btnLiveClear: "🗑️ Alles löschen", lblLiveTrans: "Übersetzung (Instant)", phLiveHeard: "Dein gesprochener Text...", phLiveTrans: "Die Übersetzung erscheint hier...", btnQuickEnDe: "⚡ Quick-Start: Englisch ➡️ Deutsch", lblClearAfter: "Löschen nach:", opt2s: "⏱ 2 Sek", opt5s: "⏱ 5 Sek", opt10s: "⏱ 10 Sek", opt15s: "⏱ 15 Sek", optManual: "✋ Manuell (Nie)", optAuto: "🔄 Bei neuem Satz",
             titleSent: "SÄTZE BILDEN & PRÜFEN", lblMySent: "Mein Satz (Deutsch)", lblTarget: "Zielsprache", lblMyAttempt: "Meine Übersetzung", btnCheckSent: "🔍 Übersetzung prüfen", lblKiSuggest: "KI-Korrektur / Vorschlag:", btnListen: "🔊 Anhören", phSentBase: "z. B. Warst du gestern einkaufen?", phSentAtt: "Ich versuche es mal...",
             titleStudy: "VOKABELN LERNEN & SUCHEN", searchPh: "🔍 Suchen...", btnPrev: "⬅️ Zurück", btnNext: "Weiter ➡️",
             audioOff: "🔈 AUDIO: AUS", audioOn: "🔊 AUDIO: AN", lblWhatMeans: "WAS HEISST...?", lblAns1: "ANTWORT 1", lblAns2: "ANTWORT 2", btnCheck: "PRÜFEN", btnNextWord: "NÄCHSTES WORT ➡️",
@@ -455,7 +468,7 @@
         'en': {
             btnNew: "➕ NEW", btnLive: "🎙️ LIVE", btnSentences: "📝 SENTENCES", btnStudy: "👀 STUDY", btnQuiz: "🧠 QUIZ", btnGame: "⏱️ GAME", btnList: "📖 LIST",
             titleAdd: "New Word", lblEx: "Example sentence", btnShowVerbs: "📝 Show verb details", btnAutoVerbs: "⚡ Find forms automatically", btnTrans: "1. Translate", btnSave: "2. Save", btnClear: "Clear fields", btnCancel: "Cancel",
-            titleLive: "FLUENT LIVE TRANSLATOR", descLive: "Perfect for real conversations (Auto-Loop)", lblSpeak: "I'm speaking", lblTransTo: "Translate to", btnStartRec: "🎤 Start", btnStopRec: "⏹️ Stop", lblHeard: "Heard text", btnLiveClear: "🗑️ Clear chat", lblLiveTrans: "Translation (Instant)", phLiveHeard: "Your text...", phLiveTrans: "Translation will appear here...", btnQuickEnDe: "⚡ Quick-Start: English ➡️ German",
+            titleLive: "FLUENT LIVE TRANSLATOR", descLive: "Perfect for real conversations (Auto-Loop)", lblSpeak: "I'm speaking", lblTransTo: "Translate to", btnStartRec: "🎤 Start", btnStopRec: "⏹️ Stop", lblHeard: "Heard text", btnLiveClear: "🗑️ Clear all", lblLiveTrans: "Translation (Instant)", phLiveHeard: "Your text...", phLiveTrans: "Translation will appear here...", btnQuickEnDe: "⚡ Quick-Start: English ➡️ German", lblClearAfter: "Clear after:", opt2s: "⏱ 2 sec", opt5s: "⏱ 5 sec", opt10s: "⏱ 10 sec", opt15s: "⏱ 15 sec", optManual: "✋ Manual", optAuto: "🔄 On new sentence",
             titleSent: "BUILD & CHECK SENTENCES", lblMySent: "My sentence", lblTarget: "Target language", lblMyAttempt: "My translation", btnCheckSent: "🔍 Check translation", lblKiSuggest: "AI Correction / Suggestion:", btnListen: "🔊 Listen", phSentBase: "e.g. Did you go shopping yesterday?", phSentAtt: "Let me try...",
             titleStudy: "STUDY & SEARCH WORDS", searchPh: "🔍 Search...", btnPrev: "⬅️ Back", btnNext: "Next ➡️",
             audioOff: "🔈 AUDIO: OFF", audioOn: "🔊 AUDIO: ON", lblWhatMeans: "WHAT DOES IT MEAN?", lblAns1: "ANSWER 1", lblAns2: "ANSWER 2", btnCheck: "CHECK", btnNextWord: "NEXT WORD ➡️",
@@ -466,7 +479,7 @@
         'sv': {
             btnNew: "➕ NYTT", btnLive: "🎙️ LIVE", btnSentences: "📝 MENINGAR", btnStudy: "👀 PLUGGA", btnQuiz: "🧠 ÖVA", btnGame: "⏱️ SPEL", btnList: "📖 LISTA",
             titleAdd: "Nytt ord", lblEx: "Exempelmening", btnShowVerbs: "📝 Visa verbdetaljer", btnAutoVerbs: "⚡ Hitta former automatiskt", btnTrans: "1. Översätt", btnSave: "2. Spara", btnClear: "Rensa fält", btnCancel: "Avbryt",
-            titleLive: "FLYTANDE LIVE-ÖVERSÄTTARE", descLive: "Perfekt för riktiga samtal (Auto-Loop)", lblSpeak: "Jag pratar", lblTransTo: "Översätt till", btnStartRec: "🎤 Starta", btnStopRec: "⏹️ Stopp", lblHeard: "Hörd text", btnLiveClear: "🗑️ Radera samtal", lblLiveTrans: "Översättning (Instant)", phLiveHeard: "Din text...", phLiveTrans: "Översättningen visas här...", btnQuickEnDe: "⚡ Snabbstart: Engelska ➡️ Tyska",
+            titleLive: "FLYTANDE LIVE-ÖVERSÄTTARE", descLive: "Perfekt för riktiga samtal (Auto-Loop)", lblSpeak: "Jag pratar", lblTransTo: "Översätt till", btnStartRec: "🎤 Starta", btnStopRec: "⏹️ Stopp", lblHeard: "Hörd text", btnLiveClear: "🗑️ Radera allt", lblLiveTrans: "Översättning (Instant)", phLiveHeard: "Din text...", phLiveTrans: "Översättningen visas här...", btnQuickEnDe: "⚡ Snabbstart: Engelska ➡️ Tyska", lblClearAfter: "Radera efter:", opt2s: "⏱ 2 sek", opt5s: "⏱ 5 sek", opt10s: "⏱ 10 sek", opt15s: "⏱ 15 sek", optManual: "✋ Manuell", optAuto: "🔄 Vid ny mening",
             titleSent: "SKAPA & TESTA MENINGAR", lblMySent: "Min mening", lblTarget: "Målspråk", lblMyAttempt: "Mitt försök", btnCheckSent: "🔍 Kolla översättning", lblKiSuggest: "AI-korrigering / Förslag:", btnListen: "🔊 Lyssna", phSentBase: "t.ex. Var du och handlade igår?", phSentAtt: "Låt mig försöka...",
             titleStudy: "PLUGGA & SÖK ORD", searchPh: "🔍 Sök...", btnPrev: "⬅️ Tillbaka", btnNext: "Nästa ➡️",
             audioOff: "🔈 LJUD: AV", audioOn: "🔊 LJUD: PÅ", lblWhatMeans: "VAD BETYDER...?", lblAns1: "SVAR 1", lblAns2: "SVAR 2", btnCheck: "KONTROLLERA", btnNextWord: "NÄSTA ORD ➡️",
@@ -548,9 +561,13 @@
         localStorage.setItem('trainerAudio', globalAudioEnabled ? 'on' : 'off');
     }
 
-    // NEU: Verzögerung in localStorage speichern
     function saveLiveDelay() {
         localStorage.setItem('trainerLiveDelay', document.getElementById('liveClearDelay').value);
+    }
+    
+    // NEU: Verzögerung für das grüne Feld speichern
+    function saveLiveDelayTrans() {
+        localStorage.setItem('trainerLiveDelayTrans', document.getElementById('liveClearDelayTrans').value);
     }
 
     function init() {
@@ -566,9 +583,11 @@
             document.getElementById('appLangSelector').value = currentAppLang;
         }
 
-        // NEU: Gespeicherten Live-Timer laden
         const savedDelay = localStorage.getItem('trainerLiveDelay');
         if(savedDelay) document.getElementById('liveClearDelay').value = savedDelay;
+        
+        const savedDelayTrans = localStorage.getItem('trainerLiveDelayTrans');
+        if(savedDelayTrans) document.getElementById('liveClearDelayTrans').value = savedDelayTrans;
 
         const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames);
         renderRenameInputs();
@@ -702,6 +721,7 @@
     let liveFinalText = "";
     let liveTranslatedText = "";
     let clearSourceTimeout = null;
+    let clearTransTimeout = null;
     let isWaitingForNewLoop = false;
 
     function startQuickEnDe() {
@@ -724,21 +744,21 @@
         document.getElementById('liveResultText').value = "";
         isWaitingForNewLoop = false;
         clearTimeout(clearSourceTimeout);
+        clearTimeout(clearTransTimeout);
     }
 
     function resetClearSourceTimer() {
         clearTimeout(clearSourceTimeout);
         
-        // NEU: Holt sich die Zeit aus dem Dropdown
         const delayVal = document.getElementById('liveClearDelay').value;
-        if (delayVal === "0") return; // Wenn auf "Manuell" (0) gestellt ist, starte keinen Timer
+        if (delayVal === "0") return; 
         
         const delayMs = parseInt(delayVal, 10);
         
         clearSourceTimeout = setTimeout(() => {
             liveFinalText = ""; 
             document.getElementById('liveSourceText').value = ""; 
-            isWaitingForNewLoop = true; 
+            isWaitingForNewLoop = true; // Signal für das grüne Feld: Ein neuer Satz beginnt!
         }, delayMs);
     }
 
@@ -763,10 +783,12 @@
         liveRec.onresult = (event) => {
             resetClearSourceTimer();
 
+            // Wenn ein neuer Satz anfängt, lösche das grüne Feld sofort!
             if (isWaitingForNewLoop) {
                 liveTranslatedText = "";
                 document.getElementById('liveResultText').value = "";
                 isWaitingForNewLoop = false;
+                clearTimeout(clearTransTimeout);
             }
 
             let interim = '';
@@ -793,6 +815,7 @@
         isLiveRecording = false;
         if (liveRec) { liveRec.stop(); }
         clearTimeout(clearSourceTimeout);
+        clearTimeout(clearTransTimeout);
         
         const btn = document.getElementById('btnLiveRecord');
         document.getElementById('liveRecText').innerHTML = UI_TRANS[currentAppLang].btnStartRec;
@@ -806,6 +829,17 @@
             const result = await translate(chunk, src, tgt);
             liveTranslatedText += result + " ";
             document.getElementById('liveResultText').value = liveTranslatedText;
+            
+            // NEU: Timer für das grüne Feld starten
+            clearTimeout(clearTransTimeout);
+            const transDelayVal = document.getElementById('liveClearDelayTrans').value;
+            if (transDelayVal !== "auto" && transDelayVal !== "0") {
+                clearTransTimeout = setTimeout(() => {
+                    liveTranslatedText = "";
+                    document.getElementById('liveResultText').value = "";
+                }, parseInt(transDelayVal, 10));
+            }
+
         } catch(e) {
             console.log("Translation error:", e);
         } finally {
