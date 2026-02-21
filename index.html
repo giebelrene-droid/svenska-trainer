@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 6.4 (Global Audio & Sounds)</title>
+    <title>Family Trainer 6.5 (Neues Design & Positionen)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -13,7 +13,7 @@
         :root {
             --primary: #006aa7; 
             --accent: #fecc00;  
-            --bg: #f4f6f8;      
+            --bg: #fefae0; /* NEU: Heller Gelbton statt Grau */
             --card-bg: #ffffff; 
             --text: #2d3748;    
             --text-light: #718096; 
@@ -32,7 +32,9 @@
             line-height: 1.5;
         }
         
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        /* Header jetzt rechtsbündig für das Zahnrad */
+        .header-row { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 25px; }
+        
         .badge { background: var(--card-bg); padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.85em; box-shadow: var(--shadow-soft); border: 1px solid var(--border-soft); }
         .settings-btn { background: var(--card-bg); border: 1px solid var(--border-soft); font-size: 1.3em; cursor: pointer; padding: 6px 12px; border-radius: 50%; box-shadow: var(--shadow-soft); color: var(--text); transition: all 0.2s; }
         .settings-btn:hover { background: #edf2f7; }
@@ -189,8 +191,6 @@
 </div>
 
 <div class="header-row">
-    <div class="badge">🔥 <span id="streakDisplay">0</span></div>
-    <div class="badge">📚 <span id="wordCount">0</span> <span data-i18n="wordStr">Wörter</span></div>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
 </div>
 
@@ -343,6 +343,8 @@
 
 <div id="tabQuiz" class="card" style="display:none">
     <div style="text-align:center; margin-bottom: 20px;">
+        <div class="badge" style="display:inline-block; margin-bottom:15px;">🔥 <span id="streakDisplay">0</span></div><br>
+
         <div id="audioModeToggle" style="font-size:0.85em; font-weight:700; color:var(--primary); cursor:pointer; margin-bottom:15px; display: inline-block; padding: 5px 10px; background: #eef2f6; border-radius: 15px;" onclick="toggleAudioMode()" data-i18n="audioOff">🔈 AUDIO: AUS</div>
         <div id="timer" style="display:none; font-size:1.8em; font-weight:800; color:#e53e3e; margin-bottom: 10px;">⚡ SPIEL</div>
         <p data-i18n="lblWhatMeans" style="color:var(--text-light); font-size:0.8em; margin:0; font-weight: 700; letter-spacing: 1px;">WAS HEISST...?</p>
@@ -377,6 +379,10 @@
 
 <div id="tabList" class="card" style="display:none">
     <h2 data-i18n="titleList">Vokabelheft</h2>
+    <div style="text-align:center; margin-bottom:20px;">
+         <div class="badge" style="display:inline-block;">📚 <span id="wordCount">0</span> <span data-i18n="wordStr">Wörter</span></div>
+    </div>
+
     <div id="listCont"></div>
     <div style="margin-top:30px; display:flex; gap:15px;">
         <button class="action-btn" style="font-size:0.9em; background:#e2e8f0; color: var(--text); flex:1;" onclick="exportData()" data-i18n="btnBackupSave">💾 Backup speichern</button>
@@ -403,7 +409,7 @@
 </div>
 
 <script>
-    const VERSION = "6.4 (Global Audio & Sounds)";
+    const VERSION = "6.5 (Neues Design & Positionen)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -420,10 +426,8 @@
     let studyWords = []; 
     let studyIndex = 0; 
 
-    // NEU: Globale Ton-Einstellung
     let globalAudioEnabled = true;
 
-    // --- DICTIONARY FÜR APP SPRACHE ---
     const UI_TRANS = {
         'de': {
             btnNew: "➕ NEU", btnLive: "🎙️ LIVE", btnSentences: "📝 SÄTZE", btnStudy: "👀 LERNEN", btnQuiz: "🧠 ÜBEN", btnGame: "⏱️ SPIEL", btnList: "📖 LISTE",
@@ -495,7 +499,6 @@
     }
     // ----------------------------------
 
-    // NEU: Sound Feedback Funktion (generiert einfache Systemtöne)
     function playTone(type) {
         if (!globalAudioEnabled) return;
         try {
@@ -537,7 +540,6 @@
     function init() {
         document.getElementById('versionDisplay').innerText = VERSION;
         
-        // Globale Audio Settings laden
         const savedAudio = localStorage.getItem('trainerAudio');
         if (savedAudio === 'off') { globalAudioEnabled = false; }
         document.getElementById('selGlobalAudio').value = globalAudioEnabled ? 'on' : 'off';
