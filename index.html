@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 8.7 (API-Diagnose Tool)</title>
+    <title>Family Trainer 8.8 (Dynamische KI-Modell Wahl)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -384,7 +384,7 @@
 </div>
 
 <script>
-    const VERSION = "8.6 (KI-Stabilitäts-Update)";
+    const VERSION = "8.8 (Dynamische KI-Modell Wahl)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -413,7 +413,6 @@
     
     function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); }
 
-    // NEU: Testet, ob der Key auch wirklich eine Verbindung zu Google aufbauen kann
     async function testApiKey() {
         const key = document.getElementById('inpGeminiKey').value.trim();
         if(!key) { alert("Bitte erst einen Schlüssel einfügen!"); return; }
@@ -514,11 +513,21 @@
         const prompt = `Du bist ein freundlicher Gesprächspartner zum Sprachenlernen. Der Nutzer sagt folgendes: "${userText}". Bitte antworte direkt, natürlich und gesprächig in der Sprache ${tgtLangName}. Schreibe nur deine direkte Antwort, maximal 2-3 kurze Sätze.`;
         
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, { 
+            // DYNAMISCHE MODELL-ABFRAGE (verhindert 'not found' Fehler)
+            const modelRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
+            const modelData = await modelRes.json();
+            
+            if(modelData.error) return "⚠️ API Fehler beim Modell-Laden: " + modelData.error.message;
+            
+            // Wir suchen ein Modell, das "gemini" heißt und "generateContent" kann
+            const validModel = modelData.models.find(m => m.name.includes("gemini") && m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"));
+            
+            if(!validModel) return "⚠️ Fehler: Dein Schlüssel hat keine Freigabe für Text-KI-Modelle.";
+            
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${validModel.name}:generateContent?key=${geminiApiKey}`, { 
                 method: "POST", headers: { "Content-Type": "application/json" }, 
                 body: JSON.stringify({ 
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { maxOutputTokens: 150 }
+                    contents: [{ parts: [{ text: prompt }] }]
                 }) 
             });
             const data = await response.json(); 
@@ -531,7 +540,7 @@
             }
             return "⚠️ Konnte keine Antwort generieren.";
 
-        } catch(e) { return "⚠️ Netzwerkfehler: Konnte KI nicht erreichen."; }
+        } catch(e) { return "⚠️ Netzwerkfehler: Konnte KI nicht erreichen. " + e.message; }
     }
 
     function startChatMic(isFirstStart = true) {
