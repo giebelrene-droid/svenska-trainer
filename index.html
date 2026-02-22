@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 8.5 (Mikrofon-Diagnose)</title>
+    <title>Family Trainer 9.0 (KI-Chat Kaskade & Mac-Fix)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -94,7 +94,7 @@
         .chat-bubble { padding: 12px 16px; border-radius: 20px; max-width: 85%; font-size: 0.95em; position: relative; word-wrap: break-word;}
         .bubble-user { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 5px; }
         .bubble-ai { background: white; border: 1px solid var(--border-soft); color: var(--text); align-self: flex-start; border-bottom-left-radius: 5px; box-shadow: var(--shadow-soft); }
-        .bubble-error { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; align-self: center; text-align: center; border-radius: 10px; font-weight: bold; width: 100%; font-size: 0.8em;}
+        .bubble-error { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; align-self: center; text-align: center; border-radius: 10px; font-weight: bold; width: 100%; font-size: 0.85em;}
         
         .voice-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .voice-row select { font-size: 0.85em; padding: 10px; background: white; }
@@ -124,7 +124,7 @@
         </select>
 
         <label>🔑 Gemini API-Schlüssel (Für Gespräche)</label>
-        <input type="password" id="inpGeminiKey" placeholder="Schlüssel hier einfügen..." oninput="saveApiKey(); this.style.borderColor='#48bb78';" style="margin-bottom:20px; font-size:0.8em; padding:10px;">
+        <input type="password" id="inpGeminiKey" placeholder="Schlüssel hier einfügen..." oninput="saveApiKey(); this.style.borderColor='#48bb78';" style="margin-bottom:20px; font-size:0.8em; padding:10px; border-width:2px;">
 
         <label data-i18n="lblUser">👤 Aktiver Benutzer</label>
         <select id="selUser" onchange="switchUser()" style="width:100%; padding:12px; margin-bottom:20px; font-weight:bold; border: 2px solid var(--primary);"></select>
@@ -189,7 +189,7 @@
     </select>
 </div>
 
-<div id="tabChat" class="card" style="display:none">
+<div id="tabChat" class="card" style="display:none;">
     <div style="text-align:center; margin-bottom: 20px;">
         <p data-i18n="titleChat" style="color:var(--text-light); font-size:0.8em; margin:0; text-transform:uppercase; font-weight:800; letter-spacing: 1px;">KI-GESPRÄCHSPARTNER</p>
         <p data-i18n="descChat" style="font-size:0.8em; color:var(--text); margin-top:5px;">Unterhalte dich frei mit der App.</p>
@@ -214,7 +214,7 @@
         <div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Wie kann ich dir heute helfen? Lass uns ein bisschen quatschen! 👋</div>
     </div>
 
-    <div id="loaderChat" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">KI denkt nach...</div>
+    <div id="loaderChat" style="color:var(--primary); text-align:center; display:none; font-weight:bold; margin-bottom: 15px;">🤖 KI denkt nach...</div>
 
     <div style="display: flex; gap: 10px; margin-bottom: 5px;">
         <button id="btnChatRecord" class="action-btn" style="background:var(--primary); margin-top: 0; flex: 1; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="toggleChatRecord()">
@@ -381,7 +381,7 @@
 </div>
 
 <script>
-    const VERSION = "8.5 (Mikrofon-Diagnose & Fixes)";
+    const VERSION = "9.0 (Chat-Fix & Not-Aus)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -466,7 +466,7 @@
 
     function stopEntireChat() {
         isChatSessionActive = false;
-        if (chatRec) { try { chatRec.stop(); } catch(e){} }
+        if (chatRec) { try { chatRec.abort(); } catch(e){} chatRec = null; }
         window.speechSynthesis.cancel(); 
         updateChatUI(false);
         document.getElementById('loaderChat').style.display = "none";
@@ -489,25 +489,34 @@
         const tgtLangName = LANGS[tgtCode].name;
         const prompt = `Du bist ein freundlicher Gesprächspartner zum Sprachenlernen. Der Nutzer sagt folgendes: "${userText}". Bitte antworte direkt, natürlich und gesprächig in der Sprache ${tgtLangName}. Schreibe nur deine direkte Antwort, maximal 2-3 kurze Sätze.`;
         
-        let model = "gemini-1.5-flash"; 
-        try {
-            let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-            let data = await response.json(); 
-            if(data.error && data.error.code === 404) {
-                model = "gemini-pro";
-                response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-                data = await response.json(); 
+        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro", "gemini-pro"];
+        let lastError = "";
+
+        for (let model of modelsToTry) {
+            try {
+                let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, { 
+                    method: "POST", headers: { "Content-Type": "application/json" }, 
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
+                });
+                let data = await response.json(); 
+                if(data.candidates && data.candidates.length > 0) {
+                    return data.candidates[0].content.parts[0].text.trim();
+                } else if(data.error) {
+                    lastError = data.error.message;
+                    // Mache weiter mit dem nächsten Modell in der Liste...
+                }
+            } catch(e) {
+                lastError = "Netzwerkfehler";
             }
-            if(data.error) return "API Fehler: " + data.error.message; 
-            return data.candidates[0].content.parts[0].text.trim();
-        } catch(e) { return "⚠️ Verbindungsfehler zur KI. Bitte prüfe dein Internet."; }
+        }
+        return "⚠️ API Fehler: " + lastError;
     }
 
-    function startChatMic() {
+    function startChatMic(isFirstStart = true) {
         if(!isChatSessionActive) return;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
         if (!SpeechRecognition) { 
-            addChatBubble("⚠️ Fehler: Dein Browser unterstützt keine Spracherkennung. Bitte nutze Google Chrome.", "error");
+            addChatBubble("⚠️ Browser-Fehler: Dein Browser (vermutlich Safari) unterstützt die Spracherkennung nicht richtig. Bitte nutze Google Chrome!", "error");
             stopEntireChat(); return; 
         }
         
@@ -516,11 +525,18 @@
             stopEntireChat(); return;
         }
 
-        chatRec = new SpeechRecognition(); chatRec.continuous = false; const srcVal = document.getElementById('chatSrcLang').value; const langCode = Object.keys(LANGS).find(k => k === srcVal); chatRec.lang = LANGS[langCode].tts;
+        if (chatRec) { try { chatRec.abort(); } catch(e){} }
+
+        chatRec = new SpeechRecognition(); 
+        chatRec.continuous = false; 
+        chatRec.interimResults = false; 
+        
+        const srcVal = document.getElementById('chatSrcLang').value; const langCode = Object.keys(LANGS).find(k => k === srcVal); 
+        chatRec.lang = LANGS[langCode].tts;
 
         chatRec.onresult = async (event) => {
             const transcript = event.results[0][0].transcript; addChatBubble(transcript, 'user'); 
-            if (chatRec) { try { chatRec.stop(); } catch(e){} }
+            if (chatRec) { try { chatRec.abort(); } catch(e){} }
             if(!isChatSessionActive) return; 
 
             document.getElementById('loaderChat').style.display = "block"; const tgtVal = document.getElementById('chatTgtLang').value;
@@ -534,28 +550,37 @@
             
             speak(reply, tgtVal, () => { 
                 if (isChatSessionActive && document.getElementById('tabChat').style.display === 'block' && !reply.startsWith("⚠️")) { 
-                    startChatMic(); 
+                    startChatMic(false); 
                 } else if (reply.startsWith("⚠️")) {
                     stopEntireChat();
                 }
             });
         };
         
-        // NEU: Bessere Fehlerbehandlung für das Mikrofon
         chatRec.onerror = (e) => { 
             console.error("Speech Error:", e.error);
             if (e.error === 'not-allowed' || e.error === 'audio-capture') {
                 addChatBubble("⚠️ Mikrofon blockiert! Bitte erlaube den Zugriff oben in der Browser-Leiste.", "error");
                 stopEntireChat();
             } else if (e.error === 'no-speech') {
-                if(isChatSessionActive) { setTimeout(startChatMic, 1000); } 
-            } else {
+                if(isChatSessionActive) { setTimeout(() => startChatMic(false), 800); } 
+            } else if (e.error !== 'aborted') {
                 addChatBubble("⚠️ Mikrofon-Fehler: " + e.error, "error");
                 stopEntireChat();
             }
         }; 
         
-        try { chatRec.start(); } catch(e){}
+        try { 
+            chatRec.start(); 
+        } catch(e){
+            if(!isFirstStart) {
+                addChatBubble("⚠️ Apple blockiert den automatischen Neustart des Mikrofons. Bitte drücke für deinen nächsten Satz erneut auf Start.", "error");
+                stopEntireChat();
+            } else {
+                console.error("Mic start failed", e);
+                stopEntireChat();
+            }
+        }
     }
 
     function changeAppLang() { currentAppLang = document.getElementById('appLangSelector').value; localStorage.setItem('trainerAppLang', currentAppLang); applyAppLang(); }
@@ -583,6 +608,7 @@
     function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; } const rec = new SpeechRecognition(); const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3); rec.lang = LANGS[langKey].tts; btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; btn.classList.remove('mic-active'); }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
     function listenAttempt(targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; } const rec = new SpeechRecognition(); const tgt = document.getElementById('sentTargetLang').value; rec.lang = tgt === 'en' ? LANGS[conf.l2].tts : LANGS[conf.l3].tts; btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; btn.classList.remove('mic-active'); }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
     
+    // --- LIVE ÜBERSETZER ---
     let liveRec = null; let isLiveRecording = false; let liveFinalText = ""; let liveTranslatedText = ""; let clearSourceTimeout = null; let clearTransTimeout = null; let isWaitingForNewLoop = false;
     function startQuickStart() { document.getElementById('liveSrcLang').value = quickSrc; document.getElementById('liveTgtLang').value = quickTgt; if (!isLiveRecording) { toggleLiveRecord(); } }
     function toggleLiveRecord() { if (isLiveRecording) stopLiveRecord(); else startLiveRecord(); }
@@ -591,18 +617,17 @@
     function startLiveRecord() { 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support in diesem Browser."); return; } 
         isLiveRecording = true; const btn = document.getElementById('btnLiveRecord'); document.getElementById('liveRecText').innerHTML = UI_TRANS[currentAppLang].btnStopRec; btn.style.background = "#e53e3e"; btn.classList.add("mic-active"); 
-        liveRec = new SpeechRecognition(); liveRec.continuous = false; liveRec.interimResults = true; const srcVal = document.getElementById('liveSrcLang').value; const langCode = Object.keys(LANGS).find(k => k === srcVal); liveRec.lang = LANGS[langCode].tts; 
+        if(liveRec) { try{ liveRec.abort(); }catch(e){} }
+        liveRec = new SpeechRecognition(); liveRec.continuous = false; liveRec.interimResults = false; const srcVal = document.getElementById('liveSrcLang').value; const langCode = Object.keys(LANGS).find(k => k === srcVal); liveRec.lang = LANGS[langCode].tts; 
         
         liveRec.onresult = (event) => { 
             resetClearSourceTimer(); 
             if (isWaitingForNewLoop) { liveTranslatedText = ""; document.getElementById('liveResultText').value = ""; isWaitingForNewLoop = false; clearTimeout(clearTransTimeout); } 
-            let interim = ''; 
-            for (let i = event.resultIndex; i < event.results.length; ++i) { 
-                if (event.results[i].isFinal) { 
-                    let finalChunk = event.results[i][0].transcript + ' '; liveFinalText += finalChunk; translateAndAppendLive(finalChunk, document.getElementById('liveSrcLang').value, document.getElementById('liveTgtLang').value); 
-                } else { interim += event.results[i][0].transcript; } 
-            } 
-            document.getElementById('liveSourceText').value = liveFinalText + interim; 
+            
+            let finalChunk = event.results[0][0].transcript + ' '; 
+            liveFinalText += finalChunk; 
+            document.getElementById('liveSourceText').value = liveFinalText; 
+            translateAndAppendLive(finalChunk, document.getElementById('liveSrcLang').value, document.getElementById('liveTgtLang').value); 
         }; 
         liveRec.onerror = (e) => { 
             console.error("Live Speech Error:", e.error);
@@ -610,11 +635,13 @@
         };
         liveRec.onend = () => { if (isLiveRecording) { try { liveRec.start(); } catch(e){} } }; try { liveRec.start(); } catch(e){} 
     }
-    function stopLiveRecord() { isLiveRecording = false; if (liveRec) { liveRec.stop(); } clearTimeout(clearSourceTimeout); clearTimeout(clearTransTimeout); const btn = document.getElementById('btnLiveRecord'); document.getElementById('liveRecText').innerHTML = UI_TRANS[currentAppLang].btnStartRec; btn.style.background = "var(--primary)"; btn.classList.remove("mic-active"); }
+    function stopLiveRecord() { isLiveRecording = false; if (liveRec) { try{ liveRec.abort(); } catch(e){} } clearTimeout(clearSourceTimeout); clearTimeout(clearTransTimeout); const btn = document.getElementById('btnLiveRecord'); document.getElementById('liveRecText').innerHTML = UI_TRANS[currentAppLang].btnStartRec; btn.style.background = "var(--primary)"; btn.classList.remove("mic-active"); }
     async function translateAndAppendLive(chunk, src, tgt) { document.getElementById('loaderLive').style.display = "block"; try { const result = await translate(chunk, src, tgt); liveTranslatedText += result + " "; document.getElementById('liveResultText').value = liveTranslatedText; clearTimeout(clearTransTimeout); const transDelayVal = document.getElementById('liveClearDelayTrans').value; if (transDelayVal !== "auto" && transDelayVal !== "0") { clearTransTimeout = setTimeout(() => { liveTranslatedText = ""; document.getElementById('liveResultText').value = ""; }, parseInt(transDelayVal, 10)); } } catch(e) {} finally { document.getElementById('loaderLive').style.display = "none"; } }
     function speakLive() { const text = document.getElementById('liveResultText').value; if(!text) return; const tgt = document.getElementById('liveTgtLang').value; const langCode = Object.keys(LANGS).find(k => k === tgt); speak(text, langCode); }
     function toggleAudioMode() { audioMode = !audioMode; applyAppLang(); }
     function cleanResult(txt) { if(!txt) return ""; let c = txt.trim(); c = c.replace(/^(to\s|I\s|He\s|She\s|We\s|You\s)/i, ""); c = c.replace(/^(a\s|an\s|the\s)/i, ""); c = c.replace(/^(ein\s|eine\s|der\s|die\s|das\s)/i, ""); if(c.toUpperCase().includes("PLEASE SELECT") || c.toUpperCase().includes("SELECT TWO")) return ""; return c; }
+    
+    // Einfache Übersetzung (Wörter & Sätze)
     async function translate(txt, src, tgt) { const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${src}&tl=${tgt}&dt=t&q=${encodeURIComponent(txt)}`; try { const response = await fetch(url); const data = await response.json(); return data[0].map(item => item[0]).join(''); } catch (error) { return "Fehler"; } }
     async function checkSentence() { const base = document.getElementById('sentBase').value.trim(); const tgtLang = document.getElementById('sentTargetLang').value; const srcLang = 'de'; if(!base) return; document.getElementById('loaderSentences').style.display = "block"; document.getElementById('sentFeedback').style.display = "none"; try { const result = await translate(base, srcLang, tgtLang); document.getElementById('sentResult').innerText = result; const langCode = tgtLang === 'en' ? conf.l2 : conf.l3; document.getElementById('spkSent').onclick = () => speak(result, langCode); document.getElementById('sentFeedback').style.display = "block"; } catch(e) {} finally { document.getElementById('loaderSentences').style.display = "none"; } }
     async function handleSmartTranslate() { const i1 = document.getElementById('inDe').value.trim(), i2 = document.getElementById('inEn').value.trim(), i3 = document.getElementById('inSv').value.trim(); let txt = i1 || i2 || i3; let src = i1 ? conf.l1 : (i2 ? conf.l2 : conf.l3); if(!txt) return; document.getElementById('loader').style.display = "block"; try { const targets = [{id:'inDe', l: conf.l1}, {id:'inEn', l: conf.l2}, {id:'inSv', l: conf.l3}]; const tasks = targets.filter(t => t.l !== src).map(async t => { const tr = await translate(txt, src, t.l); return {id: t.id, t: tr}; }); const res = await Promise.all(tasks); res.forEach(r => { document.getElementById(r.id).value = cleanResult(r.t); }); } catch(e) {} finally { document.getElementById('loader').style.display = "none"; } }
