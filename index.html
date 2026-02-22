@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 9.2 (Mac Diagnose-Modus)</title>
+    <title>Family Trainer 9.3 (Variablen-Fix & Mac-Mic)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -384,7 +384,7 @@
 </div>
 
 <script>
-    const VERSION = "9.2 (Mac Diagnose-Modus)";
+    const VERSION = "9.3 (Variablen-Fix & Mac-Mic)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -401,6 +401,7 @@
     let geminiApiKey = "";
     let quickSrc = 'en'; let quickTgt = 'de';
     let currentNavStyle = 'inline';
+    let currentAppLang = 'de'; // <--- FIX: Diese Variable hat gefehlt!
 
     const UI_TRANS = {
         'de': { btnNew: "➕ NEU", btnLive: "🎙️ LIVE", btnSentences: "📝 SÄTZE", btnStudy: "👀 LERNEN", btnQuiz: "🧠 ÜBEN", btnGame: "⏱️ SPIEL", btnList: "📖 LISTE", btnChat: "💬 GESPRÄCH", titleAdd: "Neues Wort", lblEx: "Beispielsatz", btnShowVerbs: "📝 Verb-Details anzeigen", btnAutoVerbs: "⚡ Formen automatisch suchen", btnTrans: "1. Übersetzen", btnSave: "2. Speichern", btnClear: "Felder leeren", btnCancel: "Abbrechen", titleLive: "FLIESSENDER LIVE-ÜBERSETZER", descLive: "Perfekt für echte Gespräche (Auto-Loop)", lblSpeak: "Ich spreche", lblTransTo: "Übersetze nach", btnStartRec: "🎤 Start", btnStopRec: "⏹️ Stopp", lblHeard: "Gehörter Text", btnLiveClear: "🗑️ Alles löschen", lblLiveTrans: "Übersetzung (Instant)", phLiveHeard: "Dein gesprochener Text...", phLiveTrans: "Die Übersetzung erscheint hier...", lblClearAfter: "Löschen nach:", opt2s: "⏱ 2 Sek", opt5s: "⏱ 5 Sek", opt10s: "⏱ 10 Sek", opt15s: "⏱ 15 Sek", optManual: "✋ Manuell (Nie)", optAuto: "🔄 Bei neuem Satz", btnQuickEnDe: "⚡ Quick-Start: Englisch ➡️ Deutsch", titleChat: "KI-GESPRÄCHSPARTNER", descChat: "Unterhalte dich frei mit der App.", lblChatSrc: "Ich spreche", lblChatTgt: "KI antwortet auf", btnStartChat: "Gespräch starten", btnStopChat: "Gespräch beenden", chatWelcome: "Hej! Wie kann ich dir heute helfen? Lass uns ein bisschen quatschen! 👋", titleSent: "SÄTZE BILDEN & PRÜFEN", lblMySent: "Mein Satz (Deutsch)", lblTarget: "Zielsprache", lblMyAttempt: "Meine Übersetzung", btnCheckSent: "🔍 Übersetzung prüfen", lblKiSuggest: "KI-Korrektur / Vorschlag:", btnListen: "🔊 Anhören", phSentBase: "z. B. Warst du gestern einkaufen?", phSentAtt: "Ich versuche es mal...", titleStudy: "VOKABELN LERNEN & SUCHEN", searchPh: "🔍 Suchen...", btnPrev: "⬅️ Zurück", btnNext: "Weiter ➡️", audioOff: "🔈 AUDIO: AUS", audioOn: "🔊 AUDIO: AN", lblWhatMeans: "WAS HEISST...?", lblAns1: "ANTWORT 1", lblAns2: "ANTWORT 2", btnCheck: "PRÜFEN", btnNextWord: "NÄCHSTES WORT ➡️", titleList: "Vokabelheft", btnBackupSave: "💾 Backup speichern", btnBackupLoad: "📂 Backup laden", btnDeleteAll: "⚠️ ALLES LÖSCHEN", btnEdit: "✎ Bearbeiten", lblSettings: "⚙️ Einstellungen", lblSound: "Ton & Stimme", soundOn: "🔊 Töne An", soundOff: "🔇 Töne Aus", lblUser: "👤 Aktiver Benutzer", lblRename: "BENUTZER UMBENENNEN", lblLangs: "Lern-Sprachen", lblVoices: "Stimmen (Aussprache)", btnDone: "Fertig", btnShare: "📤 App weiterleiten", appLangStr: "App-Sprache:", wordStr: "Wörter", titleEdit: "Bearbeiten", lblQuickSettings: "QUICK-START TASTE", btnQuickPrefix: "⚡ Quick-Start:", lblNavStyle: "Menü-Stil", optNavInline: "Buttons (Nebeneinander)", optNavDropdown: "Dropdown-Liste" },
@@ -483,11 +484,25 @@
     let isChatSessionActive = false; 
     let chatRec = null;
 
-    function toggleChatRecord() { 
+    async function toggleChatRecord() { 
         try {
             if(isChatSessionActive) { 
                 stopEntireChat(); 
             } else { 
+                document.getElementById('loaderChat').style.display = "block";
+                document.getElementById('loaderChat').innerText = "Warte auf Mikrofon-Freigabe...";
+                
+                try {
+                    await navigator.mediaDevices.getUserMedia({ audio: true });
+                } catch(e) {
+                    document.getElementById('loaderChat').style.display = "none";
+                    alert("⚠️ Mac/Browser blockiert das Mikrofon! Bitte oben links im Browser (Schloss-Symbol) das Mikrofon erlauben.");
+                    return;
+                }
+                
+                document.getElementById('loaderChat').style.display = "none";
+                document.getElementById('loaderChat').innerText = "🤖 KI denkt nach..."; 
+
                 isChatSessionActive = true; 
                 updateChatUI(true); 
                 startChatMic(true); 
@@ -637,8 +652,14 @@
     let liveRec = null; let isLiveRecording = false; let liveFinalText = ""; let liveTranslatedText = ""; let clearSourceTimeout = null; let clearTransTimeout = null; let isWaitingForNewLoop = false;
     function startQuickStart() { document.getElementById('liveSrcLang').value = quickSrc; document.getElementById('liveTgtLang').value = quickTgt; if (!isLiveRecording) { toggleLiveRecord(); } }
     
-    function toggleLiveRecord() { 
-        if (isLiveRecording) { stopLiveRecord(); } else { startLiveRecord(); } 
+    async function toggleLiveRecord() { 
+        if (isLiveRecording) { 
+            stopLiveRecord(); 
+        } else { 
+            try { await navigator.mediaDevices.getUserMedia({ audio: true }); } 
+            catch(e) { alert("⚠️ Mikrofon blockiert! Bitte oben in der URL-Leiste (Schloss) freigeben."); return; }
+            startLiveRecord(); 
+        } 
     }
 
     function clearLive() { liveFinalText = ""; liveTranslatedText = ""; document.getElementById('liveSourceText').value = ""; document.getElementById('liveResultText').value = ""; isWaitingForNewLoop = false; clearTimeout(clearSourceTimeout); clearTimeout(clearTransTimeout); }
