@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 8.2 (KI-Chat Fixes)</title>
+    <title>Family Trainer 8.3 (KI-Chat Fix)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -148,6 +148,13 @@
             <select id="selL1" onchange="langChanged()"></select>
             <select id="selL2" onchange="langChanged()"></select>
             <select id="selL3" onchange="langChanged()"></select>
+        </div>
+
+        <label data-i18n="lblVoices">Stimmen (Aussprache)</label>
+        <div style="background:#f8fafc; padding:15px; border-radius:16px; border:1px solid var(--border-soft); margin-bottom:20px;">
+            <div class="voice-row"><span id="flagV1" class="lang-tag"></span> <select id="selVoiceL1" onchange="saveSettings()"></select></div>
+            <div class="voice-row"><span id="flagV2" class="lang-tag"></span> <select id="selVoiceL2" onchange="saveSettings()"></select></div>
+            <div class="voice-row"><span id="flagV3" class="lang-tag"></span> <select id="selVoiceL3" onchange="saveSettings()"></select></div>
         </div>
 
         <button class="action-btn" onclick="closeSettings()" data-i18n="btnDone">Fertig</button>
@@ -374,7 +381,7 @@
 </div>
 
 <script>
-    const VERSION = "8.2 (KI-Chat Fixes)";
+    const VERSION = "8.3 (KI-Chat Fix)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -441,7 +448,6 @@
         else { document.getElementById('navInline').style.display = 'flex'; document.getElementById('navDropdown').style.display = 'none'; }
     }
 
-    // NEU: API Key sofort speichern beim Eintippen
     function saveApiKey() { 
         geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); 
         localStorage.setItem('trainerGeminiKey', geminiApiKey); 
@@ -532,7 +538,12 @@
         const tgtLangName = LANGS[tgtCode].name;
         const prompt = `Du bist ein freundlicher Gesprächspartner zum Sprachenlernen. Der Nutzer sagt folgendes: "${userText}". Bitte antworte direkt, natürlich und gesprächig in der Sprache ${tgtLangName}. Schreibe nur deine direkte Antwort, maximal 2-3 kurze Sätze.`;
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            // HIER IST DER FIX AUF GEMINI-PRO FÜR MAXIMALE KOMPATIBILITÄT:
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, { 
+                method: "POST", 
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
+            });
             const data = await response.json(); if(data.error) return "API Fehler: " + data.error.message; return data.candidates[0].content.parts[0].text.trim();
         } catch(e) { return "⚠️ Verbindungsfehler zur KI. Bitte prüfe dein Internet oder den API-Schlüssel."; }
     }
@@ -540,7 +551,6 @@
     function startChatRecord() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support i.d. Browser."); return; }
         
-        // Check if API Key is empty before even starting to listen
         if(!geminiApiKey || geminiApiKey.trim() === "") {
             addChatBubble("⚠️ Bitte trage zuerst deinen Gemini API-Schlüssel in den Einstellungen (⚙️) ein!", "error");
             return;
@@ -557,8 +567,7 @@
             
             lastAiMsg = reply; lastAiTgt = tgtVal; 
             
-            // Format error messages differently
-            if(reply.startsWith("⚠️")) { addChatBubble(reply, 'error'); } 
+            if(reply.startsWith("⚠️") || reply.includes("API Fehler")) { addChatBubble(reply, 'error'); } 
             else { addChatBubble(reply, 'ai'); }
             
             speak(reply, tgtVal, () => { if (document.getElementById('tabChat').style.display === 'block' && !reply.startsWith("⚠️")) { startChatRecord(); } });
