@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 8.3 (KI-Chat Fix)</title>
+    <title>Family Trainer 8.4 (Chat-Fix & Not-Aus)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -148,13 +148,6 @@
             <select id="selL1" onchange="langChanged()"></select>
             <select id="selL2" onchange="langChanged()"></select>
             <select id="selL3" onchange="langChanged()"></select>
-        </div>
-
-        <label data-i18n="lblVoices">Stimmen (Aussprache)</label>
-        <div style="background:#f8fafc; padding:15px; border-radius:16px; border:1px solid var(--border-soft); margin-bottom:20px;">
-            <div class="voice-row"><span id="flagV1" class="lang-tag"></span> <select id="selVoiceL1" onchange="saveSettings()"></select></div>
-            <div class="voice-row"><span id="flagV2" class="lang-tag"></span> <select id="selVoiceL2" onchange="saveSettings()"></select></div>
-            <div class="voice-row"><span id="flagV3" class="lang-tag"></span> <select id="selVoiceL3" onchange="saveSettings()"></select></div>
         </div>
 
         <button class="action-btn" onclick="closeSettings()" data-i18n="btnDone">Fertig</button>
@@ -381,7 +374,7 @@
 </div>
 
 <script>
-    const VERSION = "8.3 (KI-Chat Fix)";
+    const VERSION = "8.4 (Chat-Fix & Not-Aus)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -391,99 +384,44 @@
     const COLLECTIONS = ['words', 'words_u2', 'words_u3', 'words_u4']; 
     let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; 
     let currentCollIndex = 0;
-    
     let conf = { l1: 'de', l2: 'en', l3: 'sv', v1: '', v2: '', v3: '' }; 
-    
     let allWords = [], curWord = null, isSpiel = false, audioMode = false, voices = [], quizQ = 1;
     let studyWords = []; let studyIndex = 0; 
-
     let globalAudioEnabled = true;
     let geminiApiKey = "";
     let quickSrc = 'en'; let quickTgt = 'de';
     let currentNavStyle = 'inline';
 
     const UI_TRANS = {
-        'de': {
-            btnNew: "➕ NEU", btnLive: "🎙️ LIVE", btnSentences: "📝 SÄTZE", btnStudy: "👀 LERNEN", btnQuiz: "🧠 ÜBEN", btnGame: "⏱️ SPIEL", btnList: "📖 LISTE", btnChat: "💬 GESPRÄCH",
-            titleAdd: "Neues Wort", lblEx: "Beispielsatz", btnShowVerbs: "📝 Verb-Details anzeigen", btnAutoVerbs: "⚡ Formen automatisch suchen", btnTrans: "1. Übersetzen", btnSave: "2. Speichern", btnClear: "Felder leeren", btnCancel: "Abbrechen",
-            titleLive: "FLIESSENDER LIVE-ÜBERSETZER", descLive: "Perfekt für echte Gespräche (Auto-Loop)", lblSpeak: "Ich spreche", lblTransTo: "Übersetze nach", btnStartRec: "🎤 Start", btnStopRec: "⏹️ Stopp", lblHeard: "Gehörter Text", btnLiveClear: "🗑️ Alles löschen", lblLiveTrans: "Übersetzung (Instant)", phLiveHeard: "Dein gesprochener Text...", phLiveTrans: "Die Übersetzung erscheint hier...", lblClearAfter: "Löschen nach:", opt2s: "⏱ 2 Sek", opt5s: "⏱ 5 Sek", opt10s: "⏱ 10 Sek", opt15s: "⏱ 15 Sek", optManual: "✋ Manuell (Nie)", optAuto: "🔄 Bei neuem Satz", btnQuickEnDe: "⚡ Quick-Start: Englisch ➡️ Deutsch",
-            titleChat: "KI-GESPRÄCHSPARTNER", descChat: "Unterhalte dich frei mit der App.", lblChatSrc: "Ich spreche", lblChatTgt: "KI antwortet auf", btnStartChat: "Gespräch starten", btnStopChat: "Gespräch beenden", chatWelcome: "Hej! Wie kann ich dir heute helfen? Lass uns ein bisschen quatschen! 👋",
-            titleSent: "SÄTZE BILDEN & PRÜFEN", lblMySent: "Mein Satz (Deutsch)", lblTarget: "Zielsprache", lblMyAttempt: "Meine Übersetzung", btnCheckSent: "🔍 Übersetzung prüfen", lblKiSuggest: "KI-Korrektur / Vorschlag:", btnListen: "🔊 Anhören", phSentBase: "z. B. Warst du gestern einkaufen?", phSentAtt: "Ich versuche es mal...",
-            titleStudy: "VOKABELN LERNEN & SUCHEN", searchPh: "🔍 Suchen...", btnPrev: "⬅️ Zurück", btnNext: "Weiter ➡️",
-            audioOff: "🔈 AUDIO: AUS", audioOn: "🔊 AUDIO: AN", lblWhatMeans: "WAS HEISST...?", lblAns1: "ANTWORT 1", lblAns2: "ANTWORT 2", btnCheck: "PRÜFEN", btnNextWord: "NÄCHSTES WORT ➡️",
-            titleList: "Vokabelheft", btnBackupSave: "💾 Backup speichern", btnBackupLoad: "📂 Backup laden", btnDeleteAll: "⚠️ ALLES LÖSCHEN", btnEdit: "✎ Bearbeiten",
-            lblSettings: "⚙️ Einstellungen", lblSound: "Ton & Stimme", soundOn: "🔊 Töne An", soundOff: "🔇 Töne Aus", lblUser: "👤 Aktiver Benutzer", lblRename: "BENUTZER UMBENENNEN", lblLangs: "Lern-Sprachen", lblVoices: "Stimmen (Aussprache)", btnDone: "Fertig",
-            btnShare: "📤 App weiterleiten", appLangStr: "App-Sprache:", wordStr: "Wörter", titleEdit: "Bearbeiten", lblQuickSettings: "QUICK-START TASTE", btnQuickPrefix: "⚡ Quick-Start:", lblNavStyle: "Menü-Stil", optNavInline: "Buttons (Nebeneinander)", optNavDropdown: "Dropdown-Liste"
-        },
-        'en': {
-            btnNew: "➕ NEW", btnLive: "🎙️ LIVE", btnSentences: "📝 SENTENCES", btnStudy: "👀 STUDY", btnQuiz: "🧠 QUIZ", btnGame: "⏱️ GAME", btnList: "📖 LIST", btnChat: "💬 CHAT",
-            titleAdd: "New Word", lblEx: "Example sentence", btnShowVerbs: "📝 Show verb details", btnAutoVerbs: "⚡ Find forms automatically", btnTrans: "1. Translate", btnSave: "2. Save", btnClear: "Clear fields", btnCancel: "Cancel",
-            titleLive: "FLUENT LIVE TRANSLATOR", descLive: "Perfect for real conversations (Auto-Loop)", lblSpeak: "I'm speaking", lblTransTo: "Translate to", btnStartRec: "🎤 Start", btnStopRec: "⏹️ Stop", lblHeard: "Heard text", btnLiveClear: "🗑️ Clear all", lblLiveTrans: "Translation (Instant)", phLiveHeard: "Your text...", phLiveTrans: "Translation will appear here...", lblClearAfter: "Clear after:", opt2s: "⏱ 2 sec", opt5s: "⏱ 5 sec", opt10s: "⏱ 10 sec", opt15s: "⏱ 15 sec", optManual: "✋ Manual", optAuto: "🔄 On new sentence", btnQuickEnDe: "⚡ Quick-Start: English ➡️ German",
-            titleChat: "AI CONVERSATION PARTNER", descChat: "Talk freely with the app.", lblChatSrc: "I speak", lblChatTgt: "AI replies in", btnStartChat: "Start Chat", btnStopChat: "Stop Chat", chatWelcome: "Hi! How can I help you today? Let's chat! 👋",
-            titleSent: "BUILD & CHECK SENTENCES", lblMySent: "My sentence", lblTarget: "Target language", lblMyAttempt: "My translation", btnCheckSent: "🔍 Check translation", lblKiSuggest: "AI Correction / Suggestion:", btnListen: "🔊 Listen", phSentBase: "e.g. Did you go shopping yesterday?", phSentAtt: "Let me try...",
-            titleStudy: "STUDY & SEARCH WORDS", searchPh: "🔍 Search...", btnPrev: "⬅️ Back", btnNext: "Next ➡️",
-            audioOff: "🔈 AUDIO: OFF", audioOn: "🔊 AUDIO: ON", lblWhatMeans: "WHAT DOES IT MEAN?", lblAns1: "ANSWER 1", lblAns2: "ANSWER 2", btnCheck: "CHECK", btnNextWord: "NEXT WORD ➡️",
-            titleList: "Vocabulary List", btnBackupSave: "💾 Save Backup", btnBackupLoad: "📂 Load Backup", btnDeleteAll: "⚠️ DELETE ALL", btnEdit: "✎ Edit",
-            lblSettings: "⚙️ Settings", lblSound: "Sound & Voice", soundOn: "🔊 Sound On", soundOff: "🔇 Sound Off", lblUser: "👤 Active User", lblRename: "RENAME USERS", lblLangs: "Languages", lblVoices: "Voices (Pronunciation)", btnDone: "Done",
-            btnShare: "📤 Share App", appLangStr: "App Language:", wordStr: "Words", titleEdit: "Edit Word", lblQuickSettings: "QUICK-START BUTTON", btnQuickPrefix: "⚡ Quick-Start:", lblNavStyle: "Menu Style", optNavInline: "Buttons (Inline)", optNavDropdown: "Dropdown List"
-        },
-        'sv': {
-            btnNew: "➕ NYTT", btnLive: "🎙️ LIVE", btnSentences: "📝 MENINGAR", btnStudy: "👀 PLUGGA", btnQuiz: "🧠 ÖVA", btnGame: "⏱️ SPEL", btnList: "📖 LISTA", btnChat: "💬 SAMTAL",
-            titleAdd: "Nytt ord", lblEx: "Exempelmening", btnShowVerbs: "📝 Visa verbdetaljer", btnAutoVerbs: "⚡ Hitta former automatiskt", btnTrans: "1. Översätt", btnSave: "2. Spara", btnClear: "Rensa fält", btnCancel: "Avbryt",
-            titleLive: "FLYTANDE LIVE-ÖVERSÄTTARE", descLive: "Perfekt för riktiga samtal (Auto-Loop)", lblSpeak: "Jag pratar", lblTransTo: "Översätt till", btnStartRec: "🎤 Starta", btnStopRec: "⏹️ Stopp", lblHeard: "Hörd text", btnLiveClear: "🗑️ Radera allt", lblLiveTrans: "Översättning (Instant)", phLiveHeard: "Din text...", phLiveTrans: "Översättningen visas här...", lblClearAfter: "Radera efter:", opt2s: "⏱ 2 sek", opt5s: "⏱ 5 sek", opt10s: "⏱ 10 sek", opt15s: "⏱ 15 sek", optManual: "✋ Manuell", optAuto: "🔄 Vid ny mening", btnQuickEnDe: "⚡ Snabbstart: Engelska ➡️ Tyska",
-            titleChat: "AI SAMTALSPARTNER", descChat: "Prata fritt med appen.", lblChatSrc: "Jag pratar", lblChatTgt: "AI svarar på", btnStartChat: "Starta Samtal", btnStopChat: "Stoppa Samtal", chatWelcome: "Hej! Hur kan jag hjälpa dig idag? Låt oss prata lite! 👋",
-            titleSent: "SKAPA & TESTA MENINGAR", lblMySent: "Min mening", lblTarget: "Målspråk", lblMyAttempt: "Mitt försök", btnCheckSent: "🔍 Kolla översättning", lblKiSuggest: "AI-korrigering / Förslag:", btnListen: "🔊 Lyssna", phSentBase: "t.ex. Var du och handlade igår?", phSentAtt: "Låt mig försöka...",
-            titleStudy: "PLUGGA & SÖK ORD", searchPh: "🔍 Sök...", btnPrev: "⬅️ Tillbaka", btnNext: "Nästa ➡️",
-            audioOff: "🔈 LJUD: AV", audioOn: "🔊 LJUD: PÅ", lblWhatMeans: "VAD BETYDER...?", lblAns1: "SVAR 1", lblAns2: "SVAR 2", btnCheck: "KONTROLLERA", btnNextWord: "NÄSTA ORD ➡️",
-            titleList: "Ordbok", btnBackupSave: "💾 Spara backup", btnBackupLoad: "📂 Ladda backup", btnDeleteAll: "⚠️ RADERA ALLT", btnEdit: "✎ Redigera",
-            lblSettings: "⚙️ Inställningar", lblSound: "Ljud & Röst", soundOn: "🔊 Ljud På", soundOff: "🔇 Ljud Av", lblUser: "👤 Aktiv användare", lblRename: "BYT NAMN PÅ ANVÄNDARE", lblLangs: "Språk", lblVoices: "Röster (Uttal)", btnDone: "Klar",
-            btnShare: "📤 Dela appen", appLangStr: "App-språk:", wordStr: "Ord", titleEdit: "Redigera ord", lblQuickSettings: "SNABBSTARTSKNAPP", btnQuickPrefix: "⚡ Snabbstart:", lblNavStyle: "Menystil", optNavInline: "Knappar (Bredvid varandra)", optNavDropdown: "Rullgardinsmeny"
-        }
+        'de': { btnNew: "➕ NEU", btnLive: "🎙️ LIVE", btnSentences: "📝 SÄTZE", btnStudy: "👀 LERNEN", btnQuiz: "🧠 ÜBEN", btnGame: "⏱️ SPIEL", btnList: "📖 LISTE", btnChat: "💬 GESPRÄCH", titleAdd: "Neues Wort", lblEx: "Beispielsatz", btnShowVerbs: "📝 Verb-Details anzeigen", btnAutoVerbs: "⚡ Formen automatisch suchen", btnTrans: "1. Übersetzen", btnSave: "2. Speichern", btnClear: "Felder leeren", btnCancel: "Abbrechen", titleLive: "FLIESSENDER LIVE-ÜBERSETZER", descLive: "Perfekt für echte Gespräche (Auto-Loop)", lblSpeak: "Ich spreche", lblTransTo: "Übersetze nach", btnStartRec: "🎤 Start", btnStopRec: "⏹️ Stopp", lblHeard: "Gehörter Text", btnLiveClear: "🗑️ Alles löschen", lblLiveTrans: "Übersetzung (Instant)", phLiveHeard: "Dein gesprochener Text...", phLiveTrans: "Die Übersetzung erscheint hier...", lblClearAfter: "Löschen nach:", opt2s: "⏱ 2 Sek", opt5s: "⏱ 5 Sek", opt10s: "⏱ 10 Sek", opt15s: "⏱ 15 Sek", optManual: "✋ Manuell (Nie)", optAuto: "🔄 Bei neuem Satz", btnQuickEnDe: "⚡ Quick-Start: Englisch ➡️ Deutsch", titleChat: "KI-GESPRÄCHSPARTNER", descChat: "Unterhalte dich frei mit der App.", lblChatSrc: "Ich spreche", lblChatTgt: "KI antwortet auf", btnStartChat: "Gespräch starten", btnStopChat: "Gespräch beenden", chatWelcome: "Hej! Wie kann ich dir heute helfen? Lass uns ein bisschen quatschen! 👋", titleSent: "SÄTZE BILDEN & PRÜFEN", lblMySent: "Mein Satz (Deutsch)", lblTarget: "Zielsprache", lblMyAttempt: "Meine Übersetzung", btnCheckSent: "🔍 Übersetzung prüfen", lblKiSuggest: "KI-Korrektur / Vorschlag:", btnListen: "🔊 Anhören", phSentBase: "z. B. Warst du gestern einkaufen?", phSentAtt: "Ich versuche es mal...", titleStudy: "VOKABELN LERNEN & SUCHEN", searchPh: "🔍 Suchen...", btnPrev: "⬅️ Zurück", btnNext: "Weiter ➡️", audioOff: "🔈 AUDIO: AUS", audioOn: "🔊 AUDIO: AN", lblWhatMeans: "WAS HEISST...?", lblAns1: "ANTWORT 1", lblAns2: "ANTWORT 2", btnCheck: "PRÜFEN", btnNextWord: "NÄCHSTES WORT ➡️", titleList: "Vokabelheft", btnBackupSave: "💾 Backup speichern", btnBackupLoad: "📂 Backup laden", btnDeleteAll: "⚠️ ALLES LÖSCHEN", btnEdit: "✎ Bearbeiten", lblSettings: "⚙️ Einstellungen", lblSound: "Ton & Stimme", soundOn: "🔊 Töne An", soundOff: "🔇 Töne Aus", lblUser: "👤 Aktiver Benutzer", lblRename: "BENUTZER UMBENENNEN", lblLangs: "Lern-Sprachen", lblVoices: "Stimmen (Aussprache)", btnDone: "Fertig", btnShare: "📤 App weiterleiten", appLangStr: "App-Sprache:", wordStr: "Wörter", titleEdit: "Bearbeiten", lblQuickSettings: "QUICK-START TASTE", btnQuickPrefix: "⚡ Quick-Start:", lblNavStyle: "Menü-Stil", optNavInline: "Buttons (Nebeneinander)", optNavDropdown: "Dropdown-Liste" },
+        'en': { btnNew: "➕ NEW", btnLive: "🎙️ LIVE", btnSentences: "📝 SENTENCES", btnStudy: "👀 STUDY", btnQuiz: "🧠 QUIZ", btnGame: "⏱️ GAME", btnList: "📖 LIST", btnChat: "💬 CHAT", titleAdd: "New Word", lblEx: "Example sentence", btnShowVerbs: "📝 Show verb details", btnAutoVerbs: "⚡ Find forms automatically", btnTrans: "1. Translate", btnSave: "2. Save", btnClear: "Clear fields", btnCancel: "Cancel", titleLive: "FLUENT LIVE TRANSLATOR", descLive: "Perfect for real conversations (Auto-Loop)", lblSpeak: "I'm speaking", lblTransTo: "Translate to", btnStartRec: "🎤 Start", btnStopRec: "⏹️ Stop", lblHeard: "Heard text", btnLiveClear: "🗑️ Clear all", lblLiveTrans: "Translation (Instant)", phLiveHeard: "Your text...", phLiveTrans: "Translation will appear here...", lblClearAfter: "Clear after:", opt2s: "⏱ 2 sec", opt5s: "⏱ 5 sec", opt10s: "⏱ 10 sec", opt15s: "⏱ 15 sec", optManual: "✋ Manual", optAuto: "🔄 On new sentence", btnQuickEnDe: "⚡ Quick-Start: English ➡️ German", titleChat: "AI CONVERSATION PARTNER", descChat: "Talk freely with the app.", lblChatSrc: "I speak", lblChatTgt: "AI replies in", btnStartChat: "Start Chat", btnStopChat: "Stop Chat", chatWelcome: "Hi! How can I help you today? Let's chat! 👋", titleSent: "BUILD & CHECK SENTENCES", lblMySent: "My sentence", lblTarget: "Target language", lblMyAttempt: "My translation", btnCheckSent: "🔍 Check translation", lblKiSuggest: "AI Correction / Suggestion:", btnListen: "🔊 Listen", phSentBase: "e.g. Did you go shopping yesterday?", phSentAtt: "Let me try...", titleStudy: "STUDY & SEARCH WORDS", searchPh: "🔍 Search...", btnPrev: "⬅️ Back", btnNext: "Next ➡️", audioOff: "🔈 AUDIO: OFF", audioOn: "🔊 AUDIO: ON", lblWhatMeans: "WHAT DOES IT MEAN?", lblAns1: "ANSWER 1", lblAns2: "ANSWER 2", btnCheck: "CHECK", btnNextWord: "NEXT WORD ➡️", titleList: "Vocabulary List", btnBackupSave: "💾 Save Backup", btnBackupLoad: "📂 Load Backup", btnDeleteAll: "⚠️ DELETE ALL", btnEdit: "✎ Edit", lblSettings: "⚙️ Settings", lblSound: "Sound & Voice", soundOn: "🔊 Sound On", soundOff: "🔇 Sound Off", lblUser: "👤 Active User", lblRename: "RENAME USERS", lblLangs: "Languages", lblVoices: "Voices (Pronunciation)", btnDone: "Done", btnShare: "📤 Share App", appLangStr: "App Language:", wordStr: "Words", titleEdit: "Edit Word", lblQuickSettings: "QUICK-START BUTTON", btnQuickPrefix: "⚡ Quick-Start:", lblNavStyle: "Menu Style", optNavInline: "Buttons (Inline)", optNavDropdown: "Dropdown List" },
+        'sv': { btnNew: "➕ NYTT", btnLive: "🎙️ LIVE", btnSentences: "📝 MENINGAR", btnStudy: "👀 PLUGGA", btnQuiz: "🧠 ÖVA", btnGame: "⏱️ SPEL", btnList: "📖 LISTA", btnChat: "💬 SAMTAL", titleAdd: "Nytt ord", lblEx: "Exempelmening", btnShowVerbs: "📝 Visa verbdetaljer", btnAutoVerbs: "⚡ Hitta former automatiskt", btnTrans: "1. Översätt", btnSave: "2. Spara", btnClear: "Rensa fält", btnCancel: "Avbryt", titleLive: "FLYTANDE LIVE-ÖVERSÄTTARE", descLive: "Perfekt för riktiga samtal (Auto-Loop)", lblSpeak: "Jag pratar", lblTransTo: "Översätt till", btnStartRec: "🎤 Starta", btnStopRec: "⏹️ Stopp", lblHeard: "Hörd text", btnLiveClear: "🗑️ Radera allt", lblLiveTrans: "Översättning (Instant)", phLiveHeard: "Din text...", phLiveTrans: "Översättningen visas här...", lblClearAfter: "Radera efter:", opt2s: "⏱ 2 sek", opt5s: "⏱ 5 sek", opt10s: "⏱ 10 sek", opt15s: "⏱ 15 sek", optManual: "✋ Manuell", optAuto: "🔄 Vid ny mening", btnQuickEnDe: "⚡ Snabbstart: Engelska ➡️ Tyska", titleChat: "AI SAMTALSPARTNER", descChat: "Prata fritt med appen.", lblChatSrc: "Jag pratar", lblChatTgt: "AI svarar på", btnStartChat: "Starta Samtal", btnStopChat: "Stoppa Samtal", chatWelcome: "Hej! Hur kan jag hjälpa dig idag? Låt oss prata lite! 👋", titleSent: "SKAPA & TESTA MENINGAR", lblMySent: "Min mening", lblTarget: "Målspråk", lblMyAttempt: "Mitt försök", btnCheckSent: "🔍 Kolla översättning", lblKiSuggest: "AI-korrigering / Förslag:", btnListen: "🔊 Lyssna", phSentBase: "t.ex. Var du och handlade igår?", phSentAtt: "Låt mig försöka...", titleStudy: "PLUGGA & SÖK ORD", searchPh: "🔍 Sök...", btnPrev: "⬅️ Tillbaka", btnNext: "Nästa ➡️", audioOff: "🔈 LJUD: AV", audioOn: "🔊 LJUD: PÅ", lblWhatMeans: "VAD BETYDER...?", lblAns1: "SVAR 1", lblAns2: "SVAR 2", btnCheck: "KONTROLLERA", btnNextWord: "NÄSTA ORD ➡️", titleList: "Ordbok", btnBackupSave: "💾 Spara backup", btnBackupLoad: "📂 Ladda backup", btnDeleteAll: "⚠️ RADERA ALLT", btnEdit: "✎ Redigera", lblSettings: "⚙️ Inställningar", lblSound: "Ljud & Röst", soundOn: "🔊 Ljud På", soundOff: "🔇 Ljud Av", lblUser: "👤 Aktiv användare", lblRename: "BYT NAMN PÅ ANVÄNDARE", lblLangs: "Språk", lblVoices: "Röster (Uttal)", btnDone: "Klar", btnShare: "📤 Dela appen", appLangStr: "App-språk:", wordStr: "Ord", titleEdit: "Redigera ord", lblQuickSettings: "SNABBSTARTSKNAPP", btnQuickPrefix: "⚡ Snabbstart:", lblNavStyle: "Menystil", optNavInline: "Knappar (Bredvid varandra)", optNavDropdown: "Rullgardinsmeny" }
     };
 
     function changeNavStyle() { currentNavStyle = document.getElementById('selNavStyle').value; localStorage.setItem('trainerNavStyle', currentNavStyle); applyNavStyle(); }
-    
-    function applyNavStyle() {
-        if (currentNavStyle === 'dropdown') { document.getElementById('navInline').style.display = 'none'; document.getElementById('navDropdown').style.display = 'block'; } 
-        else { document.getElementById('navInline').style.display = 'flex'; document.getElementById('navDropdown').style.display = 'none'; }
-    }
-
-    function saveApiKey() { 
-        geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); 
-        localStorage.setItem('trainerGeminiKey', geminiApiKey); 
-    }
+    function applyNavStyle() { if (currentNavStyle === 'dropdown') { document.getElementById('navInline').style.display = 'none'; document.getElementById('navDropdown').style.display = 'block'; } else { document.getElementById('navInline').style.display = 'flex'; document.getElementById('navDropdown').style.display = 'none'; } }
+    function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); }
 
     function init() {
         document.getElementById('versionDisplay').innerText = VERSION;
-        
-        const savedNav = localStorage.getItem('trainerNavStyle'); if(savedNav) currentNavStyle = savedNav;
-        document.getElementById('selNavStyle').value = currentNavStyle; applyNavStyle();
-
-        const savedAudio = localStorage.getItem('trainerAudio'); if (savedAudio === 'off') { globalAudioEnabled = false; }
-        document.getElementById('selGlobalAudio').value = globalAudioEnabled ? 'on' : 'off';
-
+        const savedNav = localStorage.getItem('trainerNavStyle'); if(savedNav) currentNavStyle = savedNav; document.getElementById('selNavStyle').value = currentNavStyle; applyNavStyle();
+        const savedAudio = localStorage.getItem('trainerAudio'); if (savedAudio === 'off') { globalAudioEnabled = false; } document.getElementById('selGlobalAudio').value = globalAudioEnabled ? 'on' : 'off';
         const savedAppLang = localStorage.getItem('trainerAppLang'); if(savedAppLang) { currentAppLang = savedAppLang; document.getElementById('appLangSelector').value = currentAppLang; }
         const savedDelay = localStorage.getItem('trainerLiveDelay'); if(savedDelay) document.getElementById('liveClearDelay').value = savedDelay;
         const savedDelayTrans = localStorage.getItem('trainerLiveDelayTrans'); if(savedDelayTrans) document.getElementById('liveClearDelayTrans').value = savedDelayTrans;
         const savedQuickSrc = localStorage.getItem('trainerQuickSrc'); if (savedQuickSrc) quickSrc = savedQuickSrc;
         const savedQuickTgt = localStorage.getItem('trainerQuickTgt'); if (savedQuickTgt) quickTgt = savedQuickTgt;
-        
         const savedKey = localStorage.getItem('trainerGeminiKey'); if(savedKey) { geminiApiKey = savedKey; document.getElementById('inpGeminiKey').value = savedKey; }
-
-        const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames);
-        renderRenameInputs();
-        const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx);
-        if(isNaN(currentCollIndex) || currentCollIndex < 0 || currentCollIndex > 3) currentCollIndex = 0;
-        updateUserDropdown(); 
-        populateQuickSelects(); loadUserConfig(); loadVoices(); updateInterface(); refreshData(); applyAppLang(); 
-        
-        document.getElementById('chatWelcomeMsg').innerText = UI_TRANS[currentAppLang].chatWelcome || "Hej!";
-        showTab('add'); 
+        const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames); renderRenameInputs();
+        const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx); if(isNaN(currentCollIndex) || currentCollIndex < 0 || currentCollIndex > 3) currentCollIndex = 0;
+        updateUserDropdown(); populateQuickSelects(); loadUserConfig(); loadVoices(); updateInterface(); refreshData(); applyAppLang(); 
+        document.getElementById('chatWelcomeMsg').innerText = UI_TRANS[currentAppLang].chatWelcome || "Hej!"; showTab('add'); 
     }
 
     function showTab(n) { 
         if (n !== 'live' && isLiveRecording) { stopLiveRecord(); }
-        if (n !== 'chat' && isChatRecording) { stopChatRecord(); }
+        // Chat Not-Aus beim Verlassen
+        if (n !== 'chat' && isChatSessionActive) { stopEntireChat(); }
 
         document.querySelectorAll('#navInline button').forEach(b=>b.classList.remove('active')); 
         const btnMap = { 'add':'btn1', 'chat':'btn8', 'live':'btn7', 'sentences':'btn6', 'study':'btn5', 'quiz':'btn2', 'spiel':'btn4', 'list':'btn3' };
@@ -498,20 +436,11 @@
         document.getElementById('tabQuiz').style.display=(n==='quiz'||n==='spiel')?'block':'none'; 
         document.getElementById('tabList').style.display=(n==='list')?'block':'none';
         
-        document.getElementById('tabQuiz').classList.remove('challenge-mode');
-        document.getElementById('timer').style.display = "none";
-        document.getElementById('nextBtn').style.display = "none";
-        isSpiel = (n === 'spiel');
-        
-        if(n === 'study') { renderStudyWord(); }
-        if(n === 'spiel') { document.getElementById('tabQuiz').classList.add('challenge-mode'); document.getElementById('timer').style.display = "block"; }
-        if(n === 'list') { renderList(); }
-        if(n === 'quiz' || n === 'spiel') nextQ();
+        document.getElementById('tabQuiz').classList.remove('challenge-mode'); document.getElementById('timer').style.display = "none"; document.getElementById('nextBtn').style.display = "none"; isSpiel = (n === 'spiel');
+        if(n === 'study') { renderStudyWord(); } if(n === 'spiel') { document.getElementById('tabQuiz').classList.add('challenge-mode'); document.getElementById('timer').style.display = "block"; } if(n === 'list') { renderList(); } if(n === 'quiz' || n === 'spiel') nextQ();
     }
 
-    let lastAiMsg = "";
-    let lastAiTgt = "sv";
-
+    let lastAiMsg = ""; let lastAiTgt = "sv";
     function speak(txt, langCode, onEndCallback = null) { 
         if (!txt || !globalAudioEnabled) { if(onEndCallback) onEndCallback(); return; } 
         window.speechSynthesis.cancel(); const ut = new SpeechSynthesisUtterance(txt); const ttsCode = LANGS[langCode] ? LANGS[langCode].tts : 'en-US'; 
@@ -520,16 +449,39 @@
         if(v) ut.voice = v; ut.lang = ttsCode; ut.rate = 0.85; if (onEndCallback) ut.onend = onEndCallback;
         window.speechSynthesis.speak(ut); 
     }
+    function speakLastAiMsg() { if(lastAiMsg) { const langCode = Object.keys(LANGS).find(k => k === lastAiTgt); speak(lastAiMsg, langCode); } }
 
-    function speakLastAiMsg() {
-        if(lastAiMsg) {
-            const langCode = Object.keys(LANGS).find(k => k === lastAiTgt);
-            speak(lastAiMsg, langCode);
+    // --- NEU: SICHERE CHAT LOGIK ---
+    let isChatSessionActive = false; // Neuer Schalter: True solange Chat läuft
+    let chatRec = null;
+
+    function toggleChatRecord() { 
+        if(isChatSessionActive) {
+            stopEntireChat(); // Not-Aus
+        } else { 
+            isChatSessionActive = true;
+            updateChatUI(true);
+            startChatMic(); 
+        } 
+    }
+
+    function stopEntireChat() {
+        isChatSessionActive = false;
+        if (chatRec) { try { chatRec.stop(); } catch(e){} }
+        window.speechSynthesis.cancel(); // ⚡ KI sofort unterbrechen
+        updateChatUI(false);
+        document.getElementById('loaderChat').style.display = "none";
+    }
+
+    function updateChatUI(isActive) {
+        const btn = document.getElementById('btnChatRecord');
+        if(btn) {
+            document.getElementById('chatRecText').innerHTML = isActive ? (UI_TRANS[currentAppLang].btnStopChat || "Stopp") : (UI_TRANS[currentAppLang].btnStartChat || "Start");
+            btn.style.background = isActive ? "#e53e3e" : "var(--primary)";
+            if(isActive) btn.classList.add("mic-active"); else btn.classList.remove("mic-active");
         }
     }
 
-    let isChatRecording = false; let chatRec = null;
-    function toggleChatRecord() { if(isChatRecording) stopChatRecord(); else startChatRecord(); }
     function clearChat() { document.getElementById('chatHistory').innerHTML = `<div class="chat-bubble bubble-ai" id="chatWelcomeMsg">${UI_TRANS[currentAppLang].chatWelcome}</div>`; lastAiMsg=""; }
     function addChatBubble(text, sender) { const box = document.getElementById('chatHistory'); const div = document.createElement('div'); div.className = `chat-bubble bubble-${sender}`; div.innerText = text; box.appendChild(div); box.scrollTop = box.scrollHeight; }
 
@@ -537,51 +489,69 @@
         if(!geminiApiKey) { return "⚠️ Fehler: Bitte trage deinen Gemini API-Schlüssel in den Einstellungen (⚙️) ein."; }
         const tgtLangName = LANGS[tgtCode].name;
         const prompt = `Du bist ein freundlicher Gesprächspartner zum Sprachenlernen. Der Nutzer sagt folgendes: "${userText}". Bitte antworte direkt, natürlich und gesprächig in der Sprache ${tgtLangName}. Schreibe nur deine direkte Antwort, maximal 2-3 kurze Sätze.`;
+        
+        let model = "gemini-1.5-flash"; // Neues, schnelles Modell zuerst
         try {
-            // HIER IST DER FIX AUF GEMINI-PRO FÜR MAXIMALE KOMPATIBILITÄT:
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, { 
-                method: "POST", 
-                headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
-            });
-            const data = await response.json(); if(data.error) return "API Fehler: " + data.error.message; return data.candidates[0].content.parts[0].text.trim();
-        } catch(e) { return "⚠️ Verbindungsfehler zur KI. Bitte prüfe dein Internet oder den API-Schlüssel."; }
+            let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            let data = await response.json(); 
+            
+            // Fallback auf altes Modell, falls das neue nicht im Account freigeschaltet ist
+            if(data.error && data.error.code === 404) {
+                model = "gemini-pro";
+                response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                data = await response.json(); 
+            }
+
+            if(data.error) return "API Fehler: " + data.error.message; 
+            return data.candidates[0].content.parts[0].text.trim();
+        } catch(e) { return "⚠️ Verbindungsfehler zur KI. Bitte prüfe dein Internet."; }
     }
 
-    function startChatRecord() {
+    function startChatMic() {
+        if(!isChatSessionActive) return;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support i.d. Browser."); return; }
         
         if(!geminiApiKey || geminiApiKey.trim() === "") {
             addChatBubble("⚠️ Bitte trage zuerst deinen Gemini API-Schlüssel in den Einstellungen (⚙️) ein!", "error");
-            return;
+            stopEntireChat(); return;
         }
 
-        isChatRecording = true; const btn = document.getElementById('btnChatRecord'); document.getElementById('chatRecText').innerHTML = UI_TRANS[currentAppLang].btnStopChat || "Stopp"; btn.style.background = "#e53e3e"; btn.classList.add("mic-active");
         chatRec = new SpeechRecognition(); chatRec.continuous = false; const srcVal = document.getElementById('chatSrcLang').value; const langCode = Object.keys(LANGS).find(k => k === srcVal); chatRec.lang = LANGS[langCode].tts;
 
         chatRec.onresult = async (event) => {
-            const transcript = event.results[0][0].transcript; addChatBubble(transcript, 'user'); stopChatRecord(false); 
+            const transcript = event.results[0][0].transcript; addChatBubble(transcript, 'user'); 
+            
+            // Mikrofon pausieren, während KI lädt (aber Session bleibt aktiv!)
+            if (chatRec) { try { chatRec.stop(); } catch(e){} }
+            
+            if(!isChatSessionActive) return; // Falls in der Millisekunde Stopp gedrückt wurde
+
             document.getElementById('loaderChat').style.display = "block"; const tgtVal = document.getElementById('chatTgtLang').value;
             const reply = await callGeminiAPI(transcript, srcVal, tgtVal);
             document.getElementById('loaderChat').style.display = "none";
             
-            lastAiMsg = reply; lastAiTgt = tgtVal; 
-            
-            if(reply.startsWith("⚠️") || reply.includes("API Fehler")) { addChatBubble(reply, 'error'); } 
-            else { addChatBubble(reply, 'ai'); }
-            
-            speak(reply, tgtVal, () => { if (document.getElementById('tabChat').style.display === 'block' && !reply.startsWith("⚠️")) { startChatRecord(); } });
-        };
-        chatRec.onerror = () => { stopChatRecord(); }; try { chatRec.start(); } catch(e){}
-    }
+            if(!isChatSessionActive) return; // Falls während des Ladens Stopp gedrückt wurde
 
-    function stopChatRecord(updateUI = true) {
-        isChatRecording = false; if (chatRec) { try{ chatRec.stop(); }catch(e){} }
-        if(updateUI) { const btn = document.getElementById('btnChatRecord'); document.getElementById('chatRecText').innerHTML = UI_TRANS[currentAppLang].btnStartChat || "Start"; btn.style.background = "var(--primary)"; btn.classList.remove("mic-active"); }
+            lastAiMsg = reply; lastAiTgt = tgtVal; 
+            if(reply.startsWith("⚠️") || reply.includes("API Fehler")) { addChatBubble(reply, 'error'); } else { addChatBubble(reply, 'ai'); }
+            
+            speak(reply, tgtVal, () => { 
+                // Wenn sie fertig mit sprechen ist:
+                if (isChatSessionActive && document.getElementById('tabChat').style.display === 'block' && !reply.startsWith("⚠️")) { 
+                    startChatMic(); // Weiter zuhören
+                } else if (reply.startsWith("⚠️")) {
+                    stopEntireChat();
+                }
+            });
+        };
+        chatRec.onerror = () => { 
+            if(isChatSessionActive) { setTimeout(startChatMic, 1000); } // Bei Stille einfach neu versuchen
+        }; 
+        try { chatRec.start(); } catch(e){}
     }
 
     function changeAppLang() { currentAppLang = document.getElementById('appLangSelector').value; localStorage.setItem('trainerAppLang', currentAppLang); applyAppLang(); }
-    function applyAppLang() { const dict = UI_TRANS[currentAppLang]; document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if (dict[key] && el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') { el.innerHTML = dict[key]; } }); document.querySelectorAll('[data-i18n-ph]').forEach(el => { const key = el.getAttribute('data-i18n-ph'); if (dict[key]) el.placeholder = dict[key]; }); const recText = document.getElementById('liveRecText'); if(recText) { recText.innerHTML = isLiveRecording ? dict.btnStopRec : dict.btnStartRec; } if(document.getElementById('chatRecText')) document.getElementById('chatRecText').innerHTML = isChatRecording ? dict.btnStopChat : dict.btnStartChat; document.getElementById('audioModeToggle').innerText = audioMode ? dict.audioOn : dict.audioOff; const titleEl = document.getElementById('addTitle'); if(document.getElementById('editId').value) titleEl.innerText = dict.titleEdit; else titleEl.innerText = dict.titleAdd; updateQuickStartBtnText(); renderList(); }
+    function applyAppLang() { const dict = UI_TRANS[currentAppLang]; document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if (dict[key] && el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') { el.innerHTML = dict[key]; } }); document.querySelectorAll('[data-i18n-ph]').forEach(el => { const key = el.getAttribute('data-i18n-ph'); if (dict[key]) el.placeholder = dict[key]; }); const recText = document.getElementById('liveRecText'); if(recText) { recText.innerHTML = isLiveRecording ? dict.btnStopRec : dict.btnStartRec; } if(document.getElementById('chatRecText')) document.getElementById('chatRecText').innerHTML = isChatSessionActive ? dict.btnStopChat : dict.btnStartChat; document.getElementById('audioModeToggle').innerText = audioMode ? dict.audioOn : dict.audioOff; const titleEl = document.getElementById('addTitle'); if(document.getElementById('editId').value) titleEl.innerText = dict.titleEdit; else titleEl.innerText = dict.titleAdd; updateQuickStartBtnText(); renderList(); }
     function playTone(type) { if (!globalAudioEnabled) return; try { const AudioContext = window.AudioContext || window.webkitAudioContext; const ctx = new AudioContext(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); if (type === 'correct') { osc.type = 'sine'; osc.frequency.setValueAtTime(800, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1); gain.gain.setValueAtTime(0.1, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.15); } else if (type === 'wrong') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.2); gain.gain.setValueAtTime(0.1, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.25); } else if (type === 'save') { osc.type = 'sine'; osc.frequency.setValueAtTime(600, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1); gain.gain.setValueAtTime(0.05, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.15); } } catch(e) {} }
     function changeGlobalAudio() { globalAudioEnabled = document.getElementById('selGlobalAudio').value === 'on'; localStorage.setItem('trainerAudio', globalAudioEnabled ? 'on' : 'off'); }
     function saveLiveDelay() { localStorage.setItem('trainerLiveDelay', document.getElementById('liveClearDelay').value); }
@@ -604,6 +574,7 @@
     function populateVoiceSelects() { if(voices.length === 0) return; const buildOptions = (langCode, confKey, elId) => { const el = document.getElementById(elId); const prefix = LANGS[langCode].tts.split('-')[0]; const available = voices.filter(v => v.lang.startsWith(prefix)); if(available.length === 0) { el.innerHTML = '<option value="">Standard Stimme (Gerät)</option>'; return; } el.innerHTML = available.map(v => `<option value="${v.voiceURI}">${v.name}</option>`).join(''); if(confKey && available.some(v => v.voiceURI === confKey)) { el.value = confKey; } else { let best = available.find(v => v.name.includes("Premium") || v.name.includes("Natural")) || available[0]; el.value = best.voiceURI; } }; buildOptions(conf.l1, conf.v1, 'selVoiceL1'); buildOptions(conf.l2, conf.v2, 'selVoiceL2'); buildOptions(conf.l3, conf.v3, 'selVoiceL3'); }
     function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; } const rec = new SpeechRecognition(); const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3); rec.lang = LANGS[langKey].tts; btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; btn.classList.remove('mic-active'); }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
     function listenAttempt(targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support"); return; } const rec = new SpeechRecognition(); const tgt = document.getElementById('sentTargetLang').value; rec.lang = tgt === 'en' ? LANGS[conf.l2].tts : LANGS[conf.l3].tts; btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; btn.classList.remove('mic-active'); }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
+    
     let liveRec = null; let isLiveRecording = false; let liveFinalText = ""; let liveTranslatedText = ""; let clearSourceTimeout = null; let clearTransTimeout = null; let isWaitingForNewLoop = false;
     function startQuickStart() { document.getElementById('liveSrcLang').value = quickSrc; document.getElementById('liveTgtLang').value = quickTgt; if (!isLiveRecording) { toggleLiveRecord(); } }
     function toggleLiveRecord() { if (isLiveRecording) stopLiveRecord(); else startLiveRecord(); }
