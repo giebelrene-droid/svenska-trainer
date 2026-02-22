@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 8.8 (Dynamische KI-Modell Wahl)</title>
+    <title>Family Trainer 9.1 (Mac Mikrofon-Fix)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -94,7 +94,7 @@
         .chat-bubble { padding: 12px 16px; border-radius: 20px; max-width: 85%; font-size: 0.95em; position: relative; word-wrap: break-word;}
         .bubble-user { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 5px; }
         .bubble-ai { background: white; border: 1px solid var(--border-soft); color: var(--text); align-self: flex-start; border-bottom-left-radius: 5px; box-shadow: var(--shadow-soft); }
-        .bubble-error { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; align-self: center; text-align: center; border-radius: 10px; font-weight: bold; width: 100%; font-size: 0.85em;}
+        .bubble-error { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; align-self: center; text-align: center; border-radius: 10px; font-weight: bold; width: 100%; font-size: 0.85em; padding: 8px;}
         
         .voice-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .voice-row select { font-size: 0.85em; padding: 10px; background: white; }
@@ -384,7 +384,7 @@
 </div>
 
 <script>
-    const VERSION = "8.8 (Dynamische KI-Modell Wahl)";
+    const VERSION = "9.1 (Mac Mikrofon-Fix)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -483,8 +483,29 @@
     let isChatSessionActive = false; 
     let chatRec = null;
 
-    function toggleChatRecord() { 
-        if(isChatSessionActive) { stopEntireChat(); } else { isChatSessionActive = true; updateChatUI(true); startChatMic(); } 
+    async function toggleChatRecord() { 
+        if(isChatSessionActive) { 
+            stopEntireChat(); 
+        } else { 
+            isChatSessionActive = true; 
+            updateChatUI(true); 
+            
+            // NEU: ZWINGT DEN MAC/BROWSER DAZU, DAS MIKROFON FREIZUGEBEN!
+            document.getElementById('loaderChat').style.display = "block";
+            document.getElementById('loaderChat').innerText = "Warte auf Mikrofon-Freigabe...";
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch(e) {
+                document.getElementById('loaderChat').style.display = "none";
+                addChatBubble("⚠️ Mac/Browser blockiert das Mikrofon! Bitte oben links im Browser (Schloss-Symbol) das Mikrofon erlauben.", "error");
+                stopEntireChat();
+                return;
+            }
+            document.getElementById('loaderChat').style.display = "none";
+            document.getElementById('loaderChat').innerText = "🤖 KI denkt nach..."; // Text zurücksetzen
+
+            startChatMic(); 
+        } 
     }
 
     function stopEntireChat() {
@@ -512,35 +533,18 @@
         const tgtLangName = LANGS[tgtCode].name;
         const prompt = `Du bist ein freundlicher Gesprächspartner zum Sprachenlernen. Der Nutzer sagt folgendes: "${userText}". Bitte antworte direkt, natürlich und gesprächig in der Sprache ${tgtLangName}. Schreibe nur deine direkte Antwort, maximal 2-3 kurze Sätze.`;
         
+        let model = "gemini-1.5-flash"; 
         try {
-            // DYNAMISCHE MODELL-ABFRAGE (verhindert 'not found' Fehler)
-            const modelRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
-            const modelData = await modelRes.json();
-            
-            if(modelData.error) return "⚠️ API Fehler beim Modell-Laden: " + modelData.error.message;
-            
-            // Wir suchen ein Modell, das "gemini" heißt und "generateContent" kann
-            const validModel = modelData.models.find(m => m.name.includes("gemini") && m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"));
-            
-            if(!validModel) return "⚠️ Fehler: Dein Schlüssel hat keine Freigabe für Text-KI-Modelle.";
-            
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${validModel.name}:generateContent?key=${geminiApiKey}`, { 
-                method: "POST", headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify({ 
-                    contents: [{ parts: [{ text: prompt }] }]
-                }) 
-            });
-            const data = await response.json(); 
-            
-            if(data.error) {
-                return "⚠️ API Fehler: " + data.error.message;
+            let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            let data = await response.json(); 
+            if(data.error && data.error.code === 404) {
+                model = "gemini-pro";
+                response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                data = await response.json(); 
             }
-            if(data.candidates && data.candidates.length > 0) {
-                return data.candidates[0].content.parts[0].text.trim();
-            }
-            return "⚠️ Konnte keine Antwort generieren.";
-
-        } catch(e) { return "⚠️ Netzwerkfehler: Konnte KI nicht erreichen. " + e.message; }
+            if(data.error) return "⚠️ API Fehler: " + data.error.message; 
+            return data.candidates[0].content.parts[0].text.trim();
+        } catch(e) { return "⚠️ Verbindungsfehler zur KI. Bitte prüfe dein Internet."; }
     }
 
     function startChatMic(isFirstStart = true) {
@@ -642,7 +646,18 @@
     // --- LIVE ÜBERSETZER ---
     let liveRec = null; let isLiveRecording = false; let liveFinalText = ""; let liveTranslatedText = ""; let clearSourceTimeout = null; let clearTransTimeout = null; let isWaitingForNewLoop = false;
     function startQuickStart() { document.getElementById('liveSrcLang').value = quickSrc; document.getElementById('liveTgtLang').value = quickTgt; if (!isLiveRecording) { toggleLiveRecord(); } }
-    function toggleLiveRecord() { if (isLiveRecording) stopLiveRecord(); else startLiveRecord(); }
+    
+    // NEU: Live-Übersetzer fragt auch explizit nach Mikrofon!
+    async function toggleLiveRecord() { 
+        if (isLiveRecording) { 
+            stopLiveRecord(); 
+        } else { 
+            try { await navigator.mediaDevices.getUserMedia({ audio: true }); } 
+            catch(e) { alert("⚠️ Mikrofon blockiert! Bitte oben in der URL-Leiste (Schloss) freigeben."); return; }
+            startLiveRecord(); 
+        } 
+    }
+
     function clearLive() { liveFinalText = ""; liveTranslatedText = ""; document.getElementById('liveSourceText').value = ""; document.getElementById('liveResultText').value = ""; isWaitingForNewLoop = false; clearTimeout(clearSourceTimeout); clearTimeout(clearTransTimeout); }
     function resetClearSourceTimer() { clearTimeout(clearSourceTimeout); const delayVal = document.getElementById('liveClearDelay').value; if (delayVal === "0") return; const delayMs = parseInt(delayVal, 10); clearSourceTimeout = setTimeout(() => { liveFinalText = ""; document.getElementById('liveSourceText').value = ""; isWaitingForNewLoop = true; }, delayMs); }
     function startLiveRecord() { 
