@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Trainer 8.4 (Chat-Fix & Not-Aus)</title>
+    <title>Family Trainer 8.5 (Mikrofon-Diagnose)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23006aa7%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23fecc00%22>🇸🇪</text></svg>">
     
@@ -148,6 +148,13 @@
             <select id="selL1" onchange="langChanged()"></select>
             <select id="selL2" onchange="langChanged()"></select>
             <select id="selL3" onchange="langChanged()"></select>
+        </div>
+
+        <label data-i18n="lblVoices">Stimmen (Aussprache)</label>
+        <div style="background:#f8fafc; padding:15px; border-radius:16px; border:1px solid var(--border-soft); margin-bottom:20px;">
+            <div class="voice-row"><span id="flagV1" class="lang-tag"></span> <select id="selVoiceL1" onchange="saveSettings()"></select></div>
+            <div class="voice-row"><span id="flagV2" class="lang-tag"></span> <select id="selVoiceL2" onchange="saveSettings()"></select></div>
+            <div class="voice-row"><span id="flagV3" class="lang-tag"></span> <select id="selVoiceL3" onchange="saveSettings()"></select></div>
         </div>
 
         <button class="action-btn" onclick="closeSettings()" data-i18n="btnDone">Fertig</button>
@@ -374,7 +381,7 @@
 </div>
 
 <script>
-    const VERSION = "8.4 (Chat-Fix & Not-Aus)";
+    const VERSION = "8.5 (Mikrofon-Diagnose & Fixes)";
 
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe", storageBucket: "uebersetzer-d-eng-swe.firebasestorage.app", messagingSenderId: "28644987259", appId: "1:28644987259:web:ad9844766de2ced699adde", measurementId: "G-WDX870XE6B" };
     firebase.initializeApp(firebaseConfig);
@@ -420,7 +427,6 @@
 
     function showTab(n) { 
         if (n !== 'live' && isLiveRecording) { stopLiveRecord(); }
-        // Chat Not-Aus beim Verlassen
         if (n !== 'chat' && isChatSessionActive) { stopEntireChat(); }
 
         document.querySelectorAll('#navInline button').forEach(b=>b.classList.remove('active')); 
@@ -451,24 +457,17 @@
     }
     function speakLastAiMsg() { if(lastAiMsg) { const langCode = Object.keys(LANGS).find(k => k === lastAiTgt); speak(lastAiMsg, langCode); } }
 
-    // --- NEU: SICHERE CHAT LOGIK ---
-    let isChatSessionActive = false; // Neuer Schalter: True solange Chat läuft
+    let isChatSessionActive = false; 
     let chatRec = null;
 
     function toggleChatRecord() { 
-        if(isChatSessionActive) {
-            stopEntireChat(); // Not-Aus
-        } else { 
-            isChatSessionActive = true;
-            updateChatUI(true);
-            startChatMic(); 
-        } 
+        if(isChatSessionActive) { stopEntireChat(); } else { isChatSessionActive = true; updateChatUI(true); startChatMic(); } 
     }
 
     function stopEntireChat() {
         isChatSessionActive = false;
         if (chatRec) { try { chatRec.stop(); } catch(e){} }
-        window.speechSynthesis.cancel(); // ⚡ KI sofort unterbrechen
+        window.speechSynthesis.cancel(); 
         updateChatUI(false);
         document.getElementById('loaderChat').style.display = "none";
     }
@@ -490,18 +489,15 @@
         const tgtLangName = LANGS[tgtCode].name;
         const prompt = `Du bist ein freundlicher Gesprächspartner zum Sprachenlernen. Der Nutzer sagt folgendes: "${userText}". Bitte antworte direkt, natürlich und gesprächig in der Sprache ${tgtLangName}. Schreibe nur deine direkte Antwort, maximal 2-3 kurze Sätze.`;
         
-        let model = "gemini-1.5-flash"; // Neues, schnelles Modell zuerst
+        let model = "gemini-1.5-flash"; 
         try {
             let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
             let data = await response.json(); 
-            
-            // Fallback auf altes Modell, falls das neue nicht im Account freigeschaltet ist
             if(data.error && data.error.code === 404) {
                 model = "gemini-pro";
                 response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
                 data = await response.json(); 
             }
-
             if(data.error) return "API Fehler: " + data.error.message; 
             return data.candidates[0].content.parts[0].text.trim();
         } catch(e) { return "⚠️ Verbindungsfehler zur KI. Bitte prüfe dein Internet."; }
@@ -509,7 +505,11 @@
 
     function startChatMic() {
         if(!isChatSessionActive) return;
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support i.d. Browser."); return; }
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
+        if (!SpeechRecognition) { 
+            addChatBubble("⚠️ Fehler: Dein Browser unterstützt keine Spracherkennung. Bitte nutze Google Chrome.", "error");
+            stopEntireChat(); return; 
+        }
         
         if(!geminiApiKey || geminiApiKey.trim() === "") {
             addChatBubble("⚠️ Bitte trage zuerst deinen Gemini API-Schlüssel in den Einstellungen (⚙️) ein!", "error");
@@ -520,33 +520,41 @@
 
         chatRec.onresult = async (event) => {
             const transcript = event.results[0][0].transcript; addChatBubble(transcript, 'user'); 
-            
-            // Mikrofon pausieren, während KI lädt (aber Session bleibt aktiv!)
             if (chatRec) { try { chatRec.stop(); } catch(e){} }
-            
-            if(!isChatSessionActive) return; // Falls in der Millisekunde Stopp gedrückt wurde
+            if(!isChatSessionActive) return; 
 
             document.getElementById('loaderChat').style.display = "block"; const tgtVal = document.getElementById('chatTgtLang').value;
             const reply = await callGeminiAPI(transcript, srcVal, tgtVal);
             document.getElementById('loaderChat').style.display = "none";
             
-            if(!isChatSessionActive) return; // Falls während des Ladens Stopp gedrückt wurde
+            if(!isChatSessionActive) return; 
 
             lastAiMsg = reply; lastAiTgt = tgtVal; 
             if(reply.startsWith("⚠️") || reply.includes("API Fehler")) { addChatBubble(reply, 'error'); } else { addChatBubble(reply, 'ai'); }
             
             speak(reply, tgtVal, () => { 
-                // Wenn sie fertig mit sprechen ist:
                 if (isChatSessionActive && document.getElementById('tabChat').style.display === 'block' && !reply.startsWith("⚠️")) { 
-                    startChatMic(); // Weiter zuhören
+                    startChatMic(); 
                 } else if (reply.startsWith("⚠️")) {
                     stopEntireChat();
                 }
             });
         };
-        chatRec.onerror = () => { 
-            if(isChatSessionActive) { setTimeout(startChatMic, 1000); } // Bei Stille einfach neu versuchen
+        
+        // NEU: Bessere Fehlerbehandlung für das Mikrofon
+        chatRec.onerror = (e) => { 
+            console.error("Speech Error:", e.error);
+            if (e.error === 'not-allowed' || e.error === 'audio-capture') {
+                addChatBubble("⚠️ Mikrofon blockiert! Bitte erlaube den Zugriff oben in der Browser-Leiste.", "error");
+                stopEntireChat();
+            } else if (e.error === 'no-speech') {
+                if(isChatSessionActive) { setTimeout(startChatMic, 1000); } 
+            } else {
+                addChatBubble("⚠️ Mikrofon-Fehler: " + e.error, "error");
+                stopEntireChat();
+            }
         }; 
+        
         try { chatRec.start(); } catch(e){}
     }
 
@@ -580,7 +588,28 @@
     function toggleLiveRecord() { if (isLiveRecording) stopLiveRecord(); else startLiveRecord(); }
     function clearLive() { liveFinalText = ""; liveTranslatedText = ""; document.getElementById('liveSourceText').value = ""; document.getElementById('liveResultText').value = ""; isWaitingForNewLoop = false; clearTimeout(clearSourceTimeout); clearTimeout(clearTransTimeout); }
     function resetClearSourceTimer() { clearTimeout(clearSourceTimeout); const delayVal = document.getElementById('liveClearDelay').value; if (delayVal === "0") return; const delayMs = parseInt(delayVal, 10); clearSourceTimeout = setTimeout(() => { liveFinalText = ""; document.getElementById('liveSourceText').value = ""; isWaitingForNewLoop = true; }, delayMs); }
-    function startLiveRecord() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support in diesem Browser."); return; } isLiveRecording = true; const btn = document.getElementById('btnLiveRecord'); document.getElementById('liveRecText').innerHTML = UI_TRANS[currentAppLang].btnStopRec; btn.style.background = "#e53e3e"; btn.classList.add("mic-active"); liveRec = new SpeechRecognition(); liveRec.continuous = false; liveRec.interimResults = true; const srcVal = document.getElementById('liveSrcLang').value; const langCode = Object.keys(LANGS).find(k => k === srcVal); liveRec.lang = LANGS[langCode].tts; liveRec.onresult = (event) => { resetClearSourceTimer(); if (isWaitingForNewLoop) { liveTranslatedText = ""; document.getElementById('liveResultText').value = ""; isWaitingForNewLoop = false; clearTimeout(clearTransTimeout); } let interim = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) { let finalChunk = event.results[i][0].transcript + ' '; liveFinalText += finalChunk; translateAndAppendLive(finalChunk, document.getElementById('liveSrcLang').value, document.getElementById('liveTgtLang').value); } else { interim += event.results[i][0].transcript; } } document.getElementById('liveSourceText').value = liveFinalText + interim; }; liveRec.onend = () => { if (isLiveRecording) { try { liveRec.start(); } catch(e){} } }; try { liveRec.start(); } catch(e){} }
+    function startLiveRecord() { 
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { alert("Kein Mikrofon-Support in diesem Browser."); return; } 
+        isLiveRecording = true; const btn = document.getElementById('btnLiveRecord'); document.getElementById('liveRecText').innerHTML = UI_TRANS[currentAppLang].btnStopRec; btn.style.background = "#e53e3e"; btn.classList.add("mic-active"); 
+        liveRec = new SpeechRecognition(); liveRec.continuous = false; liveRec.interimResults = true; const srcVal = document.getElementById('liveSrcLang').value; const langCode = Object.keys(LANGS).find(k => k === srcVal); liveRec.lang = LANGS[langCode].tts; 
+        
+        liveRec.onresult = (event) => { 
+            resetClearSourceTimer(); 
+            if (isWaitingForNewLoop) { liveTranslatedText = ""; document.getElementById('liveResultText').value = ""; isWaitingForNewLoop = false; clearTimeout(clearTransTimeout); } 
+            let interim = ''; 
+            for (let i = event.resultIndex; i < event.results.length; ++i) { 
+                if (event.results[i].isFinal) { 
+                    let finalChunk = event.results[i][0].transcript + ' '; liveFinalText += finalChunk; translateAndAppendLive(finalChunk, document.getElementById('liveSrcLang').value, document.getElementById('liveTgtLang').value); 
+                } else { interim += event.results[i][0].transcript; } 
+            } 
+            document.getElementById('liveSourceText').value = liveFinalText + interim; 
+        }; 
+        liveRec.onerror = (e) => { 
+            console.error("Live Speech Error:", e.error);
+            if (e.error === 'not-allowed' || e.error === 'audio-capture') { stopLiveRecord(); alert("Mikrofon blockiert! Bitte erlaube den Zugriff."); }
+        };
+        liveRec.onend = () => { if (isLiveRecording) { try { liveRec.start(); } catch(e){} } }; try { liveRec.start(); } catch(e){} 
+    }
     function stopLiveRecord() { isLiveRecording = false; if (liveRec) { liveRec.stop(); } clearTimeout(clearSourceTimeout); clearTimeout(clearTransTimeout); const btn = document.getElementById('btnLiveRecord'); document.getElementById('liveRecText').innerHTML = UI_TRANS[currentAppLang].btnStartRec; btn.style.background = "var(--primary)"; btn.classList.remove("mic-active"); }
     async function translateAndAppendLive(chunk, src, tgt) { document.getElementById('loaderLive').style.display = "block"; try { const result = await translate(chunk, src, tgt); liveTranslatedText += result + " "; document.getElementById('liveResultText').value = liveTranslatedText; clearTimeout(clearTransTimeout); const transDelayVal = document.getElementById('liveClearDelayTrans').value; if (transDelayVal !== "auto" && transDelayVal !== "0") { clearTransTimeout = setTimeout(() => { liveTranslatedText = ""; document.getElementById('liveResultText').value = ""; }, parseInt(transDelayVal, 10)); } } catch(e) {} finally { document.getElementById('loaderLive').style.display = "none"; } }
     function speakLive() { const text = document.getElementById('liveResultText').value; if(!text) return; const tgt = document.getElementById('liveTgtLang').value; const langCode = Object.keys(LANGS).find(k => k === tgt); speak(text, langCode); }
