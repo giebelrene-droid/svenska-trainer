@@ -62,7 +62,6 @@
         .icon-btn:hover, .icon-btn:focus { border-color: var(--primary); color: var(--primary); }
         .icon-btn.danger { color: #EF4444; background: #FEF2F2; border-color: #FECACA; }
         .mic-active { background: #FEF2F2 !important; border-color: #EF4444 !important; color: #EF4444 !important; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
         .arcade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .arcade-card { background: white; border: 2px solid var(--border-soft); border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; transition: transform 0.2s, border-color 0.2s; box-shadow: var(--shadow-soft); }
@@ -78,6 +77,7 @@
 
         .bomb-container { text-align: center; margin: 30px 0; }
         .bomb-icon { font-size: 5rem; animation: shake 0.5s infinite; }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px) rotate(-5deg); } 50% { transform: translateX(5px) rotate(5deg); } 75% { transform: translateX(-5px) rotate(-5deg); } 100% { transform: translateX(0); } }
         .timer-bar { height: 20px; background: #E5E7EB; border-radius: 10px; overflow: hidden; margin-top: 20px; }
         .timer-fill { height: 100%; background: #EF4444; width: 100%; transition: width 0.1s linear; }
 
@@ -86,11 +86,17 @@
         .bubble-user { background: var(--primary-gradient); color: white; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: var(--shadow-float); }
         .bubble-ai { background: white; border: 1px solid var(--border-soft); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: var(--shadow-soft); }
         .bubble-feedback { background: #ECFDF5; border: 1px dashed #10B981; color: #065F46; font-size: 0.85rem; padding: 10px 15px; border-radius: 0 20px 20px 20px; align-self: flex-start; max-width: 80%; margin-top: -8px; margin-bottom: 8px; margin-left: 10px; }
+        .story-box { background: #FFFBEB; border: 2px dashed #FCD34D; padding: 20px; border-radius: 20px; font-size: 1.1rem; line-height: 1.8; margin-top: 20px; display: none; }
 
         .verb-section { display: none; background: #F9FAFB; padding: 20px; border-radius: 16px; margin-top: 15px; border: 1px solid var(--border-soft); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .verb-lang-title { font-weight: 800; font-size: 0.85rem; color: var(--text-light); margin-bottom: 10px; margin-top: 15px; letter-spacing: 0.5px;}
+
         .loader { color:var(--primary); text-align:center; display:none; font-weight:800; margin: 15px 0; font-size: 0.9rem; }
+        
         #settingsOverlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.7); display: none; z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(5px); padding: 20px;}
         .settings-box { background: var(--bg); padding: 30px; border-radius: 30px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+
+        .footer { text-align: center; margin-top: 40px; padding: 20px; color: var(--text-light); font-size: 0.75rem; border-top: 1px solid var(--border-soft); }
     </style>
 </head>
 <body>
@@ -190,19 +196,19 @@
     <button class="action-btn btn-magic" onclick="document.getElementById('camInput').click()">📸 Foto-Scanner & Auto-Fill</button>
     <div id="loader" class="loader">🤖 KI übersetzt...</div>
     
-    <label id="lblL1">Deutsch</label><div class="input-row"><input type="text" id="inDe"><button class="icon-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
-    <label id="lblL2">Englisch</label><div class="input-row"><input type="text" id="inEn"><button class="icon-btn" onclick="listen(2, 'inEn', this)">🎤</button></div>
-    <label id="lblL3">Schwedisch</label><div class="input-row"><input type="text" id="inSv"><button class="icon-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
+    <label id="lblL1">Sprache 1</label><div class="input-row"><input type="text" id="inDe"><button class="icon-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
+    <label id="lblL2">Sprache 2</label><div class="input-row"><input type="text" id="inEn"><button class="icon-btn" onclick="listen(2, 'inEn', this)">🎤</button></div>
+    <label id="lblL3">Sprache 3</label><div class="input-row"><input type="text" id="inSv"><button class="icon-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
     
     <button class="action-btn btn-secondary" onclick="toggleVerbSection()" style="margin-top: 15px; font-size: 0.9rem; padding: 12px; background: transparent;">📝 Verb-Details (Optional) ▾</button>
     
     <div id="verbSection" class="verb-section">
-        <div id="vTitle1" class="verb-lang-title">DEUTSCH</div>
+        <div id="vTitle1" class="verb-lang-title">L1</div>
         <div class="input-row"><input type="text" id="inDePast" placeholder="Vergangenheit"><input type="text" id="inDeFut" placeholder="Zukunft"></div>
-        <div id="vTitle2" class="verb-lang-title">ENGLISCH</div>
+        <div id="vTitle2" class="verb-lang-title">L2</div>
         <div class="input-row"><input type="text" id="inEnPast" placeholder="Past"><input type="text" id="inEnFut" placeholder="Future"></div>
-        <div id="vTitle3" class="verb-lang-title">SCHWEDISCH</div>
-        <div class="input-row"><input type="text" id="inSvPast" placeholder="Dåtid"><input type="text" id="inSvFut" placeholder="Framtid"></div>
+        <div id="vTitle3" class="verb-lang-title">L3</div>
+        <div class="input-row"><input type="text" id="inSvPast" placeholder="Past"><input type="text" id="inSvFut" placeholder="Future"></div>
         <button class="action-btn btn-magic" style="margin-bottom: 0;" onclick="fetchVerbForms()">⚡ Formen automatisch suchen</button>
     </div>
 
@@ -237,7 +243,12 @@
     <div id="listCont"></div>
 </div>
 
+<div class="footer">
+    SprachTutor AI &bull; Version 14.0 (Arcade & Multi-Lang) &bull; 2026
+</div>
+
 <script>
+    const VERSION = "14.0";
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" };
     firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
     db.enablePersistence().catch(()=>{});
@@ -267,6 +278,7 @@
         document.getElementById('inpGeminiKey').value = geminiApiKey; 
         const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames);
         const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx);
+        
         loadUserLangs(); renderRenameInputs(); updateUserDropdown(); populateLangSelects();
         showTab('add'); 
         firebase.auth().signInAnonymously().catch(()=>{});
@@ -418,17 +430,17 @@
         }; r.readAsDataURL(i.files[0]);
     }
 
-    let duelWord = null, duelCanTap = false;
+    let duelWordObj = null, duelCanTap = false;
     function startDuelRound() {
         if(!allWords.length) return; document.getElementById('duelWord').innerText = "Warten..."; duelCanTap = false;
-        setTimeout(() => { duelWord = allWords[Math.floor(Math.random()*allWords.length)]; document.getElementById('duelWord').innerText = duelWord[conf.l1]; duelCanTap = true; }, 1500);
+        setTimeout(() => { duelWordObj = allWords[Math.floor(Math.random()*allWords.length)]; document.getElementById('duelWord').innerText = duelWordObj[conf.l1]; duelCanTap = true; }, 1500);
     }
     function duelTap(p) {
         if(!duelCanTap) return; duelCanTap = false;
         const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); rec.lang = ALL_LANGS[conf.l3].tts;
         rec.onresult = (e) => {
             const s = e.results[0][0].transcript.toLowerCase();
-            document.getElementById('duelResult').innerText = s.includes(duelWord[conf.l3].toLowerCase()) ? `Punkt für ${p}!` : "Leider falsch";
+            document.getElementById('duelResult').innerText = s.includes(duelWordObj[conf.l3].toLowerCase()) ? `Punkt für ${p}!` : "Leider falsch";
         }; rec.start();
     }
 
@@ -521,6 +533,38 @@
     }
     function nextStudyWord() { studyIndex = (studyIndex+1)%allWords.length; renderStudyWord(); }
     function prevStudyWord() { studyIndex = (studyIndex-1+allWords.length)%allWords.length; renderStudyWord(); }
+
+    async function migrateOldData() {
+        if(!currentUser) return;
+        const oldSnapshot = await db.collection('words').get();
+        let count = 0;
+        const batch = db.batch();
+        oldSnapshot.forEach(doc => {
+            const newRef = db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).doc();
+            batch.set(newRef, doc.data());
+            count++;
+        });
+        await batch.commit();
+        alert(count + " Vokabeln importiert!");
+        refreshData();
+    }
+
+    async function nukeDatabase() { 
+        if(!currentUser || !confirm("Alles löschen?")) return;
+        const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).get();
+        const b = db.batch(); s.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); 
+    }
+
+    let searchDebounceTimer;
+    function debouncedFilterStudyWords() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            const q = document.getElementById('studySearch').value.toLowerCase();
+            studyWords = q ? allWords.filter(w => (w[conf.l1] && w[conf.l1].toLowerCase().includes(q)) || (w[conf.l3] && w[conf.l3].toLowerCase().includes(q))) : [...allWords];
+            studyIndex = 0;
+            renderStudyWord();
+        }, 300);
+    }
 
     window.onload = init;
 </script>
