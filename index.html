@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Trainer X (Magic AI Edition)</title>
+    <title>Family Trainer X (Tutor Edition)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234F46E5%22 rx=%2220%22/><text x=%2250%22 y=%2268%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23ffffff%22>🇸🇪</text></svg>">
     
@@ -13,11 +13,11 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
         :root {
-            --primary: #4F46E5;      /* Modern Indigo */
+            --primary: #4F46E5;      
             --primary-gradient: linear-gradient(135deg, #6366f1, #4f46e5);
-            --secondary: #10B981;    /* Emerald Green */
-            --accent: #F59E0B;       /* Amber */
-            --bg: #F3F4F6;           /* Cool Gray */
+            --secondary: #10B981;    
+            --accent: #F59E0B;       
+            --bg: #F3F4F6;           
             --card-bg: #ffffff; 
             --text: #1F2937;    
             --text-light: #6B7280; 
@@ -29,7 +29,6 @@
 
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 600px; margin: 0 auto; padding: 20px 15px 100px 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
         
-        /* Modern Header & Nav */
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .app-title { font-weight: 800; font-size: 1.5rem; color: var(--text); background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .settings-btn { background: var(--card-bg); border: 1px solid var(--border-soft); font-size: 1.2rem; cursor: pointer; width: 45px; height: 45px; border-radius: 50%; box-shadow: var(--shadow-soft); color: var(--text); transition: transform 0.2s; display: flex; align-items: center; justify-content: center;}
@@ -41,7 +40,6 @@
         .nav-scroll button.active { background: var(--primary-gradient); color: white; box-shadow: var(--shadow-float); border-color: transparent; transform: translateY(-2px); }
         .nav-scroll button:hover:not(.active) { border-color: #C7D2FE; color: var(--primary); }
 
-        /* Cards & Inputs */
         .card { background: var(--card-bg); padding: 25px; border-radius: var(--radius); box-shadow: var(--shadow-soft); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.5); backdrop-filter: blur(10px); animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -52,7 +50,6 @@
         input, select, textarea { flex: 1; padding: 16px; background: #F9FAFB; border: 2px solid var(--border-soft); border-radius: 16px; font-size: 1rem; width: 100%; box-sizing: border-box; color: var(--text); transition: all 0.2s; font-family: inherit; font-weight: 600;}
         input:focus, select:focus, textarea:focus { border-color: var(--primary); background: white; outline: none; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
         
-        /* Buttons */
         .action-btn { width: 100%; padding: 16px; background: var(--primary-gradient); color: white; border: none; border-radius: 16px; cursor: pointer; font-weight: 800; font-size: 1rem; margin-top: 15px; transition: all 0.2s; box-shadow: var(--shadow-float); display: flex; justify-content: center; align-items: center; gap: 8px;}
         .action-btn:active { transform: scale(0.97); box-shadow: none; }
         .btn-secondary { background: #F3F4F6; color: var(--text); box-shadow: none; border: 1px solid var(--border-soft); }
@@ -65,24 +62,21 @@
         .mic-active { background: #FEF2F2 !important; border-color: #EF4444 !important; color: #EF4444 !important; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* Story & Mission Modus */
         .story-box { background: #FFFBEB; border: 2px dashed #FCD34D; padding: 20px; border-radius: 20px; font-size: 1.1rem; line-height: 1.8; margin-top: 20px; display: none; }
         .mission-bubble { background: var(--card-bg); border-left: 4px solid var(--primary); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: var(--shadow-soft); font-weight: 600;}
 
-        /* Visuals */
-        .level-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 12px; }
-        .lvl-0 { background: #D1D5DB; } .lvl-1 { background: var(--accent); } .lvl-2 { background: var(--secondary); } .lvl-3 { background: var(--primary); }
-        .lang-tag { font-weight: 800; font-size: 1.2rem; display: inline-block; text-align: center;}
-        
-        .chat-box { background: #F9FAFB; border: 1px solid var(--border-soft); border-radius: 20px; padding: 20px; height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; }
+        /* Chat & Feedback Styles */
+        .chat-box { background: #F9FAFB; border: 1px solid var(--border-soft); border-radius: 20px; padding: 20px; height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; scroll-behavior: smooth; }
         .chat-bubble { padding: 14px 18px; border-radius: 20px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; }
         .bubble-user { background: var(--primary-gradient); color: white; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: var(--shadow-float); }
         .bubble-ai { background: white; border: 1px solid var(--border-soft); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: var(--shadow-soft); }
+        
+        /* Das neue Tutor-Feedback Design */
+        .bubble-feedback { background: #ECFDF5; border: 1px dashed #10B981; color: #065F46; font-size: 0.85rem; padding: 10px 15px; border-radius: 0 20px 20px 20px; align-self: flex-start; max-width: 80%; margin-top: -8px; margin-bottom: 8px; margin-left: 10px; box-shadow: var(--shadow-soft); }
 
         #scannerPreview { width: 100%; height: 200px; object-fit: cover; border-radius: 16px; display: none; margin-bottom: 15px; border: 2px solid var(--border-soft); }
         .loader { color:var(--primary); text-align:center; display:none; font-weight:800; margin: 15px 0; font-size: 0.9rem; }
         
-        /* Overlays & Footer */
         #settingsOverlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.7); display: none; z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(5px); padding: 20px;}
         .settings-box { background: var(--bg); padding: 30px; border-radius: 30px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
     </style>
@@ -115,7 +109,7 @@
     <button id="btnCam" onclick="showTab('scanner')">📷 Scanner</button>
     <button id="btnStory" onclick="showTab('story')">📖 KI-Märchen</button>
     <button id="btnMission" onclick="showTab('mission')">🎯 Missionen</button>
-    <button id="btn8" onclick="showTab('chat')">💬 Chat</button>
+    <button id="btn8" onclick="showTab('chat')">💬 Sprachtutor</button>
     <button id="btn7" onclick="showTab('live')">🎙️ Live</button>
     <button id="btn5" onclick="showTab('study')">👀 Lernen</button>
     <button id="btn2" onclick="showTab('quiz')">🧠 Üben</button>
@@ -155,7 +149,7 @@
 
 <div id="tabStory" class="card" style="display:none">
     <h2>📖 Das irre Vokabel-Märchen</h2>
-    <p style="color: var(--text-light); font-size: 0.9rem;">Die KI nimmt 3-4 deiner schlechtesten Vokabeln und strickt daraus eine verrückte Geschichte auf Schwedisch, damit du sie dir besser merken kannst.</p>
+    <p style="color: var(--text-light); font-size: 0.9rem;">Die KI nimmt 3-4 deiner schlechtesten Vokabeln und strickt daraus eine verrückte Geschichte, damit du sie dir besser merken kannst.</p>
     <button class="action-btn btn-magic" onclick="generateStory()">✨ Geschichte generieren</button>
     
     <div id="loaderStory" class="loader">🧙‍♂️ KI schreibt ein Meisterwerk...</div>
@@ -185,9 +179,19 @@
 </div>
 
 <div id="tabChat" class="card" style="display:none">
-    <h2>💬 KI-Gespräch</h2>
-    <div class="chat-box" id="chatHistory"><div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns quatschen. 👋</div></div>
-    <div id="loaderChat" class="loader">🤖 KI denkt nach...</div>
+    <h2>💬 KI-Sprachtutor</h2>
+    <p style="color: var(--text-light); font-size: 0.9rem;">Unterhalte dich frei. Der Tutor antwortet dir und korrigiert anschließend sanft deine Fehler.</p>
+    
+    <div class="input-row" style="margin-bottom: 15px;">
+        <select id="chatSrcLang"><option value="de">Ich spreche Deutsch</option><option value="en">Ich spreche Englisch</option><option value="sv">Ich spreche Schwedisch</option></select>
+        <select id="chatTgtLang"><option value="sv" selected>Tutor spricht Schwedisch</option><option value="en">Tutor spricht Englisch</option><option value="de">Tutor spricht Deutsch</option></select>
+    </div>
+
+    <div class="chat-box" id="chatHistory">
+        <div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns ein bisschen üben. Wie war dein Tag heute? 👋</div>
+    </div>
+    <div id="loaderChat" class="loader">👨‍🏫 Tutor denkt nach...</div>
+    
     <div class="input-row">
         <button id="btnChatRecord" class="action-btn" onclick="toggleChatRecord()" style="margin-top:0;">🎤 Chat Starten</button>
         <button class="icon-btn danger" onclick="clearChat()">🗑️</button>
@@ -224,7 +228,7 @@
 </div>
 
 <script>
-    const VERSION = "10.0 (Magic Edition)";
+    const VERSION = "10.5 (Tutor Edition)";
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" };
     firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
 
@@ -233,7 +237,7 @@
     let allWords = [], studyWords = [], studyIndex = 0;
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
     let isLiveRecording = false, liveRec = null, chatRec = null, isChatSessionActive = false, isMissionActive = false, missionRec = null;
-    let missionContext = ""; let currentStoryText = "";
+    let missionContext = ""; let currentStoryText = ""; let cachedGeminiModel = null;
 
     function escapeHTML(str) { return !str ? "" : String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[m]); }
     function safeJS(str) { return !str ? "" : String(str).replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
@@ -249,7 +253,9 @@
     function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
 
     function showTab(n) { 
-        if(isLiveRecording) toggleLiveRecord(); if(isChatSessionActive) toggleChatRecord();
+        if(isLiveRecording) toggleLiveRecord(); 
+        if(isChatSessionActive) toggleChatRecord(); // Beendet aktiven Chat beim Tab-Wechsel
+        
         document.querySelectorAll('.nav-scroll button').forEach(b=>b.classList.remove('active')); 
         const btnMap = { 'add':'btn1', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'scanner':'btnCam', 'mission':'btnMission', 'story':'btnStory' };
         if(btnMap[n] && document.getElementById(btnMap[n])) document.getElementById(btnMap[n]).classList.add('active');
@@ -263,30 +269,19 @@
         if(n === 'list') renderList(); if(n === 'study') { filterStudyWords(); }
     }
 
-    // --- ZENTRALE GEMINI API FUNKTION (Repariert & Dynamisch) ---
-    let cachedGeminiModel = null;
-
+    // --- ZENTRALE GEMINI API FUNKTION (Dynamisch & Schnell) ---
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
         if(!geminiApiKey) { alert("⚠️ Bitte trage zuerst deinen Gemini API-Schlüssel in den Einstellungen (⚙️) ein!"); return null; }
 
-        // 1. Modell dynamisch ermitteln (wird nur beim allerersten Aufruf gemacht)
         if (!cachedGeminiModel) {
             try {
                 const modelRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
                 const modelData = await modelRes.json();
                 if(!modelData.error) {
-                    // Sucht automatisch nach dem besten verfügbaren Gemini-Modell
-                    const validModel = modelData.models.find(m => 
-                        m.name.includes("gemini") && 
-                        m.supportedGenerationMethods && 
-                        m.supportedGenerationMethods.includes("generateContent")
-                    );
+                    const validModel = modelData.models.find(m => m.name.includes("gemini") && m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"));
                     if(validModel) cachedGeminiModel = validModel.name.replace('models/', '');
                 }
-            } catch(e) { 
-                console.warn("Modell-Abfrage fehlgeschlagen:", e); 
-            }
-            // Falls die Abfrage fehlschlägt, nutzen wir einen extrem sicheren Fallback
+            } catch(e) { console.warn("Modell-Abfrage fehlgeschlagen:", e); }
             if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest"; 
         }
 
@@ -303,18 +298,98 @@
         contents.push({ role: "user", parts: userParts });
 
         try {
-            const response = await fetch(url, { 
-                method: "POST", 
-                headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify({ contents: contents }) 
-            });
+            const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: contents }) });
             const data = await response.json(); 
             if(data.error) throw new Error(data.error.message);
             return data.candidates[0].content.parts[0].text.trim();
-        } catch(e) { 
-            alert("API Fehler: " + e.message); 
-            return null; 
+        } catch(e) { alert("API Fehler: " + e.message); return null; }
+    }
+
+    // --- NEU: KI-SPRACHTUTOR MIT FEEDBACK ---
+    async function toggleChatRecord() {
+        if (isChatSessionActive) {
+            isChatSessionActive = false;
+            if(chatRec) { try{ chatRec.abort(); }catch(e){} }
+            document.getElementById('btnChatRecord').innerText = "🎤 Chat Starten";
+            document.getElementById('btnChatRecord').style.background = "var(--primary-gradient)";
+            document.getElementById('btnChatRecord').classList.remove("mic-active");
+        } else {
+            isChatSessionActive = true;
+            document.getElementById('btnChatRecord').innerText = "⏹️ Chat beenden";
+            document.getElementById('btnChatRecord').style.background = "#EF4444";
+            document.getElementById('btnChatRecord').classList.add("mic-active");
+            startTutorMic();
         }
+    }
+
+    function startTutorMic() {
+        if (!isChatSessionActive) return;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return alert("Mikrofon nicht unterstützt.");
+
+        chatRec = new SpeechRecognition();
+        const srcVal = document.getElementById('chatSrcLang').value;
+        const tgtVal = document.getElementById('chatTgtLang').value;
+        
+        chatRec.lang = LANGS[srcVal].tts;
+        chatRec.continuous = false;
+
+        chatRec.onresult = async (e) => {
+            const text = e.results[0][0].transcript;
+            
+            // Nutzer-Bubble anzeigen
+            document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-user">${escapeHTML(text)}</div>`;
+            document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight;
+            document.getElementById('loaderChat').style.display = 'block';
+
+            const tgtName = LANGS[tgtVal].name;
+            const srcName = LANGS[srcVal].name;
+
+            // System Prompt zwingt die KI zum Feedback
+            const systemPrompt = `Du bist ein geduldiger, ermutigender Sprachtutor. Der Nutzer spricht ${srcName} und möchte ${tgtName} lernen.
+            WICHTIG: Antworte IMMER exakt in diesem Format (Zwei Teile getrennt durch "|||"):
+            Teil 1: Führe das Gespräch natürlich in der Zielsprache (${tgtName}) weiter. (Stelle auch mal Gegenfragen).
+            |||
+            Teil 2: Ein kurzes Feedback auf Deutsch zu seinem Satz. Korrigiere Grammatik- oder Wortfehler sanft, oder lobe ihn kurz ("Alles richtig!"), wenn es fehlerfrei war.`;
+
+            const reply = await callGemini(text, null, systemPrompt);
+            document.getElementById('loaderChat').style.display = 'none';
+
+            if(reply && isChatSessionActive) {
+                let chatText = reply;
+                let feedbackText = "";
+                
+                // Splitte Antwort und Feedback
+                if(reply.includes("|||")) {
+                    const parts = reply.split("|||");
+                    chatText = parts[0].trim();
+                    feedbackText = parts[1].trim();
+                }
+
+                // KI-Bubble anzeigen
+                document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(chatText)}</div>`;
+                
+                // Feedback-Bubble anzeigen
+                if(feedbackText) {
+                    document.getElementById('chatHistory').innerHTML += `<div class="bubble-feedback">👨‍🏫 <b>Tutor:</b> ${escapeHTML(feedbackText)}</div>`;
+                }
+
+                speak(chatText, tgtVal);
+            }
+            document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight;
+        };
+
+        chatRec.onend = () => {
+            if(isChatSessionActive) {
+                setTimeout(() => { if(isChatSessionActive) { try{ chatRec.start(); }catch(err){} } }, 1000);
+            }
+        };
+
+        try { chatRec.start(); } catch(err) { console.warn("Mikrofon-Start verzögert."); }
+    }
+
+    function clearChat() {
+        document.getElementById('chatHistory').innerHTML = `<div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns ein bisschen üben. Wie war dein Tag heute? 👋</div>`;
     }
 
     // --- FEATURE 1: KI SCANNER ---
@@ -338,7 +413,7 @@
                     document.getElementById('inDe').value = obj.de || "";
                     document.getElementById('inEn').value = obj.en || "";
                     document.getElementById('inSv').value = obj.sv || "";
-                    showTab('add'); // Springe zur Speichern-Ansicht
+                    showTab('add'); 
                 } catch(err) { alert("Konnte das Bild nicht eindeutig erkennen. Antwort: " + resultText); }
             }
         };
@@ -392,9 +467,8 @@
         document.getElementById('loaderStory').style.display = 'block';
         document.getElementById('storyBox').style.display = 'none';
         
-        // Hole schwache Vokabeln
         let weakWords = allWords.filter(w => (w.level || 0) < 2);
-        if(weakWords.length < 3) weakWords = allWords; // Falls alle gut sind, nimm alle
+        if(weakWords.length < 3) weakWords = allWords; 
         const shuffled = weakWords.sort(() => 0.5 - Math.random());
         const selected = shuffled.slice(0, 4).map(w => w.sv).join(", ");
         
@@ -414,7 +488,7 @@
     }
     function speakStory() { if(currentStoryText) speak(currentStoryText, 'sv'); }
 
-    // --- BASIS FUNKTIONEN (Gekürzt & Modernisiert) ---
+    // --- BASIS FUNKTIONEN ---
     function speak(txt, langCode) { window.speechSynthesis.cancel(); const ut = new SpeechSynthesisUtterance(txt); ut.lang = LANGS[langCode].tts; window.speechSynthesis.speak(ut); }
     function listen(slot, targetId, btn) { 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
