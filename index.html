@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -103,13 +103,20 @@
 <div id="settingsOverlay">
     <div class="settings-box">
         <h2>⚙️ Einstellungen</h2>
-        <label>🔑 Gemini API-Schlüssel (Pflicht für KI)</label>
+        <label>🔑 Gemini API-Schlüssel</label>
         <div class="input-row"><input type="password" id="inpGeminiKey" placeholder="AIzaSy..." oninput="saveApiKey()"></div>
         
-        <button class="action-btn btn-magic" onclick="migrateOldData()">🛟 Alte Vokabeln importieren</button>
+        <label style="margin-top: 20px;">👤 Aktiver Benutzer</label>
+        <select id="selUser" onchange="switchUser()" style="margin-bottom:15px;"></select>
         
+        <div style="background:#F9FAFB; padding:15px; border-radius:16px; border:1px solid var(--border-soft); margin-bottom:20px;">
+            <p style="font-size:0.75rem; font-weight:800; color:var(--text-light); margin-top:0;">BENUTZER UMBENENNEN</p>
+            <div id="renameContainer"></div>
+        </div>
+
+        <button class="action-btn btn-magic" onclick="migrateOldData()">🛟 Alte Vokabeln importieren</button>
         <button class="action-btn btn-secondary" onclick="document.getElementById('importFile').click()">📂 Backup laden</button>
-        <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Meine Vokabeln löschen</button>
+        <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Profil-Vokabeln löschen</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
         <button class="action-btn" onclick="closeSettings()" style="margin-top: 30px;">Fertig</button>
     </div>
@@ -229,11 +236,16 @@
 
 <div id="tabList" class="card" style="display:none">
     <h2>📚 Vokabelheft</h2>
+    <div style="text-align:center; margin-bottom: 15px;">
+        <span style="background: var(--primary-gradient); color: white; padding: 6px 16px; border-radius: 20px; font-weight: 800; box-shadow: var(--shadow-float);">
+            📚 <span id="wordCount">0</span> Wörter
+        </span>
+    </div>
     <div id="listCont" style="margin-top: 15px;"></div>
 </div>
 
 <script>
-    const VERSION = "13.3 (Data Rescue Edition)";
+    const VERSION = "13.4 (Family Profiles Restored)";
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" };
     firebase.initializeApp(firebaseConfig); 
     const db = firebase.firestore();
@@ -245,6 +257,11 @@
     if (!navigator.onLine) document.getElementById('offlineBanner').style.display = 'block';
 
     const LANGS = { 'de':{name:'Deutsch',tts:'de-DE'}, 'en':{name:'Englisch',tts:'en-US'}, 'sv':{name:'Schwedisch',tts:'sv-SE'} };
+    
+    // FAMILIEN-PROFILE VARIABLEN
+    let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; 
+    let currentCollIndex = 0; 
+    
     let allWords = [], studyWords = [], studyIndex = 0;
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
     let cachedGeminiModel = null;
@@ -256,9 +273,37 @@
 
     function init() { 
         document.getElementById('inpGeminiKey').value = geminiApiKey; 
+        
+        // Profil-Daten laden
+        const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames);
+        const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx);
+        renderRenameInputs(); updateUserDropdown();
+
         showTab('add'); 
         firebase.auth().signInAnonymously().catch((error) => console.error("Auth-Fehler:", error));
         firebase.auth().onAuthStateChanged((user) => { if (user) { currentUser = user; refreshData(); } });
+    }
+
+    // Profil-Management Funktionen
+    function renderRenameInputs() { 
+        document.getElementById('renameContainer').innerHTML = userNames.map((n, i) => `
+            <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                <span style="font-weight:bold; color:var(--primary); width:20px;">${i+1}.</span>
+                <input type="text" id="name${i}" value="${escapeHTML(n)}" onchange="saveName(${i})" style="padding: 10px;">
+            </div>
+        `).join(''); 
+    }
+    function updateUserDropdown() { 
+        document.getElementById('selUser').innerHTML = userNames.map((n, i) => `<option value="${i}" ${i===currentCollIndex?'selected':''}>👤 ${escapeHTML(n)}</option>`).join(''); 
+    }
+    function saveName(idx) { 
+        const val = document.getElementById('name'+idx).value.trim(); 
+        if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } 
+    }
+    function switchUser() { 
+        currentCollIndex = parseInt(document.getElementById('selUser').value); 
+        localStorage.setItem('trainerUserIdx', currentCollIndex); 
+        refreshData(); // Läd die Wörter des neu gewählten Profils
     }
 
     function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); }
@@ -500,7 +545,9 @@
         };
         const data = { de: document.getElementById('inDe').value, en: document.getElementById('inEn').value, sv: document.getElementById('inSv').value, ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0, ...vData }; 
         if(!data.de || !data.sv) return; 
-        db.collection('users').doc(currentUser.uid).collection('words').add(data).then(() => { 
+        
+        // Nutze den currentCollIndex (0, 1, 2, 3), um die Wörter des aktuellen Profils zu trennen
+        db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).add(data).then(() => { 
             refreshData(); 
             document.getElementById('inDe').value=''; document.getElementById('inEn').value=''; document.getElementById('inSv').value=''; 
             document.getElementById('inDePast').value=''; document.getElementById('inDeFut').value='';
@@ -514,18 +561,23 @@
     async function refreshData() { 
         if(!currentUser) return;
         try {
-            const s = await db.collection('users').doc(currentUser.uid).collection('words').orderBy("ts", "desc").get(); 
+            // Lade die Vokabeln des AKTUELLEN Familien-Profils
+            const s = await db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).orderBy("ts", "desc").get(); 
             allWords = s.docs.map(d => ({id: d.id, ...d.data()})); 
+            
+            // Wortzähler updaten
+            const wordCountEl = document.getElementById('wordCount');
+            if(wordCountEl) wordCountEl.innerText = allWords.length;
+            
             renderList(); filterStudyWords();
         } catch(err) {}
     }
     
     async function nukeDatabase() { 
-        if(!currentUser) return; if(!confirm(`⚠️ Möchtest du wirklich ALLE DEINE Vokabeln löschen?`)) return; 
-        const s = await db.collection('users').doc(currentUser.uid).collection('words').get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); 
+        if(!currentUser) return; if(!confirm(`⚠️ Möchtest du wirklich ALLE Vokabeln DIESES PROFILs löschen?`)) return; 
+        const s = await db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); 
     }
 
-    // --- NEUE FUNKTION: ALTE VOKABELN RETTEN ---
     async function migrateOldData() {
         if(!currentUser) return alert("Nicht eingeloggt! Lade die Seite kurz neu.");
         try {
@@ -536,13 +588,12 @@
             const batch = db.batch();
             oldSnapshot.forEach(doc => {
                 const newData = doc.data();
-                // Speichere in deinem neuen, privaten Pfad
-                const newRef = db.collection('users').doc(currentUser.uid).collection('words').doc();
+                const newRef = db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).doc();
                 batch.set(newRef, newData);
                 count++;
             });
             await batch.commit();
-            alert(`🎉 Erfolg! ${count} Vokabeln wurden erfolgreich in dein neues, privates Heft kopiert!`);
+            alert(`🎉 Erfolg! ${count} Vokabeln wurden erfolgreich in dieses Profil importiert!`);
             closeSettings();
             refreshData();
         } catch(e) {
