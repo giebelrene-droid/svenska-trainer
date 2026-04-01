@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -31,6 +31,8 @@
 
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 600px; margin: 0 auto; padding: 20px 15px 100px 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
         
+        #offlineBanner { display: none; background: #EF4444; color: white; text-align: center; padding: 10px; font-weight: 800; font-size: 0.9rem; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-float); }
+
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .app-title { font-weight: 800; font-size: 1.5rem; color: var(--text); background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .settings-btn { background: var(--card-bg); border: 1px solid var(--border-soft); font-size: 1.2rem; cursor: pointer; width: 45px; height: 45px; border-radius: 50%; box-shadow: var(--shadow-soft); color: var(--text); transition: transform 0.2s; display: flex; align-items: center; justify-content: center;}
@@ -61,22 +63,18 @@
         .mic-active { background: #FEF2F2 !important; border-color: #EF4444 !important; color: #EF4444 !important; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* Arcade Grid */
         .arcade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .arcade-card { background: white; border: 2px solid var(--border-soft); border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; transition: transform 0.2s, border-color 0.2s; box-shadow: var(--shadow-soft); }
         .arcade-card:hover { transform: translateY(-5px); border-color: var(--primary); }
         .arcade-icon { font-size: 2.5rem; margin-bottom: 10px; }
         .arcade-title { font-weight: 800; font-size: 1rem; color: var(--text); }
 
-        /* Duell Split Screen */
         .duel-container { display: flex; flex-direction: column; height: 400px; gap: 10px; border-radius: 20px; overflow: hidden; margin-top: 20px;}
         .duel-player { flex: 1; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: 800; color: white; cursor: pointer; transition: opacity 0.2s;}
-        .duel-player:active { opacity: 0.8; }
         .duel-p1 { background: #EF4444; transform: rotate(180deg); }
         .duel-p2 { background: #3B82F6; }
-        .duel-word { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 10px 20px; border-radius: 20px; font-weight: 800; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 10; text-align: center;}
+        .duel-word { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 10px 20px; border-radius: 20px; font-weight: 800; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 10;}
 
-        /* Hot Potato */
         .bomb-container { text-align: center; margin: 30px 0; }
         .bomb-icon { font-size: 5rem; animation: shake 0.5s infinite; }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px) rotate(-5deg); } 50% { transform: translateX(5px) rotate(5deg); } 75% { transform: translateX(-5px) rotate(-5deg); } 100% { transform: translateX(0); } }
@@ -88,15 +86,16 @@
         .bubble-user { background: var(--primary-gradient); color: white; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: var(--shadow-float); }
         .bubble-ai { background: white; border: 1px solid var(--border-soft); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: var(--shadow-soft); }
         .bubble-feedback { background: #ECFDF5; border: 1px dashed #10B981; color: #065F46; font-size: 0.85rem; padding: 10px 15px; border-radius: 0 20px 20px 20px; align-self: flex-start; max-width: 80%; margin-top: -8px; margin-bottom: 8px; margin-left: 10px; }
+        .story-box { background: #FFFBEB; border: 2px dashed #FCD34D; padding: 20px; border-radius: 20px; font-size: 1.1rem; line-height: 1.8; margin-top: 20px; display: none; }
 
-        #scannerPreview { width: 100%; height: 200px; object-fit: cover; border-radius: 16px; display: none; margin-bottom: 15px; border: 2px solid var(--border-soft); }
         .loader { color:var(--primary); text-align:center; display:none; font-weight:800; margin: 15px 0; font-size: 0.9rem; }
-        
         #settingsOverlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.7); display: none; z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(5px); padding: 20px;}
         .settings-box { background: var(--bg); padding: 30px; border-radius: 30px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
     </style>
 </head>
 <body>
+
+<div id="offlineBanner">⚠️ Du bist offline. KI-Funktionen sind blockiert, aber dein Vokabelheft ist lokal verfügbar!</div>
 
 <div id="settingsOverlay">
     <div class="settings-box">
@@ -128,126 +127,61 @@
 
 <div id="tabArcade" class="card" style="display:none">
     <h2>🎮 Spiele-Center</h2>
-    <p style="color: var(--text-light); font-size: 0.9rem;">Wähle einen Spielmodus für dich oder die ganze Familie aus!</p>
-    
     <div id="arcadeMenu" class="arcade-grid">
-        <div class="arcade-card" onclick="openMiniGame('Rallye')">
-            <div class="arcade-icon">💣</div><div class="arcade-title">Wort-Rallye</div>
-            <div style="font-size:0.7rem; color:var(--text-light); margin-top:5px;">Hot-Potato Spiel</div>
-        </div>
-        <div class="arcade-card" onclick="openMiniGame('Hunt')">
-            <div class="arcade-icon">📷</div><div class="arcade-title">Schatzsuche</div>
-            <div style="font-size:0.7rem; color:var(--text-light); margin-top:5px;">Kamera-Test</div>
-        </div>
-        <div class="arcade-card" onclick="openMiniGame('Duel')">
-            <div class="arcade-icon">⚔️</div><div class="arcade-title">Familien-Duell</div>
-            <div style="font-size:0.7rem; color:var(--text-light); margin-top:5px;">Split-Screen</div>
-        </div>
-        <div class="arcade-card" onclick="openMiniGame('Adventure')">
-            <div class="arcade-icon">🗺️</div><div class="arcade-title">Abenteuer</div>
-            <div style="font-size:0.7rem; color:var(--text-light); margin-top:5px;">Interaktives Hörspiel</div>
-        </div>
+        <div class="arcade-card" onclick="openMiniGame('Rallye')"><div class="arcade-icon">💣</div><div class="arcade-title">Wort-Rallye</div></div>
+        <div class="arcade-card" onclick="openMiniGame('Hunt')"><div class="arcade-icon">📷</div><div class="arcade-title">Schatzsuche</div></div>
+        <div class="arcade-card" onclick="openMiniGame('Duel')"><div class="arcade-icon">⚔️</div><div class="arcade-title">Familien-Duell</div></div>
+        <div class="arcade-card" onclick="openMiniGame('Adventure')"><div class="arcade-icon">🗺️</div><div class="arcade-title">Abenteuer</div></div>
     </div>
-
     <div id="gameRallye" style="display:none; text-align:center;">
         <h3 style="color: #EF4444;">💣 Hot-Potato Rallye</h3>
-        <p style="font-size: 0.9rem;">Die Uhr tickt! Sag ein passendes Wort auf Schwedisch, das zur Kategorie passt, und reiche das Gerät weiter.</p>
-        <div class="bomb-container">
-            <div class="bomb-icon" id="rallyeBomb">💣</div>
-            <h2 id="rallyeCategory" style="margin: 15px 0; color: var(--primary);">Kategorie: Tiere</h2>
-            <div class="timer-bar"><div class="timer-fill" id="rallyeTimerFill"></div></div>
-        </div>
-        <button class="action-btn" id="btnRallyeMic" onclick="playRallyeRound()">🎤 Wort sagen</button>
-        <div id="rallyeLoader" class="loader">KI prüft...</div>
-        <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
+        <div class="bomb-container"><div class="bomb-icon" id="rallyeBomb">💣</div><h2 id="rallyeCategory" style="margin: 15px 0; color: var(--primary);">Kategorie: Tiere</h2><div class="timer-bar"><div class="timer-fill" id="rallyeTimerFill"></div></div></div>
+        <button class="action-btn" id="btnRallyeMic" onclick="playRallyeRound()">🎤 Wort sagen</button><div id="rallyeLoader" class="loader">KI prüft...</div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
     </div>
-
     <div id="gameHunt" style="display:none;">
         <h3>📷 Die Schatzsuche</h3>
-        <p style="font-size: 0.9rem;">Renne durch das Haus und fotografiere den gesuchten Gegenstand!</p>
-        <div class="mission-bubble" style="text-align:center;">
-            <span style="color:var(--text-light);">Finde folgendes auf Schwedisch:</span><br>
-            <strong id="huntTargetWord" style="font-size:2rem; color:var(--primary);">---</strong>
-        </div>
+        <div class="mission-bubble" style="text-align:center;"><span style="color:var(--text-light);">Finde folgendes auf Schwedisch:</span><br><strong id="huntTargetWord" style="font-size:2rem; color:var(--primary);">---</strong></div>
         <input type="file" id="huntInput" accept="image/*" capture="environment" style="display:none" onchange="checkHuntImage(this)">
         <button class="action-btn btn-magic" onclick="document.getElementById('huntInput').click()">📸 Objekt fotografieren</button>
         <img id="huntPreview" src="" style="width:100%; border-radius:16px; margin-top:15px; display:none;">
-        <div id="huntLoader" class="loader">KI prüft das Bild...</div>
-        <div id="huntResult" style="text-align:center; font-weight:bold; font-size:1.2rem; margin-top:10px;"></div>
-        <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
+        <div id="huntLoader" class="loader">KI prüft das Bild...</div><div id="huntResult" style="text-align:center; font-weight:bold; font-size:1.2rem; margin-top:10px;"></div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
     </div>
-
     <div id="gameDuel" style="display:none;">
         <h3>⚔️ Split-Screen Duell</h3>
-        <p style="font-size:0.9rem;">Legt das Gerät in die Mitte. Wer zuerst auf seine Farbe drückt, darf das deutsche Wort auf Schwedisch übersetzen!</p>
         <button class="action-btn" onclick="startDuelRound()" id="btnStartDuel">Runde starten</button>
-        <div class="duel-container" id="duelArea" style="display:none; position:relative;">
-            <div class="duel-word" id="duelWord">Achtung...</div>
-            <div class="duel-player duel-p1" onclick="duelTap('Rot')">SPIELER 1 (ROT)</div>
-            <div class="duel-player duel-p2" onclick="duelTap('Blau')">SPIELER 2 (BLAU)</div>
-        </div>
-        <div id="duelResult" style="text-align:center; font-weight:bold; font-size:1.2rem; margin-top:15px; color:var(--primary);"></div>
-        <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
+        <div class="duel-container" id="duelArea" style="display:none; position:relative;"><div class="duel-word" id="duelWord">Achtung...</div><div class="duel-player duel-p1" onclick="duelTap('Rot')">SPIELER 1</div><div class="duel-player duel-p2" onclick="duelTap('Blau')">SPIELER 2</div></div>
+        <div id="duelResult" style="text-align:center; font-weight:bold; font-size:1.2rem; margin-top:15px; color:var(--primary);"></div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
     </div>
-
     <div id="gameAdventure" style="display:none;">
         <h3>🗺️ Interaktives Abenteuer</h3>
-        <p style="font-size:0.9rem;">Die KI erzählt eine Geschichte. Du entscheidest auf Schwedisch, was als nächstes passiert!</p>
         <button class="action-btn" onclick="startAdventure()" id="btnStartAdv">Abenteuer starten</button>
-        <div id="advArea" style="display:none; margin-top:15px;">
-            <div class="chat-box" id="advHistory"></div>
-            <div id="advLoader" class="loader">KI schreibt...</div>
-            <button class="action-btn" id="btnAdvMic" onclick="advTurn()">🎤 Meine Aktion (Schwedisch)</button>
-        </div>
+        <div id="advArea" style="display:none; margin-top:15px;"><div class="chat-box" id="advHistory"></div><div id="advLoader" class="loader">KI schreibt...</div><button class="action-btn" id="btnAdvMic" onclick="advTurn()">🎤 Meine Aktion</button></div>
         <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
     </div>
 </div>
 
 <div id="tabStory" class="card" style="display:none">
     <h2>📖 Das irre Vokabel-Märchen</h2>
-    <p style="color: var(--text-light); font-size: 0.9rem;">Die KI nimmt 3-4 deiner Vokabeln und strickt daraus eine verrückte Geschichte auf Schwedisch.</p>
     <button class="action-btn btn-magic" onclick="generateStory()">✨ Geschichte generieren</button>
     <div id="loaderStory" class="loader">🧙‍♂️ KI schreibt ein Meisterwerk...</div>
-    <div id="storyBox" class="story-box">
-        <div id="storyContent" style="font-weight: 800; font-size: 1.2rem; color: var(--primary); margin-bottom: 15px;"></div>
-        <div id="storyTranslation" style="font-size: 0.9rem; color: var(--text-light); border-top: 1px solid #FCD34D; padding-top: 10px;"></div>
-        <button class="action-btn btn-secondary" onclick="speakStory()" style="margin-top: 15px;">🔊 Vorlesen</button>
-    </div>
+    <div id="storyBox" class="story-box"><div id="storyContent" style="font-weight: 800; font-size: 1.2rem; color: var(--primary); margin-bottom: 15px;"></div><div id="storyTranslation" style="font-size: 0.9rem; color: var(--text-light); border-top: 1px solid #FCD34D; padding-top: 10px;"></div><button class="action-btn btn-secondary" onclick="speakStory()" style="margin-top: 15px;">🔊 Vorlesen</button></div>
 </div>
 
 <div id="tabAdd" class="card">
     <h2 id="addTitle">➕ Neues Wort</h2>
     <div id="loader" class="loader">🤖 KI übersetzt...</div>
-    
-    <label>Deutsch</label>
-    <div class="input-row"><input type="text" id="inDe"><button class="icon-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
-    <label>Englisch</label>
-    <div class="input-row"><input type="text" id="inEn"><button class="icon-btn" onclick="listen(2, 'inEn', this)">🎤</button></div>
-    <label>Schwedisch</label>
-    <div class="input-row"><input type="text" id="inSv"><button class="icon-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
-    
-    <div style="display: flex; gap: 10px; margin-top: 25px;">
-        <button class="action-btn btn-secondary" onclick="handleSmartTranslate()">⚡ Auto-Fill</button>
-        <button class="action-btn" onclick="manualSave()">💾 Speichern</button>
-    </div>
+    <label>Deutsch</label><div class="input-row"><input type="text" id="inDe"><button class="icon-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
+    <label>Englisch</label><div class="input-row"><input type="text" id="inEn"><button class="icon-btn" onclick="listen(2, 'inEn', this)">🎤</button></div>
+    <label>Schwedisch</label><div class="input-row"><input type="text" id="inSv"><button class="icon-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
+    <div style="display: flex; gap: 10px; margin-top: 25px;"><button class="action-btn btn-secondary" onclick="handleSmartTranslate()">⚡ Auto-Fill</button><button class="action-btn" onclick="manualSave()">💾 Speichern</button></div>
 </div>
 
 <div id="tabChat" class="card" style="display:none">
     <h2>💬 KI-Sprachtutor</h2>
-    <p style="color: var(--text-light); font-size: 0.9rem;">Unterhalte dich frei. Der Tutor antwortet dir und korrigiert anschließend sanft deine Fehler.</p>
-    
-    <div class="input-row" style="margin-bottom: 15px;">
-        <select id="chatSrcLang"><option value="de">Ich spreche Deutsch</option><option value="en">Ich spreche Englisch</option><option value="sv">Ich spreche Schwedisch</option></select>
-        <select id="chatTgtLang"><option value="sv" selected>Tutor spricht Schwedisch</option><option value="en">Tutor spricht Englisch</option><option value="de">Tutor spricht Deutsch</option></select>
-    </div>
-
-    <div class="chat-box" id="chatHistory"><div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns ein bisschen üben. Wie war dein Tag heute? 👋</div></div>
+    <div class="input-row" style="margin-bottom: 15px;"><select id="chatSrcLang"><option value="de">Ich spreche Deutsch</option><option value="en">Ich spreche Englisch</option><option value="sv">Ich spreche Schwedisch</option></select><select id="chatTgtLang"><option value="sv" selected>Tutor spricht Schwedisch</option><option value="en">Tutor spricht Englisch</option><option value="de">Tutor spricht Deutsch</option></select></div>
+    <div class="chat-box" id="chatHistory"><div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns ein bisschen üben. 👋</div></div>
     <div id="loaderChat" class="loader">👨‍🏫 Tutor denkt nach...</div>
-    
-    <div class="input-row">
-        <button id="btnChatRecord" class="action-btn" onclick="toggleChatRecord()" style="margin-top:0;">🎤 Chat Starten</button>
-        <button class="icon-btn danger" onclick="clearChat()">🗑️</button>
-    </div>
+    <div class="input-row"><button id="btnChatRecord" class="action-btn" onclick="toggleChatRecord()" style="margin-top:0;">🎤 Chat Starten</button><button class="icon-btn danger" onclick="clearChat()">🗑️</button></div>
 </div>
 
 <div id="tabLive" class="card" style="display:none">
@@ -269,19 +203,26 @@
 </div>
 
 <script>
-    const VERSION = "12.0 (SprachTutor AI - Secure)";
+    const VERSION = "13.0 (Offline & Auth Ready)";
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" };
     firebase.initializeApp(firebaseConfig); 
     const db = firebase.firestore();
 
+    // 🔴 NEU: OFFLINE PERSISTENCE AKTIVIEREN
+    db.enablePersistence().catch(function(err) {
+        console.warn("Offline-Speicherung konnte nicht aktiviert werden:", err.code);
+    });
+
+    // Offline / Online Erkennung für das UI Banner
+    window.addEventListener('online', () => document.getElementById('offlineBanner').style.display = 'none');
+    window.addEventListener('offline', () => document.getElementById('offlineBanner').style.display = 'block');
+    if (!navigator.onLine) document.getElementById('offlineBanner').style.display = 'block';
+
     const LANGS = { 'de':{name:'Deutsch',tts:'de-DE'}, 'en':{name:'Englisch',tts:'en-US'}, 'sv':{name:'Schwedisch',tts:'sv-SE'} };
-    let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
     let allWords = [], studyWords = [], studyIndex = 0;
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
     let cachedGeminiModel = null;
     let isLiveRecording = false, liveRec = null, chatRec = null, isChatSessionActive = false;
-    
-    // Auth Variable
     let currentUser = null;
 
     function escapeHTML(str) { return !str ? "" : String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[m]); }
@@ -291,16 +232,9 @@
         document.getElementById('inpGeminiKey').value = geminiApiKey; 
         showTab('add'); 
 
-        // Firebase Anonymer Login
-        firebase.auth().signInAnonymously().catch((error) => {
-            console.error("Auth-Fehler:", error);
-        });
-
+        firebase.auth().signInAnonymously().catch((error) => console.error("Auth-Fehler:", error));
         firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-                currentUser = user;
-                refreshData(); // Lade Daten erst, wenn der User eine ID hat
-            }
+            if (user) { currentUser = user; refreshData(); }
         });
     }
 
@@ -322,9 +256,9 @@
         if(n === 'list') renderList(); if(n === 'study') { filterStudyWords(); } if(n === 'arcade') openMiniGame('Menu');
     }
 
-    // --- ZENTRALE GEMINI API FUNKTION ---
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
-        if(!geminiApiKey) { alert("⚠️ Bitte trage deinen Gemini API-Schlüssel in den Einstellungen (⚙️) ein!"); return null; }
+        if (!navigator.onLine) { alert("⚠️ Du bist offline! KI-Funktionen benötigen eine Internetverbindung."); return null; }
+        if(!geminiApiKey) { alert("⚠️ Bitte trage deinen Gemini API-Schlüssel in den Einstellungen ein!"); return null; }
         if (!cachedGeminiModel) {
             try {
                 const modelRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
@@ -353,292 +287,157 @@
         } catch(e) { alert("API Fehler: " + e.message); return null; }
     }
 
-    // ==========================================
-    // 🎮 ARCADE MINI-GAMES LOGIC
-    // ==========================================
     function openMiniGame(game) {
         ['arcadeMenu', 'gameRallye', 'gameHunt', 'gameDuel', 'gameAdventure'].forEach(id => document.getElementById(id).style.display = 'none');
         if(game === 'Menu') document.getElementById('arcadeMenu').style.display = 'grid';
         else document.getElementById('game' + game).style.display = 'block';
-        
-        if(game === 'Rallye') initRallye();
-        if(game === 'Hunt') initHunt();
+        if(game === 'Rallye') initRallye(); if(game === 'Hunt') initHunt();
     }
 
-    // 1. Wort-Rallye (Hot Potato)
     let rallyeTimer, rallyeTimeLeft = 30000, currentRallyeCat = "";
     const rallyeCats = ["Tiere", "Farben", "Essen & Trinken", "Kleidung", "Möbel"];
-    
     function initRallye() {
         currentRallyeCat = rallyeCats[Math.floor(Math.random() * rallyeCats.length)];
         document.getElementById('rallyeCategory').innerText = "Kategorie: " + currentRallyeCat;
         rallyeTimeLeft = 30000; updateRallyeUI(); clearInterval(rallyeTimer);
-        rallyeTimer = setInterval(() => {
-            rallyeTimeLeft -= 100; updateRallyeUI();
-            if(rallyeTimeLeft <= 0) { clearInterval(rallyeTimer); alert("💥 BOOM! Die Bombe ist explodiert! Verloren!"); initRallye(); }
-        }, 100);
+        rallyeTimer = setInterval(() => { rallyeTimeLeft -= 100; updateRallyeUI(); if(rallyeTimeLeft <= 0) { clearInterval(rallyeTimer); alert("💥 BOOM! Verloren!"); initRallye(); } }, 100);
     }
-    
     function updateRallyeUI() { document.getElementById('rallyeTimerFill').style.width = (rallyeTimeLeft / 30000 * 100) + "%"; }
-    
     function playRallyeRound() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = 'sv-SE';
         document.getElementById('btnRallyeMic').innerText = "Hört zu..."; document.getElementById('btnRallyeMic').classList.add('mic-active');
-        
         rec.onresult = async (e) => {
             const word = e.results[0][0].transcript;
             document.getElementById('btnRallyeMic').classList.remove('mic-active');
             document.getElementById('rallyeLoader').style.display = 'block';
-            
-            const prompt = `Der Nutzer hat das schwedische Wort "${word}" gesagt. Passt dieses Wort zur Kategorie "${currentRallyeCat}"? Antworte NUR mit JA oder NEIN.`;
-            const check = await callGemini(prompt);
+            const check = await callGemini(`Der Nutzer hat "${word}" gesagt. Passt es zu "${currentRallyeCat}"? Antworte NUR mit JA oder NEIN.`);
             document.getElementById('rallyeLoader').style.display = 'none';
             document.getElementById('btnRallyeMic').innerText = "🎤 Wort sagen";
-            
-            if(check && check.toUpperCase().includes("JA")) {
-                alert(`✅ Richtig ("${word}")! Handy schnell weitergeben!`);
-                rallyeTimeLeft = Math.min(30000, rallyeTimeLeft + 15000); 
-            } else { alert(`❌ Falsch ("${word}")! Versuch es nochmal!`); }
-        };
-        rec.start();
+            if(check && check.toUpperCase().includes("JA")) { alert(`✅ Richtig! Weitergeben!`); rallyeTimeLeft = Math.min(30000, rallyeTimeLeft + 15000); } 
+            else { alert(`❌ Falsch! Versuch es nochmal!`); }
+        }; rec.start();
     }
 
-    // 2. Schatzsuche (Hunt)
     let huntTarget = "";
     function initHunt() {
-        if(allWords.length === 0) { huntTarget = "Äpple"; } 
-        else { huntTarget = allWords[Math.floor(Math.random() * allWords.length)].sv; }
-        document.getElementById('huntTargetWord').innerText = huntTarget;
-        document.getElementById('huntPreview').style.display = 'none';
-        document.getElementById('huntResult').innerText = "";
+        if(allWords.length === 0) { huntTarget = "Äpple"; } else { huntTarget = allWords[Math.floor(Math.random() * allWords.length)].sv; }
+        document.getElementById('huntTargetWord').innerText = huntTarget; document.getElementById('huntPreview').style.display = 'none'; document.getElementById('huntResult').innerText = "";
     }
-    
     function checkHuntImage(input) {
-        const file = input.files[0]; if(!file) return;
-        const reader = new FileReader();
+        const file = input.files[0]; if(!file) return; const reader = new FileReader();
         reader.onload = async (e) => {
             const imgBase64 = e.target.result;
-            document.getElementById('huntPreview').src = imgBase64;
-            document.getElementById('huntPreview').style.display = 'block';
-            document.getElementById('huntLoader').style.display = 'block';
-            
-            const prompt = `Does this image show the object meant by the Swedish word "${huntTarget}"? Answer ONLY YES or NO.`;
-            const check = await callGemini(prompt, imgBase64);
+            document.getElementById('huntPreview').src = imgBase64; document.getElementById('huntPreview').style.display = 'block'; document.getElementById('huntLoader').style.display = 'block';
+            const check = await callGemini(`Does this show the object for Swedish word "${huntTarget}"? Answer ONLY YES or NO.`, imgBase64);
             document.getElementById('huntLoader').style.display = 'none';
-            
-            if(check && check.toUpperCase().includes("YES")) {
-                document.getElementById('huntResult').style.color = "var(--secondary)";
-                document.getElementById('huntResult').innerText = "🎉 Perfekt! Du hast es gefunden!";
-            } else {
-                document.getElementById('huntResult').style.color = "#EF4444";
-                document.getElementById('huntResult').innerText = "❌ Das scheint nicht das richtige zu sein. Such weiter!";
-            }
-        };
-        reader.readAsDataURL(file);
+            if(check && check.toUpperCase().includes("YES")) { document.getElementById('huntResult').style.color = "var(--secondary)"; document.getElementById('huntResult').innerText = "🎉 Gefunden!"; } 
+            else { document.getElementById('huntResult').style.color = "#EF4444"; document.getElementById('huntResult').innerText = "❌ Das ist es nicht."; }
+        }; reader.readAsDataURL(file);
     }
 
-    // 3. Duell (Split Screen)
     let duelWordObj = null, duelCanTap = false;
     function startDuelRound() {
         if(allWords.length === 0) return alert("Füge erst Vokabeln hinzu!");
-        document.getElementById('btnStartDuel').style.display = 'none';
-        document.getElementById('duelArea').style.display = 'flex';
-        document.getElementById('duelResult').innerText = "";
-        document.getElementById('duelWord').innerText = "Macht euch bereit...";
-        duelCanTap = false;
-        
-        setTimeout(() => {
-            duelWordObj = allWords[Math.floor(Math.random() * allWords.length)];
-            document.getElementById('duelWord').innerText = duelWordObj.de;
-            duelCanTap = true;
-        }, Math.random() * 2000 + 1000); 
+        document.getElementById('btnStartDuel').style.display = 'none'; document.getElementById('duelArea').style.display = 'flex'; document.getElementById('duelResult').innerText = ""; document.getElementById('duelWord').innerText = "Achtung..."; duelCanTap = false;
+        setTimeout(() => { duelWordObj = allWords[Math.floor(Math.random() * allWords.length)]; document.getElementById('duelWord').innerText = duelWordObj.de; duelCanTap = true; }, Math.random() * 2000 + 1000); 
     }
-    
     function duelTap(player) {
-        if(!duelCanTap) return;
-        duelCanTap = false;
-        document.getElementById('duelResult').style.color = "var(--text)";
-        document.getElementById('duelResult').innerText = `🎤 Spieler ${player} darf sprechen!`;
-        
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = 'sv-SE';
-        
+        if(!duelCanTap) return; duelCanTap = false; document.getElementById('duelResult').style.color = "var(--text)"; document.getElementById('duelResult').innerText = `🎤 Spieler ${player} spricht!`;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = 'sv-SE';
         rec.onresult = (e) => {
             const spoken = e.results[0][0].transcript.toLowerCase();
-            if(spoken.includes(duelWordObj.sv.toLowerCase())) {
-                document.getElementById('duelResult').style.color = "var(--secondary)";
-                document.getElementById('duelResult').innerText = `🏆 Richtig! Punkt für ${player}!`;
-            } else {
-                document.getElementById('duelResult').style.color = "#EF4444";
-                document.getElementById('duelResult').innerText = `❌ Falsch! Er sagte "${spoken}". Die Lösung war "${duelWordObj.sv}".`;
-            }
-            document.getElementById('btnStartDuel').style.display = 'block';
-            document.getElementById('btnStartDuel').innerText = "Nächste Runde";
-        };
-        rec.start();
+            if(spoken.includes(duelWordObj.sv.toLowerCase())) { document.getElementById('duelResult').style.color = "var(--secondary)"; document.getElementById('duelResult').innerText = `🏆 Richtig! Punkt für ${player}!`; } 
+            else { document.getElementById('duelResult').style.color = "#EF4444"; document.getElementById('duelResult').innerText = `❌ Falsch! Lösung war "${duelWordObj.sv}".`; }
+            document.getElementById('btnStartDuel').style.display = 'block'; document.getElementById('btnStartDuel').innerText = "Nächste Runde";
+        }; rec.start();
     }
 
-    // 4. Adventure (Interaktives Hörspiel)
-    let advContext = "Du bist der Spielleiter eines einfachen Text-Adventures. Die Sprache ist SCHWEDISCH. Der Nutzer befindet sich in einem magischen Wald. Beschreibe kurz die Umgebung (2 Sätze) und gib ihm 2 Optionen, was er tun kann. Warte dann auf seine schwedische Antwort.";
+    let advContext = "Du bist der Spielleiter eines Text-Adventures auf SCHWEDISCH. Der Nutzer ist in einem Wald. Beschreibe kurz (2 Sätze) und gib 2 Optionen.";
     async function startAdventure() {
-        document.getElementById('btnStartAdv').style.display = 'none';
-        document.getElementById('advArea').style.display = 'block';
-        document.getElementById('advLoader').style.display = 'block';
-        
+        document.getElementById('btnStartAdv').style.display = 'none'; document.getElementById('advArea').style.display = 'block'; document.getElementById('advLoader').style.display = 'block';
         const reply = await callGemini("Starte das Abenteuer.", null, advContext);
         document.getElementById('advLoader').style.display = 'none';
-        
-        if(reply) {
-            document.getElementById('advHistory').innerHTML = `<div class="chat-bubble bubble-ai">${escapeHTML(reply)}</div>`;
-            speak(reply, 'sv');
-        }
+        if(reply) { document.getElementById('advHistory').innerHTML = `<div class="chat-bubble bubble-ai">${escapeHTML(reply)}</div>`; speak(reply, 'sv'); }
     }
-    
     function advTurn() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = 'sv-SE';
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = 'sv-SE';
         document.getElementById('btnAdvMic').classList.add('mic-active');
-        
         rec.onresult = async (e) => {
-            const text = e.results[0][0].transcript;
-            document.getElementById('btnAdvMic').classList.remove('mic-active');
-            document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-user">${escapeHTML(text)}</div>`;
-            document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight;
-            document.getElementById('advLoader').style.display = 'block';
-            
+            const text = e.results[0][0].transcript; document.getElementById('btnAdvMic').classList.remove('mic-active');
+            document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-user">${escapeHTML(text)}</div>`; document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight; document.getElementById('advLoader').style.display = 'block';
             const reply = await callGemini(text, null, advContext);
             document.getElementById('advLoader').style.display = 'none';
-            if(reply) {
-                document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(reply)}</div>`;
-                document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight;
-                speak(reply, 'sv');
-            }
-        };
-        rec.start();
+            if(reply) { document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(reply)}</div>`; document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight; speak(reply, 'sv'); }
+        }; rec.start();
     }
 
-    // ==========================================
-    // STANDARD TUTOR CHAT & BASIS FUNKTIONEN
-    // ==========================================
     async function toggleChatRecord() {
         if (isChatSessionActive) {
             isChatSessionActive = false; if(chatRec) { try{ chatRec.abort(); }catch(e){} }
-            document.getElementById('btnChatRecord').innerText = "🎤 Chat Starten";
-            document.getElementById('btnChatRecord').style.background = "var(--primary-gradient)";
-            document.getElementById('btnChatRecord').classList.remove("mic-active");
+            document.getElementById('btnChatRecord').innerText = "🎤 Chat Starten"; document.getElementById('btnChatRecord').style.background = "var(--primary-gradient)"; document.getElementById('btnChatRecord').classList.remove("mic-active");
         } else {
-            isChatSessionActive = true;
-            document.getElementById('btnChatRecord').innerText = "⏹️ Chat beenden";
-            document.getElementById('btnChatRecord').style.background = "#EF4444";
-            document.getElementById('btnChatRecord').classList.add("mic-active");
-            startTutorMic();
+            isChatSessionActive = true; document.getElementById('btnChatRecord').innerText = "⏹️ Chat beenden"; document.getElementById('btnChatRecord').style.background = "#EF4444"; document.getElementById('btnChatRecord').classList.add("mic-active"); startTutorMic();
         }
     }
-
     function startTutorMic() {
-        if (!isChatSessionActive) return;
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return alert("Mikrofon nicht unterstützt.");
-
-        chatRec = new SpeechRecognition();
-        const srcVal = document.getElementById('chatSrcLang').value;
-        const tgtVal = document.getElementById('chatTgtLang').value;
+        if (!isChatSessionActive) return; const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return;
+        chatRec = new SpeechRecognition(); const srcVal = document.getElementById('chatSrcLang').value; const tgtVal = document.getElementById('chatTgtLang').value;
         chatRec.lang = LANGS[srcVal].tts; chatRec.continuous = false;
-
         chatRec.onresult = async (e) => {
-            const text = e.results[0][0].transcript;
-            document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-user">${escapeHTML(text)}</div>`;
-            document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight;
-            document.getElementById('loaderChat').style.display = 'block';
-
-            const tgtName = LANGS[tgtVal].name; const srcName = LANGS[srcVal].name;
-            const systemPrompt = `Du bist ein geduldiger Sprachtutor. Der Nutzer spricht ${srcName} und lernt ${tgtName}. Format (Zwei Teile getrennt durch "|||"): Teil 1: Natürliche Antwort auf ${tgtName}. ||| Teil 2: Kurzes Feedback auf Deutsch (Korrektur oder Lob).`;
-
-            const reply = await callGemini(text, null, systemPrompt);
+            const text = e.results[0][0].transcript; document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-user">${escapeHTML(text)}</div>`; document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight; document.getElementById('loaderChat').style.display = 'block';
+            const reply = await callGemini(text, null, `Du bist Sprachtutor. Nutzer spricht ${LANGS[srcVal].name}, lernt ${LANGS[tgtVal].name}. Format: Teil 1: Natürliche Antwort auf ${LANGS[tgtVal].name}. ||| Teil 2: Kurzes Feedback auf Deutsch.`);
             document.getElementById('loaderChat').style.display = 'none';
-
             if(reply && isChatSessionActive) {
-                let chatText = reply, feedbackText = "";
-                if(reply.includes("|||")) { const parts = reply.split("|||"); chatText = parts[0].trim(); feedbackText = parts[1] ? parts[1].trim() : ""; }
-                document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(chatText)}</div>`;
-                if(feedbackText) document.getElementById('chatHistory').innerHTML += `<div class="bubble-feedback">👨‍🏫 <b>Tutor:</b> ${escapeHTML(feedbackText)}</div>`;
-                speak(chatText, tgtVal);
+                let chatText = reply, feedbackText = ""; if(reply.includes("|||")) { const parts = reply.split("|||"); chatText = parts[0].trim(); feedbackText = parts[1] ? parts[1].trim() : ""; }
+                document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(chatText)}</div>`; if(feedbackText) document.getElementById('chatHistory').innerHTML += `<div class="bubble-feedback">👨‍🏫 <b>Tutor:</b> ${escapeHTML(feedbackText)}</div>`; speak(chatText, tgtVal);
             }
             document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight;
         };
-        chatRec.onend = () => { if(isChatSessionActive) setTimeout(() => { if(isChatSessionActive) try{ chatRec.start(); }catch(err){} }, 1000); };
-        try { chatRec.start(); } catch(err) {}
+        chatRec.onend = () => { if(isChatSessionActive) setTimeout(() => { if(isChatSessionActive) try{ chatRec.start(); }catch(err){} }, 1000); }; try { chatRec.start(); } catch(err) {}
     }
-
     function clearChat() { document.getElementById('chatHistory').innerHTML = `<div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns ein bisschen üben. 👋</div>`; }
 
-    // KI Story Generator
     async function generateStory() {
         if(allWords.length < 3) return alert("Du brauchst mindestens 3 Vokabeln im Heft!");
         document.getElementById('loaderStory').style.display = 'block'; document.getElementById('storyBox').style.display = 'none';
         const selected = allWords.sort(() => 0.5 - Math.random()).slice(0, 4).map(w => w.sv).join(", ");
-        const prompt = `Schreibe ein absurdes, lustiges Märchen (max 3 Sätze) auf Schwedisch. Baue diese Wörter ein: ${selected}. Format: Schwedisch --- Deutsch.`;
-        const res = await callGemini(prompt);
+        const res = await callGemini(`Schreibe ein absurdes Märchen (max 3 Sätze) auf Schwedisch. Baue diese Wörter ein: ${selected}. Format: Schwedisch --- Deutsch.`);
         document.getElementById('loaderStory').style.display = 'none';
-        if(res) {
-            const parts = res.split('---'); currentStoryText = parts[0].trim();
-            document.getElementById('storyContent').innerText = currentStoryText;
-            document.getElementById('storyTranslation').innerText = parts[1] ? parts[1].trim() : "";
-            document.getElementById('storyBox').style.display = 'block'; speak(currentStoryText, 'sv');
-        }
+        if(res) { const parts = res.split('---'); currentStoryText = parts[0].trim(); document.getElementById('storyContent').innerText = currentStoryText; document.getElementById('storyTranslation').innerText = parts[1] ? parts[1].trim() : ""; document.getElementById('storyBox').style.display = 'block'; speak(currentStoryText, 'sv'); }
     }
     function speakStory() { if(currentStoryText) speak(currentStoryText, 'sv'); }
 
-    // Standard Funktionen (Translate, Save, List, Listen)
     function speak(txt, langCode) { window.speechSynthesis.cancel(); const ut = new SpeechSynthesisUtterance(txt); ut.lang = LANGS[langCode].tts; window.speechSynthesis.speak(ut); }
     function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = slot === 1 ? 'de-DE' : (slot === 2 ? 'en-US' : 'sv-SE'); btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
 
     async function handleSmartTranslate() { 
         const txt = document.getElementById('inDe').value.trim() || document.getElementById('inEn').value.trim() || document.getElementById('inSv').value.trim(); 
         if(!txt) return; document.getElementById('loader').style.display = "block"; 
-        try {
-            const prompt = `Übersetze das Wort "${txt}" einzeln in Deutsch, Englisch und Schwedisch. Antworte NUR im JSON Format: {"de":"...", "en":"...", "sv":"..."}`;
-            const res = await callGemini(prompt);
-            const obj = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim());
-            document.getElementById('inDe').value = obj.de || ""; document.getElementById('inEn').value = obj.en || ""; document.getElementById('inSv').value = obj.sv || "";
-        } catch(e) {} document.getElementById('loader').style.display = "none"; 
+        try { const res = await callGemini(`Übersetze das Wort "${txt}" in Deutsch, Englisch und Schwedisch. Antworte NUR im JSON Format: {"de":"...", "en":"...", "sv":"..."}`); const obj = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim()); document.getElementById('inDe').value = obj.de || ""; document.getElementById('inEn').value = obj.en || ""; document.getElementById('inSv').value = obj.sv || ""; } catch(e) {} document.getElementById('loader').style.display = "none"; 
     }
 
-    // Angepasst: Speichern unter dem aktuellen Nutzer
     function manualSave() { 
-        if(!currentUser) return alert("Bitte warten, Verbindung zur Datenbank wird hergestellt...");
+        if(!currentUser) return alert("Verbindung zur Datenbank wird hergestellt...");
         const data = { de: document.getElementById('inDe').value, en: document.getElementById('inEn').value, sv: document.getElementById('inSv').value, ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0 }; 
         if(!data.de || !data.sv) return; 
-        
-        db.collection('users').doc(currentUser.uid).collection('words').add(data).then(() => { 
-            refreshData(); 
-            document.getElementById('inDe').value=''; 
-            document.getElementById('inEn').value=''; 
-            document.getElementById('inSv').value=''; 
-            showTab('list'); 
-        }); 
+        db.collection('users').doc(currentUser.uid).collection('words').add(data).then(() => { refreshData(); document.getElementById('inDe').value=''; document.getElementById('inEn').value=''; document.getElementById('inSv').value=''; showTab('list'); }); 
     }
 
-    // Angepasst: Vokabeln des aktuellen Nutzers laden
     async function refreshData() { 
         if(!currentUser) return;
-        const s = await db.collection('users').doc(currentUser.uid).collection('words').orderBy("ts", "desc").get(); 
-        allWords = s.docs.map(d => ({id: d.id, ...d.data()})); 
-        renderList(); 
-        filterStudyWords();
+        try {
+            const s = await db.collection('users').doc(currentUser.uid).collection('words').orderBy("ts", "desc").get(); 
+            allWords = s.docs.map(d => ({id: d.id, ...d.data()})); 
+            renderList(); filterStudyWords();
+        } catch(err) {
+            console.error("Fehler beim Laden (möglicherweise offline):", err);
+        }
     }
     
-    // Angepasst: Datenbank des Nutzers leeren
     async function nukeDatabase() { 
-        if(!currentUser) return;
-        if(!confirm(`⚠️ Möchtest du wirklich ALLE DEINE Vokabeln löschen?`)) return; 
-        
-        const s = await db.collection('users').doc(currentUser.uid).collection('words').get(); 
-        const b = db.batch(); 
-        s.docs.forEach(d => b.delete(d.ref)); 
-        await b.commit(); 
-        refreshData(); 
+        if(!currentUser) return; if(!confirm(`⚠️ Möchtest du wirklich ALLE DEINE Vokabeln löschen?`)) return; 
+        const s = await db.collection('users').doc(currentUser.uid).collection('words').get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); 
     }
 
     function renderList() { document.getElementById('listCont').innerHTML = allWords.map(w => `<div class="card" style="padding:15px; margin-bottom:10px;"><div style="font-weight:800; font-size:1.1rem; color:var(--primary);">${escapeHTML(w.de)}</div><div style="color:var(--text-light);">${escapeHTML(w.sv)} | ${escapeHTML(w.en)}</div></div>`).join(''); }
