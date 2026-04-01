@@ -105,6 +105,9 @@
         <h2>⚙️ Einstellungen</h2>
         <label>🔑 Gemini API-Schlüssel (Pflicht für KI)</label>
         <div class="input-row"><input type="password" id="inpGeminiKey" placeholder="AIzaSy..." oninput="saveApiKey()"></div>
+        
+        <button class="action-btn btn-magic" onclick="migrateOldData()">🛟 Alte Vokabeln importieren</button>
+        
         <button class="action-btn btn-secondary" onclick="document.getElementById('importFile').click()">📂 Backup laden</button>
         <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Meine Vokabeln löschen</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
@@ -191,13 +194,10 @@
     <div id="verbSection" class="verb-section">
         <div class="verb-lang-title" style="margin-top: 0;">DEUTSCH</div>
         <div class="input-row"><input type="text" id="inDePast" placeholder="Präteritum (er...)"><input type="text" id="inDeFut" placeholder="Futur (er wird...)"></div>
-        
         <div class="verb-lang-title">ENGLISCH</div>
         <div class="input-row"><input type="text" id="inEnPast" placeholder="Past (he...)"><input type="text" id="inEnFut" placeholder="Future (he will...)"></div>
-        
         <div class="verb-lang-title">SCHWEDISCH</div>
         <div class="input-row"><input type="text" id="inSvPast" placeholder="Dåtid (han...)"><input type="text" id="inSvFut" placeholder="Framtid (han kommer...)"></div>
-        
         <button class="action-btn btn-magic" style="margin-bottom: 0;" onclick="fetchVerbForms()">⚡ Formen automatisch suchen</button>
     </div>
 
@@ -233,7 +233,7 @@
 </div>
 
 <script>
-    const VERSION = "13.2 (Scanner Restored)";
+    const VERSION = "13.3 (Data Rescue Edition)";
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" };
     firebase.initializeApp(firebaseConfig); 
     const db = firebase.firestore();
@@ -308,7 +308,6 @@
         } catch(e) { alert("API Fehler: " + e.message); return null; }
     }
 
-    // --- DER WIEDERHERGESTELLTE KI-SCANNER ---
     function handleImageScan(input) {
         const file = input.files[0]; if(!file) return;
         const reader = new FileReader();
@@ -321,7 +320,7 @@
             const resultText = await callGemini(prompt, imgBase64);
             
             document.getElementById('loader').style.display = 'none';
-            document.getElementById('loader').innerText = '🤖 KI übersetzt...'; // Zurücksetzen für den Standard-Text
+            document.getElementById('loader').innerText = '🤖 KI übersetzt...'; 
             
             if(resultText) {
                 try {
@@ -336,7 +335,6 @@
         reader.readAsDataURL(file);
     }
 
-    // Verb Funktionen
     function toggleVerbSection() {
         const vs = document.getElementById('verbSection');
         vs.style.display = vs.style.display === 'block' ? 'none' : 'block';
@@ -525,6 +523,31 @@
     async function nukeDatabase() { 
         if(!currentUser) return; if(!confirm(`⚠️ Möchtest du wirklich ALLE DEINE Vokabeln löschen?`)) return; 
         const s = await db.collection('users').doc(currentUser.uid).collection('words').get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); 
+    }
+
+    // --- NEUE FUNKTION: ALTE VOKABELN RETTEN ---
+    async function migrateOldData() {
+        if(!currentUser) return alert("Nicht eingeloggt! Lade die Seite kurz neu.");
+        try {
+            const oldSnapshot = await db.collection('words').get();
+            if(oldSnapshot.empty) return alert("Keine alten Wörter auf dem öffentlichen Server gefunden!");
+            
+            let count = 0;
+            const batch = db.batch();
+            oldSnapshot.forEach(doc => {
+                const newData = doc.data();
+                // Speichere in deinem neuen, privaten Pfad
+                const newRef = db.collection('users').doc(currentUser.uid).collection('words').doc();
+                batch.set(newRef, newData);
+                count++;
+            });
+            await batch.commit();
+            alert(`🎉 Erfolg! ${count} Vokabeln wurden erfolgreich in dein neues, privates Heft kopiert!`);
+            closeSettings();
+            refreshData();
+        } catch(e) {
+            alert("Fehler beim Importieren: " + e.message);
+        }
     }
 
     function renderList() { document.getElementById('listCont').innerHTML = allWords.map(w => `<div class="card" style="padding:15px; margin-bottom:10px;"><div style="font-weight:800; font-size:1.1rem; color:var(--primary);">${escapeHTML(w.de)}</div><div style="color:var(--text-light);">${escapeHTML(w.sv)} | ${escapeHTML(w.en)}</div></div>`).join(''); }
