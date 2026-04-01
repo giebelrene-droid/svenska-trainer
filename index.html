@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Trainer X (Tutor Edition)</title>
+    <title>Family Trainer X (Arcade Edition)</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234F46E5%22 rx=%2220%22/><text x=%2250%22 y=%2268%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23ffffff%22>🇸🇪</text></svg>">
     
@@ -38,8 +38,7 @@
         .nav-scroll::-webkit-scrollbar { display: none; }
         .nav-scroll button { flex: 0 0 auto; background: var(--card-bg); padding: 12px 20px; font-size: 0.9rem; color: var(--text-light); border: 2px solid transparent; border-radius: 100px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow-soft); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 6px;}
         .nav-scroll button.active { background: var(--primary-gradient); color: white; box-shadow: var(--shadow-float); border-color: transparent; transform: translateY(-2px); }
-        .nav-scroll button:hover:not(.active) { border-color: #C7D2FE; color: var(--primary); }
-
+        
         .card { background: var(--card-bg); padding: 25px; border-radius: var(--radius); box-shadow: var(--shadow-soft); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.5); backdrop-filter: blur(10px); animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -47,32 +46,46 @@
         label { display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-light); margin: 15px 0 6px 4px; text-transform: uppercase; letter-spacing: 0.5px; }
         
         .input-row { display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 5px; }
-        input, select, textarea { flex: 1; padding: 16px; background: #F9FAFB; border: 2px solid var(--border-soft); border-radius: 16px; font-size: 1rem; width: 100%; box-sizing: border-box; color: var(--text); transition: all 0.2s; font-family: inherit; font-weight: 600;}
+        input, select, textarea { flex: 1; padding: 16px; background: #F9FAFB; border: 2px solid var(--border-soft); border-radius: 16px; font-size: 1rem; width: 100%; box-sizing: border-box; color: var(--text); font-family: inherit; font-weight: 600;}
         input:focus, select:focus, textarea:focus { border-color: var(--primary); background: white; outline: none; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
         
         .action-btn { width: 100%; padding: 16px; background: var(--primary-gradient); color: white; border: none; border-radius: 16px; cursor: pointer; font-weight: 800; font-size: 1rem; margin-top: 15px; transition: all 0.2s; box-shadow: var(--shadow-float); display: flex; justify-content: center; align-items: center; gap: 8px;}
         .action-btn:active { transform: scale(0.97); box-shadow: none; }
         .btn-secondary { background: #F3F4F6; color: var(--text); box-shadow: none; border: 1px solid var(--border-soft); }
-        .btn-secondary:hover { background: #E5E7EB; }
         .btn-magic { background: linear-gradient(135deg, #a855f7, #ec4899); box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2); }
 
         .icon-btn { background: white; border: 2px solid var(--border-soft); font-size: 1.2rem; cursor: pointer; border-radius: 14px; padding: 12px; display:flex; align-items:center; justify-content:center; color: var(--text-light); transition: all 0.2s; flex-shrink: 0;}
-        .icon-btn:hover, .icon-btn:focus { border-color: var(--primary); color: var(--primary); }
         .icon-btn.danger { color: #EF4444; background: #FEF2F2; border-color: #FECACA; }
         .mic-active { background: #FEF2F2 !important; border-color: #EF4444 !important; color: #EF4444 !important; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        .story-box { background: #FFFBEB; border: 2px dashed #FCD34D; padding: 20px; border-radius: 20px; font-size: 1.1rem; line-height: 1.8; margin-top: 20px; display: none; }
-        .mission-bubble { background: var(--card-bg); border-left: 4px solid var(--primary); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: var(--shadow-soft); font-weight: 600;}
+        /* Arcade Grid */
+        .arcade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .arcade-card { background: white; border: 2px solid var(--border-soft); border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; transition: transform 0.2s, border-color 0.2s; box-shadow: var(--shadow-soft); }
+        .arcade-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+        .arcade-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .arcade-title { font-weight: 800; font-size: 1rem; color: var(--text); }
 
-        /* Chat & Feedback Styles */
+        /* Duell Split Screen */
+        .duel-container { display: flex; flex-direction: column; height: 400px; gap: 10px; border-radius: 20px; overflow: hidden; margin-top: 20px;}
+        .duel-player { flex: 1; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: 800; color: white; cursor: pointer; transition: opacity 0.2s;}
+        .duel-player:active { opacity: 0.8; }
+        .duel-p1 { background: #EF4444; transform: rotate(180deg); }
+        .duel-p2 { background: #3B82F6; }
+        .duel-word { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 10px 20px; border-radius: 20px; font-weight: 800; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 10; text-align: center;}
+
+        /* Hot Potato */
+        .bomb-container { text-align: center; margin: 30px 0; }
+        .bomb-icon { font-size: 5rem; animation: shake 0.5s infinite; }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px) rotate(-5deg); } 50% { transform: translateX(5px) rotate(5deg); } 75% { transform: translateX(-5px) rotate(-5deg); } 100% { transform: translateX(0); } }
+        .timer-bar { height: 20px; background: #E5E7EB; border-radius: 10px; overflow: hidden; margin-top: 20px; }
+        .timer-fill { height: 100%; background: #EF4444; width: 100%; transition: width 0.1s linear; }
+
         .chat-box { background: #F9FAFB; border: 1px solid var(--border-soft); border-radius: 20px; padding: 20px; height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; scroll-behavior: smooth; }
         .chat-bubble { padding: 14px 18px; border-radius: 20px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; }
         .bubble-user { background: var(--primary-gradient); color: white; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: var(--shadow-float); }
         .bubble-ai { background: white; border: 1px solid var(--border-soft); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: var(--shadow-soft); }
-        
-        /* Das neue Tutor-Feedback Design */
-        .bubble-feedback { background: #ECFDF5; border: 1px dashed #10B981; color: #065F46; font-size: 0.85rem; padding: 10px 15px; border-radius: 0 20px 20px 20px; align-self: flex-start; max-width: 80%; margin-top: -8px; margin-bottom: 8px; margin-left: 10px; box-shadow: var(--shadow-soft); }
+        .bubble-feedback { background: #ECFDF5; border: 1px dashed #10B981; color: #065F46; font-size: 0.85rem; padding: 10px 15px; border-radius: 0 20px 20px 20px; align-self: flex-start; max-width: 80%; margin-top: -8px; margin-bottom: 8px; margin-left: 10px; }
 
         #scannerPreview { width: 100%; height: 200px; object-fit: cover; border-radius: 16px; display: none; margin-bottom: 15px; border: 2px solid var(--border-soft); }
         .loader { color:var(--primary); text-align:center; display:none; font-weight:800; margin: 15px 0; font-size: 0.9rem; }
@@ -87,11 +100,7 @@
     <div class="settings-box">
         <h2>⚙️ Einstellungen</h2>
         <label>🔑 Gemini API-Schlüssel (Pflicht für KI)</label>
-        <div class="input-row">
-            <input type="password" id="inpGeminiKey" placeholder="AIzaSy..." oninput="saveApiKey()">
-        </div>
-        <label>👤 Benutzer & Daten</label>
-        <select id="selUser" onchange="switchUser()" style="margin-bottom:15px;"></select>
+        <div class="input-row"><input type="password" id="inpGeminiKey" placeholder="AIzaSy..." oninput="saveApiKey()"></div>
         <button class="action-btn btn-secondary" onclick="document.getElementById('importFile').click()">📂 Backup laden</button>
         <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Alles löschen</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
@@ -106,9 +115,8 @@
 
 <div class="nav-scroll">
     <button id="btn1" class="active" onclick="showTab('add')">➕ Wort</button>
-    <button id="btnCam" onclick="showTab('scanner')">📷 Scanner</button>
+    <button id="btnArcade" onclick="showTab('arcade')">🎮 Arcade</button>
     <button id="btnStory" onclick="showTab('story')">📖 KI-Märchen</button>
-    <button id="btnMission" onclick="showTab('mission')">🎯 Missionen</button>
     <button id="btn8" onclick="showTab('chat')">💬 Sprachtutor</button>
     <button id="btn7" onclick="showTab('live')">🎙️ Live</button>
     <button id="btn5" onclick="showTab('study')">👀 Lernen</button>
@@ -116,54 +124,98 @@
     <button id="btn3" onclick="showTab('list')">📚 Liste</button>
 </div>
 
-<div id="tabScanner" class="card" style="display:none">
-    <h2>📷 Welt-Scanner</h2>
-    <p style="color: var(--text-light); font-size: 0.9rem;">Mach ein Foto von einem Gegenstand. Die KI erkennt ihn und erstellt sofort eine Vokabelkarte!</p>
+<div id="tabArcade" class="card" style="display:none">
+    <h2>🎮 Spiele-Center</h2>
+    <p style="color: var(--text-light); font-size: 0.9rem;">Wähle einen Spielmodus für dich oder die ganze Familie aus!</p>
     
-    <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none" onchange="handleImageScan(this)">
-    <button class="action-btn btn-magic" onclick="document.getElementById('camInput').click()">📸 Kamera öffnen & Scannen</button>
-    
-    <img id="scannerPreview" src="" alt="Preview">
-    <div id="loaderScanner" class="loader">✨ KI analysiert das Bild...</div>
-</div>
-
-<div id="tabMission" class="card" style="display:none">
-    <h2>🎯 Rollenspiel-Mission</h2>
-    <label>Wähle dein Szenario:</label>
-    <select id="missionSelect" style="margin-bottom: 15px;">
-        <option value="cafe">☕ Im Café (Bestelle 2 Kaffee & Zimtschnecken)</option>
-        <option value="hotel">🏨 Im Hotel (Checke für 2 Nächte ein)</option>
-        <option value="station">🚆 Am Bahnhof (Frage nach dem Zug nach Stockholm)</option>
-    </select>
-    <button class="action-btn" onclick="startMission()" id="btnStartMission">🚀 Mission starten</button>
-    
-    <div id="missionArea" style="display:none; margin-top: 20px;">
-        <div class="mission-bubble" id="missionGoal">Ziel: ...</div>
-        <div class="chat-box" id="missionHistory" style="height: 250px;"></div>
-        <div id="loaderMission" class="loader">🤖 KI tippt...</div>
-        <div class="input-row">
-            <button class="action-btn" id="btnMissionRec" onclick="toggleMissionMic()" style="margin-top:0;">🎤 Sprechen</button>
+    <div id="arcadeMenu" class="arcade-grid">
+        <div class="arcade-card" onclick="openMiniGame('Rallye')">
+            <div class="arcade-icon">💣</div><div class="arcade-title">Wort-Rallye</div>
+            <div style="font-size:0.7rem; color:var(--text-light); margin-top:5px;">Hot-Potato Spiel</div>
         </div>
+        <div class="arcade-card" onclick="openMiniGame('Hunt')">
+            <div class="arcade-icon">📷</div><div class="arcade-title">Schatzsuche</div>
+            <div style="font-size:0.7rem; color:var(--text-light); margin-top:5px;">Kamera-Test</div>
+        </div>
+        <div class="arcade-card" onclick="openMiniGame('Duel')">
+            <div class="arcade-icon">⚔️</div><div class="arcade-title">Familien-Duell</div>
+            <div style="font-size:0.7rem; color:var(--text-light); margin-top:5px;">Split-Screen</div>
+        </div>
+        <div class="arcade-card" onclick="openMiniGame('Adventure')">
+            <div class="arcade-icon">🗺️</div><div class="arcade-title">Abenteuer</div>
+            <div style="font-size:0.7rem; color:var(--text-light); margin-top:5px;">Interaktives Hörspiel</div>
+        </div>
+    </div>
+
+    <div id="gameRallye" style="display:none; text-align:center;">
+        <h3 style="color: #EF4444;">💣 Hot-Potato Rallye</h3>
+        <p style="font-size: 0.9rem;">Die Uhr tickt! Sag ein passendes Wort auf Schwedisch, das zur Kategorie passt, und reiche das Gerät weiter.</p>
+        <div class="bomb-container">
+            <div class="bomb-icon" id="rallyeBomb">💣</div>
+            <h2 id="rallyeCategory" style="margin: 15px 0; color: var(--primary);">Kategorie: Tiere</h2>
+            <div class="timer-bar"><div class="timer-fill" id="rallyeTimerFill"></div></div>
+        </div>
+        <button class="action-btn" id="btnRallyeMic" onclick="playRallyeRound()">🎤 Wort sagen</button>
+        <div id="rallyeLoader" class="loader">KI prüft...</div>
+        <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
+    </div>
+
+    <div id="gameHunt" style="display:none;">
+        <h3>📷 Die Schatzsuche</h3>
+        <p style="font-size: 0.9rem;">Renne durch das Haus und fotografiere den gesuchten Gegenstand!</p>
+        <div class="mission-bubble" style="text-align:center;">
+            <span style="color:var(--text-light);">Finde folgendes auf Schwedisch:</span><br>
+            <strong id="huntTargetWord" style="font-size:2rem; color:var(--primary);">---</strong>
+        </div>
+        <input type="file" id="huntInput" accept="image/*" capture="environment" style="display:none" onchange="checkHuntImage(this)">
+        <button class="action-btn btn-magic" onclick="document.getElementById('huntInput').click()">📸 Objekt fotografieren</button>
+        <img id="huntPreview" src="" style="width:100%; border-radius:16px; margin-top:15px; display:none;">
+        <div id="huntLoader" class="loader">KI prüft das Bild...</div>
+        <div id="huntResult" style="text-align:center; font-weight:bold; font-size:1.2rem; margin-top:10px;"></div>
+        <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
+    </div>
+
+    <div id="gameDuel" style="display:none;">
+        <h3>⚔️ Split-Screen Duell</h3>
+        <p style="font-size:0.9rem;">Legt das Gerät in die Mitte. Wer zuerst auf seine Farbe drückt, darf das deutsche Wort auf Schwedisch übersetzen!</p>
+        <button class="action-btn" onclick="startDuelRound()" id="btnStartDuel">Runde starten</button>
+        <div class="duel-container" id="duelArea" style="display:none; position:relative;">
+            <div class="duel-word" id="duelWord">Achtung...</div>
+            <div class="duel-player duel-p1" onclick="duelTap('Rot')">SPIELER 1 (ROT)</div>
+            <div class="duel-player duel-p2" onclick="duelTap('Blau')">SPIELER 2 (BLAU)</div>
+        </div>
+        <div id="duelResult" style="text-align:center; font-weight:bold; font-size:1.2rem; margin-top:15px; color:var(--primary);"></div>
+        <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
+    </div>
+
+    <div id="gameAdventure" style="display:none;">
+        <h3>🗺️ Interaktives Abenteuer</h3>
+        <p style="font-size:0.9rem;">Die KI erzählt eine Geschichte. Du entscheidest auf Schwedisch, was als nächstes passiert!</p>
+        <button class="action-btn" onclick="startAdventure()" id="btnStartAdv">Abenteuer starten</button>
+        <div id="advArea" style="display:none; margin-top:15px;">
+            <div class="chat-box" id="advHistory"></div>
+            <div id="advLoader" class="loader">KI schreibt...</div>
+            <button class="action-btn" id="btnAdvMic" onclick="advTurn()">🎤 Meine Aktion (Schwedisch)</button>
+        </div>
+        <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
     </div>
 </div>
 
 <div id="tabStory" class="card" style="display:none">
     <h2>📖 Das irre Vokabel-Märchen</h2>
-    <p style="color: var(--text-light); font-size: 0.9rem;">Die KI nimmt 3-4 deiner schlechtesten Vokabeln und strickt daraus eine verrückte Geschichte, damit du sie dir besser merken kannst.</p>
+    <p style="color: var(--text-light); font-size: 0.9rem;">Die KI nimmt 3-4 deiner Vokabeln und strickt daraus eine verrückte Geschichte auf Schwedisch.</p>
     <button class="action-btn btn-magic" onclick="generateStory()">✨ Geschichte generieren</button>
-    
     <div id="loaderStory" class="loader">🧙‍♂️ KI schreibt ein Meisterwerk...</div>
     <div id="storyBox" class="story-box">
         <div id="storyContent" style="font-weight: 800; font-size: 1.2rem; color: var(--primary); margin-bottom: 15px;"></div>
         <div id="storyTranslation" style="font-size: 0.9rem; color: var(--text-light); border-top: 1px solid #FCD34D; padding-top: 10px;"></div>
-        <button class="action-btn btn-secondary" onclick="speakStory()" style="margin-top: 15px;">🔊 Vorlesen lassen</button>
+        <button class="action-btn btn-secondary" onclick="speakStory()" style="margin-top: 15px;">🔊 Vorlesen</button>
     </div>
 </div>
 
 <div id="tabAdd" class="card">
     <h2 id="addTitle">➕ Neues Wort</h2>
     <div id="loader" class="loader">🤖 KI übersetzt...</div>
-    <input type="hidden" id="editId">
     
     <label>Deutsch</label>
     <div class="input-row"><input type="text" id="inDe"><button class="icon-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
@@ -187,9 +239,7 @@
         <select id="chatTgtLang"><option value="sv" selected>Tutor spricht Schwedisch</option><option value="en">Tutor spricht Englisch</option><option value="de">Tutor spricht Deutsch</option></select>
     </div>
 
-    <div class="chat-box" id="chatHistory">
-        <div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns ein bisschen üben. Wie war dein Tag heute? 👋</div>
-    </div>
+    <div class="chat-box" id="chatHistory"><div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns ein bisschen üben. Wie war dein Tag heute? 👋</div></div>
     <div id="loaderChat" class="loader">👨‍🏫 Tutor denkt nach...</div>
     
     <div class="input-row">
@@ -200,79 +250,59 @@
 
 <div id="tabLive" class="card" style="display:none">
     <h2>🎙️ Live Übersetzer</h2>
-    <div class="input-row">
-        <select id="liveSrcLang"><option value="en">Englisch</option><option value="de" selected>Deutsch</option><option value="sv">Schwedisch</option></select>
-        <span>➡️</span>
-        <select id="liveTgtLang"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="sv" selected>Schwedisch</option></select>
-    </div>
+    <div class="input-row"><select id="liveSrcLang"><option value="en">Englisch</option><option value="de" selected>Deutsch</option><option value="sv">Schwedisch</option></select><span>➡️</span><select id="liveTgtLang"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="sv" selected>Schwedisch</option></select></div>
     <button id="btnLiveRecord" class="action-btn" onclick="toggleLiveRecord()">🎤 Start</button>
-    
     <label>Gehört:</label><textarea id="liveSourceText" rows="2" readonly></textarea>
-    <div id="loaderLive" class="loader">🤖 KI...</div>
-    <label>Übersetzung:</label><textarea id="liveResultText" rows="3" readonly style="color: var(--primary);"></textarea>
+    <div id="loaderLive" class="loader">🤖 KI...</div><label>Übersetzung:</label><textarea id="liveResultText" rows="3" readonly style="color: var(--primary);"></textarea>
 </div>
-
 <div id="tabStudy" class="card" style="display:none">
     <div style="text-align:center;"><h2>👀 Lernen</h2><p id="studyWordCount" style="font-weight:800; color:var(--primary);">0/0</p></div>
     <input type="text" id="studySearch" placeholder="🔍 Suchen..." oninput="debouncedFilterStudyWords()" style="margin-bottom: 20px;">
     <div id="studyContainer"></div>
-    <div style="display: flex; gap: 10px; margin-top:20px;">
-        <button class="action-btn btn-secondary" onclick="prevStudyWord()">⬅️ Zurück</button>
-        <button class="action-btn" onclick="nextStudyWord()">Weiter ➡️</button>
-    </div>
+    <div style="display: flex; gap: 10px; margin-top:20px;"><button class="action-btn btn-secondary" onclick="prevStudyWord()">⬅️ Zurück</button><button class="action-btn" onclick="nextStudyWord()">Weiter ➡️</button></div>
 </div>
-
 <div id="tabList" class="card" style="display:none">
     <h2>📚 Vokabelheft</h2>
     <div id="listCont" style="margin-top: 15px;"></div>
 </div>
 
 <script>
-    const VERSION = "10.5 (Tutor Edition)";
+    const VERSION = "11.0 (Arcade Edition)";
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" };
     firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
 
     const LANGS = { 'de':{name:'Deutsch',tts:'de-DE'}, 'en':{name:'Englisch',tts:'en-US'}, 'sv':{name:'Schwedisch',tts:'sv-SE'} };
-    let userNames = ['Benutzer 1']; let currentCollIndex = 0; let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
+    let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
     let allWords = [], studyWords = [], studyIndex = 0;
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
-    let isLiveRecording = false, liveRec = null, chatRec = null, isChatSessionActive = false, isMissionActive = false, missionRec = null;
-    let missionContext = ""; let currentStoryText = ""; let cachedGeminiModel = null;
+    let cachedGeminiModel = null;
+    let isLiveRecording = false, liveRec = null, chatRec = null, isChatSessionActive = false;
 
     function escapeHTML(str) { return !str ? "" : String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[m]); }
     function safeJS(str) { return !str ? "" : String(str).replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
 
-    function init() { 
-        document.getElementById('inpGeminiKey').value = geminiApiKey; 
-        refreshData(); 
-        showTab('add'); 
-    }
-    
+    function init() { document.getElementById('inpGeminiKey').value = geminiApiKey; refreshData(); showTab('add'); }
     function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); }
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
 
     function showTab(n) { 
         if(isLiveRecording) toggleLiveRecord(); 
-        if(isChatSessionActive) toggleChatRecord(); // Beendet aktiven Chat beim Tab-Wechsel
+        if(isChatSessionActive) toggleChatRecord(); 
         
         document.querySelectorAll('.nav-scroll button').forEach(b=>b.classList.remove('active')); 
-        const btnMap = { 'add':'btn1', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'scanner':'btnCam', 'mission':'btnMission', 'story':'btnStory' };
+        const btnMap = { 'add':'btn1', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'arcade':'btnArcade', 'story':'btnStory' };
         if(btnMap[n] && document.getElementById(btnMap[n])) document.getElementById(btnMap[n]).classList.add('active');
         
-        ['tabAdd','tabChat','tabLive','tabStudy','tabList','tabScanner','tabMission','tabStory'].forEach(id => {
-            const el = document.getElementById(id); if(el) el.style.display = 'none';
-        });
+        ['tabAdd','tabChat','tabLive','tabStudy','tabList','tabArcade','tabStory'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
         const activeTab = document.getElementById('tab'+n.charAt(0).toUpperCase() + n.slice(1));
         if(activeTab) activeTab.style.display = 'block';
-        
-        if(n === 'list') renderList(); if(n === 'study') { filterStudyWords(); }
+        if(n === 'list') renderList(); if(n === 'study') { filterStudyWords(); } if(n === 'arcade') openMiniGame('Menu');
     }
 
-    // --- ZENTRALE GEMINI API FUNKTION (Dynamisch & Schnell) ---
+    // --- ZENTRALE GEMINI API FUNKTION ---
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
-        if(!geminiApiKey) { alert("⚠️ Bitte trage zuerst deinen Gemini API-Schlüssel in den Einstellungen (⚙️) ein!"); return null; }
-
+        if(!geminiApiKey) { alert("⚠️ Bitte trage deinen Gemini API-Schlüssel in den Einstellungen (⚙️) ein!"); return null; }
         if (!cachedGeminiModel) {
             try {
                 const modelRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
@@ -281,20 +311,16 @@
                     const validModel = modelData.models.find(m => m.name.includes("gemini") && m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"));
                     if(validModel) cachedGeminiModel = validModel.name.replace('models/', '');
                 }
-            } catch(e) { console.warn("Modell-Abfrage fehlgeschlagen:", e); }
+            } catch(e) {}
             if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest"; 
         }
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${cachedGeminiModel}:generateContent?key=${geminiApiKey}`;
-        
         let contents = [];
         if (systemPrompt) contents.push({ role: "user", parts: [{ text: "SYSTEM-ANWEISUNG: " + systemPrompt }] }, { role: "model", parts: [{ text: "Verstanden." }] });
         
         let userParts = [{ text: prompt }];
-        if (imageBase64) {
-            const base64Data = imageBase64.split(',')[1];
-            userParts.push({ inlineData: { mimeType: "image/jpeg", data: base64Data } });
-        }
+        if (imageBase64) userParts.push({ inlineData: { mimeType: "image/jpeg", data: imageBase64.split(',')[1] } });
         contents.push({ role: "user", parts: userParts });
 
         try {
@@ -305,11 +331,177 @@
         } catch(e) { alert("API Fehler: " + e.message); return null; }
     }
 
-    // --- NEU: KI-SPRACHTUTOR MIT FEEDBACK ---
+    // ==========================================
+    // 🎮 ARCADE MINI-GAMES LOGIC
+    // ==========================================
+    function openMiniGame(game) {
+        ['arcadeMenu', 'gameRallye', 'gameHunt', 'gameDuel', 'gameAdventure'].forEach(id => document.getElementById(id).style.display = 'none');
+        if(game === 'Menu') document.getElementById('arcadeMenu').style.display = 'grid';
+        else document.getElementById('game' + game).style.display = 'block';
+        
+        if(game === 'Rallye') initRallye();
+        if(game === 'Hunt') initHunt();
+    }
+
+    // 1. Wort-Rallye (Hot Potato)
+    let rallyeTimer, rallyeTimeLeft = 30000, currentRallyeCat = "";
+    const rallyeCats = ["Tiere", "Farben", "Essen & Trinken", "Kleidung", "Möbel"];
+    
+    function initRallye() {
+        currentRallyeCat = rallyeCats[Math.floor(Math.random() * rallyeCats.length)];
+        document.getElementById('rallyeCategory').innerText = "Kategorie: " + currentRallyeCat;
+        rallyeTimeLeft = 30000; updateRallyeUI(); clearInterval(rallyeTimer);
+        rallyeTimer = setInterval(() => {
+            rallyeTimeLeft -= 100; updateRallyeUI();
+            if(rallyeTimeLeft <= 0) { clearInterval(rallyeTimer); alert("💥 BOOM! Die Bombe ist explodiert! Verloren!"); initRallye(); }
+        }, 100);
+    }
+    
+    function updateRallyeUI() { document.getElementById('rallyeTimerFill').style.width = (rallyeTimeLeft / 30000 * 100) + "%"; }
+    
+    function playRallyeRound() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = 'sv-SE';
+        document.getElementById('btnRallyeMic').innerText = "Hört zu..."; document.getElementById('btnRallyeMic').classList.add('mic-active');
+        
+        rec.onresult = async (e) => {
+            const word = e.results[0][0].transcript;
+            document.getElementById('btnRallyeMic').classList.remove('mic-active');
+            document.getElementById('rallyeLoader').style.display = 'block';
+            
+            const prompt = `Der Nutzer hat das schwedische Wort "${word}" gesagt. Passt dieses Wort zur Kategorie "${currentRallyeCat}"? Antworte NUR mit JA oder NEIN.`;
+            const check = await callGemini(prompt);
+            document.getElementById('rallyeLoader').style.display = 'none';
+            document.getElementById('btnRallyeMic').innerText = "🎤 Wort sagen";
+            
+            if(check && check.toUpperCase().includes("JA")) {
+                alert(`✅ Richtig ("${word}")! Handy schnell weitergeben!`);
+                rallyeTimeLeft = Math.min(30000, rallyeTimeLeft + 15000); // Zeitbonus
+            } else { alert(`❌ Falsch ("${word}")! Versuch es nochmal!`); }
+        };
+        rec.start();
+    }
+
+    // 2. Schatzsuche (Hunt)
+    let huntTarget = "";
+    function initHunt() {
+        if(allWords.length === 0) { huntTarget = "Äpple"; } 
+        else { huntTarget = allWords[Math.floor(Math.random() * allWords.length)].sv; }
+        document.getElementById('huntTargetWord').innerText = huntTarget;
+        document.getElementById('huntPreview').style.display = 'none';
+        document.getElementById('huntResult').innerText = "";
+    }
+    
+    function checkHuntImage(input) {
+        const file = input.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const imgBase64 = e.target.result;
+            document.getElementById('huntPreview').src = imgBase64;
+            document.getElementById('huntPreview').style.display = 'block';
+            document.getElementById('huntLoader').style.display = 'block';
+            
+            const prompt = `Does this image show the object meant by the Swedish word "${huntTarget}"? Answer ONLY YES or NO.`;
+            const check = await callGemini(prompt, imgBase64);
+            document.getElementById('huntLoader').style.display = 'none';
+            
+            if(check && check.toUpperCase().includes("YES")) {
+                document.getElementById('huntResult').style.color = "var(--secondary)";
+                document.getElementById('huntResult').innerText = "🎉 Perfekt! Du hast es gefunden!";
+            } else {
+                document.getElementById('huntResult').style.color = "#EF4444";
+                document.getElementById('huntResult').innerText = "❌ Das scheint nicht das richtige zu sein. Such weiter!";
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 3. Duell (Split Screen)
+    let duelWordObj = null, duelCanTap = false;
+    function startDuelRound() {
+        if(allWords.length === 0) return alert("Füge erst Vokabeln hinzu!");
+        document.getElementById('btnStartDuel').style.display = 'none';
+        document.getElementById('duelArea').style.display = 'flex';
+        document.getElementById('duelResult').innerText = "";
+        document.getElementById('duelWord').innerText = "Macht euch bereit...";
+        duelCanTap = false;
+        
+        setTimeout(() => {
+            duelWordObj = allWords[Math.floor(Math.random() * allWords.length)];
+            document.getElementById('duelWord').innerText = duelWordObj.de;
+            duelCanTap = true;
+        }, Math.random() * 2000 + 1000); // 1-3 Sekunden Wartezeit
+    }
+    
+    function duelTap(player) {
+        if(!duelCanTap) return;
+        duelCanTap = false;
+        document.getElementById('duelResult').style.color = "var(--text)";
+        document.getElementById('duelResult').innerText = `🎤 Spieler ${player} darf sprechen!`;
+        
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = 'sv-SE';
+        
+        rec.onresult = (e) => {
+            const spoken = e.results[0][0].transcript.toLowerCase();
+            if(spoken.includes(duelWordObj.sv.toLowerCase())) {
+                document.getElementById('duelResult').style.color = "var(--secondary)";
+                document.getElementById('duelResult').innerText = `🏆 Richtig! Punkt für ${player}!`;
+            } else {
+                document.getElementById('duelResult').style.color = "#EF4444";
+                document.getElementById('duelResult').innerText = `❌ Falsch! Er sagte "${spoken}". Die Lösung war "${duelWordObj.sv}".`;
+            }
+            document.getElementById('btnStartDuel').style.display = 'block';
+            document.getElementById('btnStartDuel').innerText = "Nächste Runde";
+        };
+        rec.start();
+    }
+
+    // 4. Adventure (Interaktives Hörspiel)
+    let advContext = "Du bist der Spielleiter eines einfachen Text-Adventures. Die Sprache ist SCHWEDISCH. Der Nutzer befindet sich in einem magischen Wald. Beschreibe kurz die Umgebung (2 Sätze) und gib ihm 2 Optionen, was er tun kann. Warte dann auf seine schwedische Antwort.";
+    async function startAdventure() {
+        document.getElementById('btnStartAdv').style.display = 'none';
+        document.getElementById('advArea').style.display = 'block';
+        document.getElementById('advLoader').style.display = 'block';
+        
+        const reply = await callGemini("Starte das Abenteuer.", null, advContext);
+        document.getElementById('advLoader').style.display = 'none';
+        
+        if(reply) {
+            document.getElementById('advHistory').innerHTML = `<div class="chat-bubble bubble-ai">${escapeHTML(reply)}</div>`;
+            speak(reply, 'sv');
+        }
+    }
+    
+    function advTurn() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = 'sv-SE';
+        document.getElementById('btnAdvMic').classList.add('mic-active');
+        
+        rec.onresult = async (e) => {
+            const text = e.results[0][0].transcript;
+            document.getElementById('btnAdvMic').classList.remove('mic-active');
+            document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-user">${escapeHTML(text)}</div>`;
+            document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight;
+            document.getElementById('advLoader').style.display = 'block';
+            
+            const reply = await callGemini(text, null, advContext);
+            document.getElementById('advLoader').style.display = 'none';
+            if(reply) {
+                document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(reply)}</div>`;
+                document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight;
+                speak(reply, 'sv');
+            }
+        };
+        rec.start();
+    }
+
+    // ==========================================
+    // STANDARD TUTOR CHAT & BASIS FUNKTIONEN
+    // ==========================================
     async function toggleChatRecord() {
         if (isChatSessionActive) {
-            isChatSessionActive = false;
-            if(chatRec) { try{ chatRec.abort(); }catch(e){} }
+            isChatSessionActive = false; if(chatRec) { try{ chatRec.abort(); }catch(e){} }
             document.getElementById('btnChatRecord').innerText = "🎤 Chat Starten";
             document.getElementById('btnChatRecord').style.background = "var(--primary-gradient)";
             document.getElementById('btnChatRecord').classList.remove("mic-active");
@@ -330,183 +522,63 @@
         chatRec = new SpeechRecognition();
         const srcVal = document.getElementById('chatSrcLang').value;
         const tgtVal = document.getElementById('chatTgtLang').value;
-        
-        chatRec.lang = LANGS[srcVal].tts;
-        chatRec.continuous = false;
+        chatRec.lang = LANGS[srcVal].tts; chatRec.continuous = false;
 
         chatRec.onresult = async (e) => {
             const text = e.results[0][0].transcript;
-            
-            // Nutzer-Bubble anzeigen
             document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-user">${escapeHTML(text)}</div>`;
             document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight;
             document.getElementById('loaderChat').style.display = 'block';
 
-            const tgtName = LANGS[tgtVal].name;
-            const srcName = LANGS[srcVal].name;
-
-            // System Prompt zwingt die KI zum Feedback
-            const systemPrompt = `Du bist ein geduldiger, ermutigender Sprachtutor. Der Nutzer spricht ${srcName} und möchte ${tgtName} lernen.
-            WICHTIG: Antworte IMMER exakt in diesem Format (Zwei Teile getrennt durch "|||"):
-            Teil 1: Führe das Gespräch natürlich in der Zielsprache (${tgtName}) weiter. (Stelle auch mal Gegenfragen).
-            |||
-            Teil 2: Ein kurzes Feedback auf Deutsch zu seinem Satz. Korrigiere Grammatik- oder Wortfehler sanft, oder lobe ihn kurz ("Alles richtig!"), wenn es fehlerfrei war.`;
+            const tgtName = LANGS[tgtVal].name; const srcName = LANGS[srcVal].name;
+            const systemPrompt = `Du bist ein geduldiger Sprachtutor. Der Nutzer spricht ${srcName} und lernt ${tgtName}. Format (Zwei Teile getrennt durch "|||"): Teil 1: Natürliche Antwort auf ${tgtName}. ||| Teil 2: Kurzes Feedback auf Deutsch (Korrektur oder Lob).`;
 
             const reply = await callGemini(text, null, systemPrompt);
             document.getElementById('loaderChat').style.display = 'none';
 
             if(reply && isChatSessionActive) {
-                let chatText = reply;
-                let feedbackText = "";
-                
-                // Splitte Antwort und Feedback
-                if(reply.includes("|||")) {
-                    const parts = reply.split("|||");
-                    chatText = parts[0].trim();
-                    feedbackText = parts[1].trim();
-                }
-
-                // KI-Bubble anzeigen
+                let chatText = reply, feedbackText = "";
+                if(reply.includes("|||")) { const parts = reply.split("|||"); chatText = parts[0].trim(); feedbackText = parts[1] ? parts[1].trim() : ""; }
                 document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(chatText)}</div>`;
-                
-                // Feedback-Bubble anzeigen
-                if(feedbackText) {
-                    document.getElementById('chatHistory').innerHTML += `<div class="bubble-feedback">👨‍🏫 <b>Tutor:</b> ${escapeHTML(feedbackText)}</div>`;
-                }
-
+                if(feedbackText) document.getElementById('chatHistory').innerHTML += `<div class="bubble-feedback">👨‍🏫 <b>Tutor:</b> ${escapeHTML(feedbackText)}</div>`;
                 speak(chatText, tgtVal);
             }
             document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight;
         };
-
-        chatRec.onend = () => {
-            if(isChatSessionActive) {
-                setTimeout(() => { if(isChatSessionActive) { try{ chatRec.start(); }catch(err){} } }, 1000);
-            }
-        };
-
-        try { chatRec.start(); } catch(err) { console.warn("Mikrofon-Start verzögert."); }
+        chatRec.onend = () => { if(isChatSessionActive) setTimeout(() => { if(isChatSessionActive) try{ chatRec.start(); }catch(err){} }, 1000); };
+        try { chatRec.start(); } catch(err) {}
     }
 
-    function clearChat() {
-        document.getElementById('chatHistory').innerHTML = `<div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns ein bisschen üben. Wie war dein Tag heute? 👋</div>`;
-    }
+    function clearChat() { document.getElementById('chatHistory').innerHTML = `<div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns ein bisschen üben. 👋</div>`; }
 
-    // --- FEATURE 1: KI SCANNER ---
-    function handleImageScan(input) {
-        const file = input.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const imgBase64 = e.target.result;
-            document.getElementById('scannerPreview').src = imgBase64;
-            document.getElementById('scannerPreview').style.display = 'block';
-            document.getElementById('loaderScanner').style.display = 'block';
-            
-            const prompt = `Identify the single main everyday object in this image. Translate it. Respond STRICTLY in valid JSON format without markdown blocks. Example: {"de":"Apfel","en":"Apple","sv":"Äpple"}`;
-            const resultText = await callGemini(prompt, imgBase64);
-            document.getElementById('loaderScanner').style.display = 'none';
-            
-            if(resultText) {
-                try {
-                    let cleanJson = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
-                    const obj = JSON.parse(cleanJson);
-                    document.getElementById('inDe').value = obj.de || "";
-                    document.getElementById('inEn').value = obj.en || "";
-                    document.getElementById('inSv').value = obj.sv || "";
-                    showTab('add'); 
-                } catch(err) { alert("Konnte das Bild nicht eindeutig erkennen. Antwort: " + resultText); }
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // --- FEATURE 2: MISSIONEN ---
-    function startMission() {
-        const type = document.getElementById('missionSelect').value;
-        const goals = { 'cafe': 'Bestelle 2 Kaffee und eine Zimtschnecke auf Schwedisch.', 'hotel': 'Checke für 2 Nächte in ein Hotel ein.', 'station': 'Frage, wann der nächste Zug nach Stockholm fährt.' };
-        const prompts = { 
-            'cafe': 'Du bist ein freundlicher Kellner in einem schwedischen Café. Der Nutzer ist Kunde. Antworte immer kurz auf Schwedisch.', 
-            'hotel': 'Du stehst an der Rezeption in einem schwedischen Hotel. Der Nutzer möchte einchecken. Antworte kurz auf Schwedisch.', 
-            'station': 'Du arbeitest am Fahrkartenschalter in Schweden. Antworte kurz auf Schwedisch auf die Fragen des Nutzers.' 
-        };
-        document.getElementById('missionGoal').innerText = "Ziel: " + goals[type];
-        missionContext = prompts[type];
-        document.getElementById('missionArea').style.display = 'block';
-        document.getElementById('missionHistory').innerHTML = `<div class="chat-bubble bubble-ai">Hej! Vad kan jag hjälpa till med?</div>`;
-        isMissionActive = true;
-    }
-
-    async function toggleMissionMic() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return alert("Mikrofon nicht unterstützt.");
-        missionRec = new SpeechRecognition(); missionRec.lang = LANGS['sv'].tts;
-        
-        document.getElementById('btnMissionRec').classList.add('mic-active');
-        document.getElementById('btnMissionRec').innerText = "Höre zu...";
-        
-        missionRec.onresult = async (e) => {
-            const text = e.results[0][0].transcript;
-            document.getElementById('missionHistory').innerHTML += `<div class="chat-bubble bubble-user">${escapeHTML(text)}</div>`;
-            document.getElementById('loaderMission').style.display = 'block';
-            
-            const reply = await callGemini(text, null, missionContext);
-            document.getElementById('loaderMission').style.display = 'none';
-            if(reply) {
-                document.getElementById('missionHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(reply)}</div>`;
-                speak(reply, 'sv');
-            }
-            document.getElementById('missionHistory').scrollTop = document.getElementById('missionHistory').scrollHeight;
-        };
-        missionRec.onend = () => { document.getElementById('btnMissionRec').classList.remove('mic-active'); document.getElementById('btnMissionRec').innerText = "🎤 Antworten"; };
-        missionRec.start();
-    }
-
-    // --- FEATURE 3: KI MÄRCHEN ---
+    // KI Story Generator
     async function generateStory() {
-        if(allWords.length < 3) return alert("Du brauchst mindestens 3 Vokabeln im Heft für ein Märchen!");
-        document.getElementById('loaderStory').style.display = 'block';
-        document.getElementById('storyBox').style.display = 'none';
-        
-        let weakWords = allWords.filter(w => (w.level || 0) < 2);
-        if(weakWords.length < 3) weakWords = allWords; 
-        const shuffled = weakWords.sort(() => 0.5 - Math.random());
-        const selected = shuffled.slice(0, 4).map(w => w.sv).join(", ");
-        
-        const prompt = `Schreibe ein extrem absurdes, lustiges und sehr kurzes Märchen (max 3-4 Sätze) auf Schwedisch. Du MUSST folgende Wörter einbauen: ${selected}. 
-        Format: Erst die schwedische Geschichte. Dann ein Trennzeichen '---'. Dann die deutsche Übersetzung.`;
-        
+        if(allWords.length < 3) return alert("Du brauchst mindestens 3 Vokabeln im Heft!");
+        document.getElementById('loaderStory').style.display = 'block'; document.getElementById('storyBox').style.display = 'none';
+        const selected = allWords.sort(() => 0.5 - Math.random()).slice(0, 4).map(w => w.sv).join(", ");
+        const prompt = `Schreibe ein absurdes, lustiges Märchen (max 3 Sätze) auf Schwedisch. Baue diese Wörter ein: ${selected}. Format: Schwedisch --- Deutsch.`;
         const res = await callGemini(prompt);
         document.getElementById('loaderStory').style.display = 'none';
         if(res) {
-            const parts = res.split('---');
-            currentStoryText = parts[0].trim();
+            const parts = res.split('---'); currentStoryText = parts[0].trim();
             document.getElementById('storyContent').innerText = currentStoryText;
             document.getElementById('storyTranslation').innerText = parts[1] ? parts[1].trim() : "";
-            document.getElementById('storyBox').style.display = 'block';
-            speak(currentStoryText, 'sv');
+            document.getElementById('storyBox').style.display = 'block'; speak(currentStoryText, 'sv');
         }
     }
     function speakStory() { if(currentStoryText) speak(currentStoryText, 'sv'); }
 
-    // --- BASIS FUNKTIONEN ---
+    // Standard Funktionen (Translate, Save, List, Listen)
     function speak(txt, langCode) { window.speechSynthesis.cancel(); const ut = new SpeechSynthesisUtterance(txt); ut.lang = LANGS[langCode].tts; window.speechSynthesis.speak(ut); }
-    function listen(slot, targetId, btn) { 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
-        if(!SpeechRecognition) return; const rec = new SpeechRecognition(); 
-        rec.lang = slot === 1 ? 'de-DE' : (slot === 2 ? 'en-US' : 'sv-SE');
-        btn.classList.add('mic-active');
-        rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; };
-        rec.onend = () => btn.classList.remove('mic-active'); rec.start(); 
-    }
+    function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = slot === 1 ? 'de-DE' : (slot === 2 ? 'en-US' : 'sv-SE'); btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
 
     async function handleSmartTranslate() { 
         const txt = document.getElementById('inDe').value.trim() || document.getElementById('inEn').value.trim() || document.getElementById('inSv').value.trim(); 
         if(!txt) return; document.getElementById('loader').style.display = "block"; 
         try {
-            const prompt = `Übersetze das Wort "${txt}" einzeln in Deutsch, Englisch und Schwedisch. Antworte NUR in diesem JSON Format: {"de":"...", "en":"...", "sv":"..."}`;
+            const prompt = `Übersetze das Wort "${txt}" einzeln in Deutsch, Englisch und Schwedisch. Antworte NUR im JSON Format: {"de":"...", "en":"...", "sv":"..."}`;
             const res = await callGemini(prompt);
-            let cleanJson = res.replace(/```json/g, '').replace(/```/g, '').trim();
-            const obj = JSON.parse(cleanJson);
+            const obj = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim());
             document.getElementById('inDe').value = obj.de || ""; document.getElementById('inEn').value = obj.en || ""; document.getElementById('inSv').value = obj.sv || "";
         } catch(e) {} document.getElementById('loader').style.display = "none"; 
     }
