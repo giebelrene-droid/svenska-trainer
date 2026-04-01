@@ -272,7 +272,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 16.0 (Vollständig repariert) &bull; 2026
+    SprachTutor AI &bull; Version 16.1 (Scanner Fix) &bull; 2026
 </div>
 
 <script>
@@ -324,10 +324,9 @@
         firebase.auth().onAuthStateChanged((user) => { if (user) { currentUser = user; refreshData(); } });
     }
 
-    // --- MENÜ UND EINSTELLUNGEN ---
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
-    function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); }
+    function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); cachedGeminiModel = null; }
 
     function showTab(n) { 
         if(isLiveRecording) toggleLiveRecord(); if(isChatSessionActive) toggleChatRecord();
@@ -341,7 +340,6 @@
         if(n === 'study') generateStudyList();
     }
 
-    // --- DATEN-MANAGEMENT ---
     function importData(e) {
         const file = e.target.files[0]; if(!file) return;
         const reader = new FileReader();
@@ -371,7 +369,6 @@
         const b = db.batch(); s.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); closeSettings();
     }
 
-    // --- WEITERE FUNKTIONEN (wie zuvor) ---
     function playSound(type) {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
@@ -402,13 +399,77 @@
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
     function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
+    // --- ZENTRALE KI FUNKTION (Repariert für Bild-Uploads) ---
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
         if(!geminiApiKey) { alert("API Key fehlt!"); return null; }
-        if (!cachedGeminiModel) { try { const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`); const data = await res.json(); const m = data.models.find(mod => mod.name.includes("gemini") && mod.supportedGenerationMethods.includes("generateContent")); if(m) cachedGeminiModel = m.name.replace('models/', ''); } catch(e) {} if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest"; }
+        if (!cachedGeminiModel) { 
+            try { 
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`); 
+                const data = await res.json(); 
+                const m = data.models.find(mod => mod.name.includes("gemini-1.5") && mod.supportedGenerationMethods.includes("generateContent")); 
+                if(m) cachedGeminiModel = m.name.replace('models/', ''); 
+            } catch(e) {} 
+            if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest"; 
+        }
+        
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${cachedGeminiModel}:generateContent?key=${geminiApiKey}`;
         let contents = systemPrompt ? [{role:"user",parts:[{text:"SYSTEM:"+systemPrompt}]},{role:"model",parts:[{text:"OK"}]}] : [];
-        let userParts = [{text:prompt}]; if(imageBase64) userParts.push({inlineData:{mimeType:"image/jpeg",data:imageBase64.split(',')[1]}}); contents.push({role:"user",parts:userParts});
-        try { const resp = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({contents})}); const d = await resp.json(); return d.candidates[0].content.parts[0].text.trim(); } catch(e) { return null; }
+        let userParts = [{text:prompt}]; 
+        
+        if(imageBase64) {
+            let mime = "image/jpeg";
+            try { mime = imageBase64.match(/data:(.*?);/)[1]; } catch(e){}
+            userParts.push({inlineData: {mimeType: mime, data: imageBase64.split(',')[1]}});
+        }
+        
+        contents.push({role:"user",parts:userParts});
+        
+        try { 
+            const resp = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({contents})}); 
+            const d = await resp.json(); 
+            if(d.error) throw new Error(d.error.message);
+            return d.candidates[0].content.parts[0].text.trim(); 
+        } catch(e) { 
+            console.error(e);
+            return null; 
+        }
+    }
+
+    // --- BILD SCANNER (Repariert) ---
+    function handleImageScan(input) { 
+        const file = input.files[0]; if(!file) return; 
+        const reader = new FileReader(); 
+        reader.onload = async (e) => { 
+            document.getElementById('loader').style.display = 'block'; 
+            document.getElementById('loader').innerText = '✨ KI analysiert das Bild...'; 
+            
+            const prompt = `Identify the single main everyday object in this image. Translate it into these language codes: ${conf.l1}, ${conf.l2}, ${conf.l3}. Respond STRICTLY with ONLY valid JSON and absolutely no other text, markdown, or explanation. Format: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`;
+            
+            const res = await callGemini(prompt, e.target.result); 
+            
+            document.getElementById('loader').style.display = 'none'; 
+            document.getElementById('loader').innerText = '🤖 KI übersetzt...'; 
+            
+            if(res) { 
+                try { 
+                    let cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim();
+                    const sIdx = cleanStr.indexOf('{');
+                    const eIdx = cleanStr.lastIndexOf('}');
+                    if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1);
+                    
+                    const obj = JSON.parse(cleanStr); 
+                    document.getElementById('inDe').value = obj[conf.l1] || ""; 
+                    document.getElementById('inEn').value = obj[conf.l2] || ""; 
+                    document.getElementById('inSv').value = obj[conf.l3] || ""; 
+                } catch(err) { 
+                    alert("⚠️ Die KI hat das Bild nicht eindeutig erkannt. Bitte mach noch ein Foto!"); 
+                } 
+            } else {
+                alert("⚠️ Keine Antwort von der KI erhalten.");
+            }
+            input.value = ""; 
+        }; 
+        reader.readAsDataURL(file); 
     }
 
     function editWord(id) {
@@ -435,13 +496,31 @@
     async function handleSmartTranslate() { 
         const txt = document.getElementById('inDe').value || document.getElementById('inEn').value || document.getElementById('inSv').value; 
         if(!txt) return; document.getElementById('loader').style.display = "block"; 
-        try { const res = await callGemini(`Übersetze das Wort "${txt}". Antworte NUR im JSON Format: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`); const obj = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim()); document.getElementById('inDe').value = obj[conf.l1] || ""; document.getElementById('inEn').value = obj[conf.l2] || ""; document.getElementById('inSv').value = obj[conf.l3] || ""; } catch(e) {} document.getElementById('loader').style.display = "none"; 
+        try { 
+            const res = await callGemini(`Übersetze das Wort "${txt}". Antworte NUR im JSON Format: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`); 
+            const cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const obj = JSON.parse(cleanStr); 
+            document.getElementById('inDe').value = obj[conf.l1] || ""; document.getElementById('inEn').value = obj[conf.l2] || ""; document.getElementById('inSv').value = obj[conf.l3] || ""; 
+        } catch(e) { alert("Übersetzung fehlgeschlagen."); } 
+        document.getElementById('loader').style.display = "none"; 
     }
     
     function toggleVerbSection() { const vs = document.getElementById('verbSection'); vs.style.display = vs.style.display === 'block' ? 'none' : 'block'; }
-    async function fetchVerbForms() { const b = document.getElementById('inDe').value || document.getElementById('inEn').value; if(!b) return; document.getElementById('loader').style.display = "block"; const prompt = `Verb "${b}". JSON: {"l1P":"...", "l1F":"...", "l2P":"...", "l2F":"...", "l3P":"...", "l3F":"..."} for ${conf.l1}, ${conf.l2}, ${conf.l3}`; const res = await callGemini(prompt); document.getElementById('loader').style.display = "none"; if(res) { try { const o = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim()); document.getElementById('inDePast').value = o.l1P; document.getElementById('inDeFut').value = o.l1F; document.getElementById('inEnPast').value = o.l2P; document.getElementById('inEnFut').value = o.l2F; document.getElementById('inSvPast').value = o.l3P; document.getElementById('inSvFut').value = o.l3F; } catch(e) {} } }
     
-    function handleImageScan(input) { const file = input.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = async (e) => { document.getElementById('loader').style.display = 'block'; document.getElementById('loader').innerText = '✨ KI analysiert...'; const res = await callGemini(`Identify object. JSON: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`, e.target.result); document.getElementById('loader').style.display = 'none'; document.getElementById('loader').innerText = '🤖 KI übersetzt...'; if(res) { try { const obj = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim()); document.getElementById('inDe').value = obj[conf.l1] || ""; document.getElementById('inEn').value = obj[conf.l2] || ""; document.getElementById('inSv').value = obj[conf.l3] || ""; } catch(err) {} } }; reader.readAsDataURL(file); }
+    async function fetchVerbForms() { 
+        const b = document.getElementById('inDe').value || document.getElementById('inEn').value; 
+        if(!b) return; document.getElementById('loader').style.display = "block"; 
+        const prompt = `Verb "${b}". JSON: {"l1P":"...", "l1F":"...", "l2P":"...", "l2F":"...", "l3P":"...", "l3F":"..."} for ${conf.l1}, ${conf.l2}, ${conf.l3}`; 
+        const res = await callGemini(prompt); 
+        document.getElementById('loader').style.display = "none"; 
+        if(res) { 
+            try { 
+                const cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim();
+                const o = JSON.parse(cleanStr); 
+                document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||""; 
+            } catch(e) {} 
+        } 
+    }
 
     async function refreshData() { if(!currentUser) return; const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).orderBy("ts", "desc").get(); allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderList(); }
     let listDebounceTimer; function debouncedFilterListWords() { clearTimeout(listDebounceTimer); listDebounceTimer = setTimeout(renderList, 300); }
@@ -458,25 +537,35 @@
     let rallyeTimer, rallyeTimeLeft = 30000; function initRallye() { rallyeTimeLeft = 30000; clearInterval(rallyeTimer); rallyeTimer = setInterval(() => { rallyeTimeLeft -= 100; document.getElementById('rallyeTimerFill').style.width = (rallyeTimeLeft/300)+'%'; if(rallyeTimeLeft % 1000 === 0 && rallyeTimeLeft > 0) playSound('tick'); if(rallyeTimeLeft<=0){clearInterval(rallyeTimer); playSound('error'); alert("💥 BOOM!"); initRallye();} }, 100); }
     function playRallyeRound() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return alert("Kein Mikro."); const rec = new SpeechRecognition(); rec.lang = ALL_LANGS[conf.l3].tts; rec.onresult = async (e) => { const w = e.results[0][0].transcript; document.getElementById('rallyeLoader').style.display = 'block'; const res = await callGemini(`Is "${w}" in category "${document.getElementById('rallyeCategory').innerText}"? JA/NEIN`); document.getElementById('rallyeLoader').style.display = 'none'; if(res && res.includes("JA")) { playSound('success'); addXP(15); rallyeTimeLeft = Math.min(30000, rallyeTimeLeft+10000); } else { playSound('error'); } }; rec.start(); }
     
-    let huntTarget = ""; function initHunt() { huntTarget = allWords.length ? allWords[Math.floor(Math.random()*allWords.length)][conf.l3] : "Äpple"; document.getElementById('huntTargetWord').innerText = huntTarget; }
-    function checkHuntImage(i) { const r = new FileReader(); r.onload = async (e) => { document.getElementById('huntLoader').style.display = 'block'; const c = await callGemini(`Is this "${huntTarget}"? YES/NO`, e.target.result); document.getElementById('huntLoader').style.display = 'none'; if(c && c.includes("YES")) { document.getElementById('huntResult').innerText = "✅ Richtig!"; playSound('success'); addXP(20); } else { document.getElementById('huntResult').innerText = "❌ Falsch"; playSound('error'); } }; r.readAsDataURL(i.files[0]); }
+    // --- BILD SCHATZSUCHE (Repariert) ---
+    let huntTarget = ""; function initHunt() { huntTarget = allWords.length ? allWords[Math.floor(Math.random()*allWords.length)][conf.l3] : "Äpple"; document.getElementById('huntTargetWord').innerText = huntTarget; document.getElementById('huntResult').innerText = ""; }
+    function checkHuntImage(i) { 
+        const file = i.files[0]; if(!file) return; 
+        const r = new FileReader(); 
+        r.onload = async (e) => { 
+            document.getElementById('huntLoader').style.display = 'block'; 
+            const c = await callGemini(`Is this an image of a "${huntTarget}"? Answer STRICTLY with YES or NO.`, e.target.result); 
+            document.getElementById('huntLoader').style.display = 'none'; 
+            if(c && c.toUpperCase().includes("YES")) { document.getElementById('huntResult').innerText = "✅ Richtig!"; playSound('success'); addXP(20); } else { document.getElementById('huntResult').innerText = "❌ Falsch. Versuch es nochmal!"; playSound('error'); } 
+            i.value = ""; 
+        }; 
+        r.readAsDataURL(file); 
+    }
     
     let duelWordObj = null, duelCanTap = false; function startDuelRound() { if(!allWords.length) return; document.getElementById('duelWord').innerText = "Warten..."; duelCanTap = false; setTimeout(() => { duelWordObj = allWords[Math.floor(Math.random()*allWords.length)]; document.getElementById('duelWord').innerText = duelWordObj[conf.l1]; duelCanTap = true; }, 1500); }
     function duelTap(p) { if(!duelCanTap) return; duelCanTap = false; const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); rec.lang = ALL_LANGS[conf.l3].tts; rec.onresult = (e) => { const s = e.results[0][0].transcript.toLowerCase(); if(s.includes(duelWordObj[conf.l3].toLowerCase())) { document.getElementById('duelResult').innerText = `Punkt für ${p}!`; playSound('success'); } else { document.getElementById('duelResult').innerText = "Falsch"; playSound('error'); } }; rec.start(); }
 
-    async function startAdventure() { document.getElementById('advArea').style.display='block'; document.getElementById('advLoader').style.display='block'; const r = await callGemini(`Starte Abenteuer auf ${ALL_LANGS[conf.l3].name}. 2 Sätze + 2 Optionen.`); document.getElementById('advLoader').style.display='none'; if(r) { document.getElementById('advHistory').innerHTML = `<div class="chat-bubble bubble-ai">${r}</div>`; speak(r, conf.l3); } }
+    async function startAdventure() { document.getElementById('advArea').style.display='block'; document.getElementById('advLoader').style.display='block'; const r = await callGemini(`Starte Abenteuer auf ${ALL_LANGS[conf.l3].name}. 2 Sätze + 2 Optionen.`); document.getElementById('advLoader').style.display='none'; if(r) { document.getElementById('advHistory').innerHTML = `<div class="chat-bubble bubble-ai">${escapeHTML(r)}</div>`; speak(r, conf.l3); } }
     function advTurn() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = ALL_LANGS[conf.l3].tts; document.getElementById('btnAdvMic').classList.add('mic-active'); rec.onresult = async (e) => { document.getElementById('btnAdvMic').classList.remove('mic-active'); const text = e.results[0][0].transcript; document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-user">${escapeHTML(text)}</div>`; document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight; document.getElementById('advLoader').style.display = 'block'; const reply = await callGemini(text, null, `Abenteuer auf ${ALL_LANGS[conf.l3].name}.`); document.getElementById('advLoader').style.display = 'none'; if(reply) { document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(reply)}</div>`; document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight; speak(reply, conf.l3); } }; rec.onerror = () => document.getElementById('btnAdvMic').classList.remove('mic-active'); rec.start(); }
 
     function toggleLiveRecord() { if(isLiveRecording) { isLiveRecording=false; if(liveRecObj)liveRecObj.abort(); document.getElementById('btnLiveRecord').innerText="🎤 Start"; return; } isLiveRecording=true; document.getElementById('btnLiveRecord').innerText="⏹️ Stop"; const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); rec.lang = ALL_LANGS[document.getElementById('liveSrcLang').value].tts; rec.continuous = true; rec.onresult = async (e) => { const txt = e.results[e.results.length-1][0].transcript; document.getElementById('liveSourceText').value = txt; document.getElementById('loaderLive').style.display='block'; const res = await callGemini(`Translate to ${ALL_LANGS[document.getElementById('liveTgtLang').value].name}: ` + txt); document.getElementById('loaderLive').style.display='none'; if(res) { document.getElementById('liveResultText').value = res; speak(res, document.getElementById('liveTgtLang').value); } }; rec.onend = () => { if(isLiveRecording) rec.start(); }; liveRecObj = rec; rec.start(); }
 
-    function startTutorMic() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; chatRec = new SpeechRecognition(); chatRec.lang = ALL_LANGS[document.getElementById('chatSrcLang').value].tts; chatRec.continuous = false; chatRec.onresult = async (e) => { const t = e.results[0][0].transcript; document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-user">${t}</div>`; document.getElementById('loaderChat').style.display='block'; const tgtLang = document.getElementById('chatTgtLang').value; const r = await callGemini(t, null, `Tutor für ${ALL_LANGS[tgtLang].name}. Antwort auf ${ALL_LANGS[tgtLang].name} ||| Feedback auf Deutsch.`); document.getElementById('loaderChat').style.display='none'; if(r) { const p = r.split('|||'); document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${p[0]}</div><div class="bubble-feedback">${p[1]||''}</div>`; speak(p[0], tgtLang); } }; chatRec.onend = () => { if(isChatSessionActive) { setTimeout(() => { try { chatRec.start(); } catch(err){} }, 500); } }; chatRec.start(); }
+    function startTutorMic() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; chatRec = new SpeechRecognition(); chatRec.lang = ALL_LANGS[document.getElementById('chatSrcLang').value].tts; chatRec.continuous = false; chatRec.onresult = async (e) => { const t = e.results[0][0].transcript; document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-user">${t}</div>`; document.getElementById('loaderChat').style.display='block'; const tgtLang = document.getElementById('chatTgtLang').value; const r = await callGemini(t, null, `Tutor für ${ALL_LANGS[tgtLang].name}. Antwort auf ${ALL_LANGS[tgtLang].name} ||| Feedback auf Deutsch.`); document.getElementById('loaderChat').style.display='none'; if(r) { const p = r.split('|||'); document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(p[0])}</div><div class="bubble-feedback">${escapeHTML(p[1]||'')}</div>`; speak(p[0], tgtLang); } }; chatRec.onend = () => { if(isChatSessionActive) { setTimeout(() => { try { chatRec.start(); } catch(err){} }, 500); } }; chatRec.start(); }
     async function toggleChatRecord() { if(isChatSessionActive) { isChatSessionActive = false; if(chatRec) { try { chatRec.abort(); } catch(e){} } document.getElementById('btnChatRecord').innerText = "🎤 Chat Starten"; document.getElementById('btnChatRecord').style.background = "var(--primary-gradient)"; } else { isChatSessionActive = true; document.getElementById('btnChatRecord').innerText = "⏹️ Chat beenden"; document.getElementById('btnChatRecord').style.background = "#EF4444"; startTutorMic(); } }
     function clearChat() { document.getElementById('chatHistory').innerHTML = `<div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns üben. 👋</div>`; }
 
     async function generateStory() { if(allWords.length < 3) return alert("Min. 3 Wörter nötig!"); const words = allWords.sort(()=>0.5-Math.random()).slice(0,4).map(w=>w[conf.l3]).join(", "); document.getElementById('loaderStory').style.display='block'; const r = await callGemini(`Schreibe ein absurdes Märchen (max 3 Sätze) auf ${ALL_LANGS[conf.l3].name}. Nutze: ${words}. Format: Geschichte --- Übersetzung auf Deutsch.`); document.getElementById('loaderStory').style.display='none'; if(r) { const p = r.split('---'); document.getElementById('storyContent').innerText = p[0]; document.getElementById('storyTranslation').innerText = p[1] || ""; document.getElementById('storyBox').style.display='block'; speak(p[0], conf.l3); } }
     function speakStory() { const t = document.getElementById('storyContent').innerText; if(t) speak(t, conf.l3); }
-
-    function speak(t, l) { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = ALL_LANGS[l].tts; window.speechSynthesis.speak(u); }
 
     window.onload = init;
 </script>
