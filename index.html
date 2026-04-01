@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -272,7 +272,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 16.2 (Tutor Fix) &bull; 2026
+    SprachTutor AI &bull; Version 16.3 (Camera Performance Fix) &bull; 2026
 </div>
 
 <script>
@@ -434,38 +434,50 @@
         }
     }
 
+    // --- BILD KOMPRESSOR & SCANNER ---
     function handleImageScan(input) { 
         const file = input.files[0]; if(!file) return; 
+        document.getElementById('loader').style.display = 'block'; 
+        document.getElementById('loader').innerText = '📸 Bild wird verkleinert...'; 
+        
         const reader = new FileReader(); 
-        reader.onload = async (e) => { 
-            document.getElementById('loader').style.display = 'block'; 
-            document.getElementById('loader').innerText = '✨ KI analysiert das Bild...'; 
-            
-            const prompt = `Identify the single main everyday object in this image. Translate it into these language codes: ${conf.l1}, ${conf.l2}, ${conf.l3}. Respond STRICTLY with ONLY valid JSON and absolutely no other text, markdown, or explanation. Format: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`;
-            
-            const res = await callGemini(prompt, e.target.result); 
-            
-            document.getElementById('loader').style.display = 'none'; 
-            document.getElementById('loader').innerText = '🤖 KI übersetzt...'; 
-            
-            if(res) { 
-                try { 
-                    let cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim();
-                    const sIdx = cleanStr.indexOf('{');
-                    const eIdx = cleanStr.lastIndexOf('}');
-                    if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1);
-                    
-                    const obj = JSON.parse(cleanStr); 
-                    document.getElementById('inDe').value = obj[conf.l1] || ""; 
-                    document.getElementById('inEn').value = obj[conf.l2] || ""; 
-                    document.getElementById('inSv').value = obj[conf.l3] || ""; 
-                } catch(err) { 
-                    alert("⚠️ Die KI hat das Bild nicht eindeutig erkannt. Bitte mach noch ein Foto!"); 
-                } 
-            } else {
-                alert("⚠️ Keine Antwort von der KI erhalten.");
-            }
-            input.value = ""; 
+        reader.onload = (e) => { 
+            const img = new Image();
+            img.onload = async () => {
+                // Komprimierung
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+                const max = 800; // Maximale Breite/Höhe
+                if(w > h && w > max) { h = Math.round(h * max / w); w = max; }
+                else if(h > max) { w = Math.round(w * max / h); h = max; }
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                document.getElementById('loader').innerText = '✨ KI analysiert das Bild...'; 
+                
+                const prompt = `Identify the single main everyday object in this image. Translate it into these language codes: ${conf.l1}, ${conf.l2}, ${conf.l3}. Respond STRICTLY with ONLY valid JSON and absolutely no other text, markdown, or explanation. Format: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`;
+                const res = await callGemini(prompt, compressedBase64); 
+                
+                document.getElementById('loader').style.display = 'none'; 
+                document.getElementById('loader').innerText = '🤖 KI übersetzt...'; 
+                
+                if(res) { 
+                    try { 
+                        let cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim();
+                        const sIdx = cleanStr.indexOf('{'); const eIdx = cleanStr.lastIndexOf('}');
+                        if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1);
+                        
+                        const obj = JSON.parse(cleanStr); 
+                        document.getElementById('inDe').value = obj[conf.l1] || ""; 
+                        document.getElementById('inEn').value = obj[conf.l2] || ""; 
+                        document.getElementById('inSv').value = obj[conf.l3] || ""; 
+                    } catch(err) { alert("⚠️ Die KI hat das Bild nicht eindeutig erkannt. Bitte mach noch ein Foto!"); } 
+                } else { alert("⚠️ Keine Antwort von der KI erhalten."); }
+                input.value = ""; 
+            };
+            img.src = e.target.result;
         }; 
         reader.readAsDataURL(file); 
     }
@@ -535,8 +547,36 @@
     let rallyeTimer, rallyeTimeLeft = 30000; function initRallye() { rallyeTimeLeft = 30000; clearInterval(rallyeTimer); rallyeTimer = setInterval(() => { rallyeTimeLeft -= 100; document.getElementById('rallyeTimerFill').style.width = (rallyeTimeLeft/300)+'%'; if(rallyeTimeLeft % 1000 === 0 && rallyeTimeLeft > 0) playSound('tick'); if(rallyeTimeLeft<=0){clearInterval(rallyeTimer); playSound('error'); alert("💥 BOOM!"); initRallye();} }, 100); }
     function playRallyeRound() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return alert("Kein Mikro."); const rec = new SpeechRecognition(); rec.lang = ALL_LANGS[conf.l3].tts; rec.onresult = async (e) => { const w = e.results[0][0].transcript; document.getElementById('rallyeLoader').style.display = 'block'; const res = await callGemini(`Is "${w}" in category "${document.getElementById('rallyeCategory').innerText}"? JA/NEIN`); document.getElementById('rallyeLoader').style.display = 'none'; if(res && res.includes("JA")) { playSound('success'); addXP(15); rallyeTimeLeft = Math.min(30000, rallyeTimeLeft+10000); } else { playSound('error'); } }; rec.start(); }
     
+    // --- BILD SCHATZSUCHE KOMPRESSOR ---
     let huntTarget = ""; function initHunt() { huntTarget = allWords.length ? allWords[Math.floor(Math.random()*allWords.length)][conf.l3] : "Äpple"; document.getElementById('huntTargetWord').innerText = huntTarget; document.getElementById('huntResult').innerText = ""; }
-    function checkHuntImage(i) { const file = i.files[0]; if(!file) return; const r = new FileReader(); r.onload = async (e) => { document.getElementById('huntLoader').style.display = 'block'; const c = await callGemini(`Is this an image of a "${huntTarget}"? Answer STRICTLY with YES or NO.`, e.target.result); document.getElementById('huntLoader').style.display = 'none'; if(c && c.toUpperCase().includes("YES")) { document.getElementById('huntResult').innerText = "✅ Richtig!"; playSound('success'); addXP(20); } else { document.getElementById('huntResult').innerText = "❌ Falsch. Versuch es nochmal!"; playSound('error'); } i.value = ""; }; r.readAsDataURL(file); }
+    function checkHuntImage(i) { 
+        const file = i.files[0]; if(!file) return; 
+        document.getElementById('huntLoader').style.display = 'block';
+        document.getElementById('huntLoader').innerText = '📸 Bild wird verkleinert...';
+        
+        const r = new FileReader(); 
+        r.onload = (e) => { 
+            const img = new Image();
+            img.onload = async () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height; const max = 800;
+                if(w > h && w > max) { h = Math.round(h * max / w); w = max; } else if(h > max) { w = Math.round(w * max / h); h = max; }
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                document.getElementById('huntLoader').innerText = '✨ KI analysiert...';
+                const c = await callGemini(`Is this an image of a "${huntTarget}"? Answer STRICTLY with YES or NO.`, compressedBase64); 
+                document.getElementById('huntLoader').style.display = 'none'; 
+                document.getElementById('huntLoader').innerText = 'KI prüft...';
+                
+                if(c && c.toUpperCase().includes("YES")) { document.getElementById('huntResult').innerText = "✅ Richtig!"; playSound('success'); addXP(20); } else { document.getElementById('huntResult').innerText = "❌ Falsch. Versuch es nochmal!"; playSound('error'); } 
+                i.value = ""; 
+            };
+            img.src = e.target.result;
+        }; 
+        r.readAsDataURL(file); 
+    }
     
     let duelWordObj = null, duelCanTap = false; function startDuelRound() { if(!allWords.length) return; document.getElementById('duelWord').innerText = "Warten..."; duelCanTap = false; setTimeout(() => { duelWordObj = allWords[Math.floor(Math.random()*allWords.length)]; document.getElementById('duelWord').innerText = duelWordObj[conf.l1]; duelCanTap = true; }, 1500); }
     function duelTap(p) { if(!duelCanTap) return; duelCanTap = false; const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); rec.lang = ALL_LANGS[conf.l3].tts; rec.onresult = (e) => { const s = e.results[0][0].transcript.toLowerCase(); if(s.includes(duelWordObj[conf.l3].toLowerCase())) { document.getElementById('duelResult').innerText = `Punkt für ${p}!`; playSound('success'); } else { document.getElementById('duelResult').innerText = "Falsch"; playSound('error'); } }; rec.start(); }
@@ -546,35 +586,7 @@
 
     function toggleLiveRecord() { if(isLiveRecording) { isLiveRecording=false; if(liveRecObj)liveRecObj.abort(); document.getElementById('btnLiveRecord').innerText="🎤 Start"; return; } isLiveRecording=true; document.getElementById('btnLiveRecord').innerText="⏹️ Stop"; const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); rec.lang = ALL_LANGS[document.getElementById('liveSrcLang').value].tts; rec.continuous = true; rec.onresult = async (e) => { const txt = e.results[e.results.length-1][0].transcript; document.getElementById('liveSourceText').value = txt; document.getElementById('loaderLive').style.display='block'; const res = await callGemini(`Translate to ${ALL_LANGS[document.getElementById('liveTgtLang').value].name}: ` + txt); document.getElementById('loaderLive').style.display='none'; if(res) { document.getElementById('liveResultText').value = res; speak(res, document.getElementById('liveTgtLang').value); } }; rec.onend = () => { if(isLiveRecording) rec.start(); }; liveRecObj = rec; rec.start(); }
 
-    // --- KI TUTOR (Verkürzt) ---
-    function startTutorMic() { 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
-        if (!SpeechRecognition) return; 
-        chatRec = new SpeechRecognition(); 
-        chatRec.lang = ALL_LANGS[document.getElementById('chatSrcLang').value].tts; 
-        chatRec.continuous = false; 
-        
-        chatRec.onresult = async (e) => { 
-            const t = e.results[0][0].transcript; 
-            document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-user">${t}</div>`; 
-            document.getElementById('loaderChat').style.display='block'; 
-            
-            const tgtLang = document.getElementById('chatTgtLang').value; 
-            const prompt = `Du bist Sprachtutor für ${ALL_LANGS[tgtLang].name}. Antworte extrem kurz und natürlich. Format: Max 2 kurze Sätze auf ${ALL_LANGS[tgtLang].name} ||| Max 1 kurzer Satz Feedback/Korrektur auf Deutsch.`;
-            
-            const r = await callGemini(t, null, prompt); 
-            
-            document.getElementById('loaderChat').style.display='none'; 
-            if(r) { 
-                const p = r.split('|||'); 
-                document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(p[0])}</div><div class="bubble-feedback">${escapeHTML(p[1]||'')}</div>`; 
-                speak(p[0], tgtLang); 
-            } 
-        }; 
-        chatRec.onend = () => { if(isChatSessionActive) { setTimeout(() => { try { chatRec.start(); } catch(err){} }, 500); } }; 
-        chatRec.start(); 
-    }
-    
+    function startTutorMic() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; chatRec = new SpeechRecognition(); chatRec.lang = ALL_LANGS[document.getElementById('chatSrcLang').value].tts; chatRec.continuous = false; chatRec.onresult = async (e) => { const t = e.results[0][0].transcript; document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-user">${t}</div>`; document.getElementById('loaderChat').style.display='block'; const tgtLang = document.getElementById('chatTgtLang').value; const r = await callGemini(t, null, `Tutor für ${ALL_LANGS[tgtLang].name}. Antwort extrem kurz (max 2 Sätze) auf ${ALL_LANGS[tgtLang].name} ||| Max 1 Satz kurzes Feedback auf Deutsch.`); document.getElementById('loaderChat').style.display='none'; if(r) { const p = r.split('|||'); document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(p[0])}</div><div class="bubble-feedback">${escapeHTML(p[1]||'')}</div>`; speak(p[0], tgtLang); } }; chatRec.onend = () => { if(isChatSessionActive) { setTimeout(() => { try { chatRec.start(); } catch(err){} }, 500); } }; chatRec.start(); }
     async function toggleChatRecord() { if(isChatSessionActive) { isChatSessionActive = false; if(chatRec) { try { chatRec.abort(); } catch(e){} } document.getElementById('btnChatRecord').innerText = "🎤 Chat Starten"; document.getElementById('btnChatRecord').style.background = "var(--primary-gradient)"; } else { isChatSessionActive = true; document.getElementById('btnChatRecord').innerText = "⏹️ Chat beenden"; document.getElementById('btnChatRecord').style.background = "#EF4444"; startTutorMic(); } }
     function clearChat() { document.getElementById('chatHistory').innerHTML = `<div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns üben. 👋</div>`; }
 
