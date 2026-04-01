@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Trainer X (Arcade Edition)</title>
+    <title>SprachTutor AI</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234F46E5%22 rx=%2220%22/><text x=%2250%22 y=%2268%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23ffffff%22>🇸🇪</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
@@ -102,14 +104,14 @@
         <label>🔑 Gemini API-Schlüssel (Pflicht für KI)</label>
         <div class="input-row"><input type="password" id="inpGeminiKey" placeholder="AIzaSy..." oninput="saveApiKey()"></div>
         <button class="action-btn btn-secondary" onclick="document.getElementById('importFile').click()">📂 Backup laden</button>
-        <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Alles löschen</button>
+        <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Meine Vokabeln löschen</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
         <button class="action-btn" onclick="closeSettings()" style="margin-top: 30px;">Fertig</button>
     </div>
 </div>
 
 <div class="top-bar">
-    <div class="app-title">FamilyTrainer</div>
+    <div class="app-title">SprachTutor AI</div>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
 </div>
 
@@ -267,9 +269,10 @@
 </div>
 
 <script>
-    const VERSION = "11.0 (Arcade Edition)";
+    const VERSION = "12.0 (SprachTutor AI - Secure)";
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" };
-    firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
+    firebase.initializeApp(firebaseConfig); 
+    const db = firebase.firestore();
 
     const LANGS = { 'de':{name:'Deutsch',tts:'de-DE'}, 'en':{name:'Englisch',tts:'en-US'}, 'sv':{name:'Schwedisch',tts:'sv-SE'} };
     let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
@@ -277,11 +280,30 @@
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
     let cachedGeminiModel = null;
     let isLiveRecording = false, liveRec = null, chatRec = null, isChatSessionActive = false;
+    
+    // Auth Variable
+    let currentUser = null;
 
     function escapeHTML(str) { return !str ? "" : String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[m]); }
     function safeJS(str) { return !str ? "" : String(str).replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
 
-    function init() { document.getElementById('inpGeminiKey').value = geminiApiKey; refreshData(); showTab('add'); }
+    function init() { 
+        document.getElementById('inpGeminiKey').value = geminiApiKey; 
+        showTab('add'); 
+
+        // Firebase Anonymer Login
+        firebase.auth().signInAnonymously().catch((error) => {
+            console.error("Auth-Fehler:", error);
+        });
+
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                refreshData(); // Lade Daten erst, wenn der User eine ID hat
+            }
+        });
+    }
+
     function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); }
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
@@ -376,7 +398,7 @@
             
             if(check && check.toUpperCase().includes("JA")) {
                 alert(`✅ Richtig ("${word}")! Handy schnell weitergeben!`);
-                rallyeTimeLeft = Math.min(30000, rallyeTimeLeft + 15000); // Zeitbonus
+                rallyeTimeLeft = Math.min(30000, rallyeTimeLeft + 15000); 
             } else { alert(`❌ Falsch ("${word}")! Versuch es nochmal!`); }
         };
         rec.start();
@@ -430,7 +452,7 @@
             duelWordObj = allWords[Math.floor(Math.random() * allWords.length)];
             document.getElementById('duelWord').innerText = duelWordObj.de;
             duelCanTap = true;
-        }, Math.random() * 2000 + 1000); // 1-3 Sekunden Wartezeit
+        }, Math.random() * 2000 + 1000); 
     }
     
     function duelTap(player) {
@@ -583,13 +605,42 @@
         } catch(e) {} document.getElementById('loader').style.display = "none"; 
     }
 
+    // Angepasst: Speichern unter dem aktuellen Nutzer
     function manualSave() { 
+        if(!currentUser) return alert("Bitte warten, Verbindung zur Datenbank wird hergestellt...");
         const data = { de: document.getElementById('inDe').value, en: document.getElementById('inEn').value, sv: document.getElementById('inSv').value, ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0 }; 
         if(!data.de || !data.sv) return; 
-        db.collection('words').add(data).then(() => { refreshData(); document.getElementById('inDe').value=''; document.getElementById('inEn').value=''; document.getElementById('inSv').value=''; showTab('list'); }); 
+        
+        db.collection('users').doc(currentUser.uid).collection('words').add(data).then(() => { 
+            refreshData(); 
+            document.getElementById('inDe').value=''; 
+            document.getElementById('inEn').value=''; 
+            document.getElementById('inSv').value=''; 
+            showTab('list'); 
+        }); 
     }
 
-    async function refreshData() { const s = await db.collection('words').orderBy("ts", "desc").get(); allWords = s.docs.map(d => ({id: d.id, ...d.data()})); renderList(); filterStudyWords();}
+    // Angepasst: Vokabeln des aktuellen Nutzers laden
+    async function refreshData() { 
+        if(!currentUser) return;
+        const s = await db.collection('users').doc(currentUser.uid).collection('words').orderBy("ts", "desc").get(); 
+        allWords = s.docs.map(d => ({id: d.id, ...d.data()})); 
+        renderList(); 
+        filterStudyWords();
+    }
+    
+    // Angepasst: Datenbank des Nutzers leeren
+    async function nukeDatabase() { 
+        if(!currentUser) return;
+        if(!confirm(`⚠️ Möchtest du wirklich ALLE DEINE Vokabeln löschen?`)) return; 
+        
+        const s = await db.collection('users').doc(currentUser.uid).collection('words').get(); 
+        const b = db.batch(); 
+        s.docs.forEach(d => b.delete(d.ref)); 
+        await b.commit(); 
+        refreshData(); 
+    }
+
     function renderList() { document.getElementById('listCont').innerHTML = allWords.map(w => `<div class="card" style="padding:15px; margin-bottom:10px;"><div style="font-weight:800; font-size:1.1rem; color:var(--primary);">${escapeHTML(w.de)}</div><div style="color:var(--text-light);">${escapeHTML(w.sv)} | ${escapeHTML(w.en)}</div></div>`).join(''); }
 
     let searchDebounceTimer;
