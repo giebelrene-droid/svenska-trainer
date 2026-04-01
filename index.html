@@ -272,7 +272,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 16.4 (Foto-Scanner Fix & Error Radar) &bull; 2026
+    SprachTutor AI &bull; Version 16.5 (Smart KI-Connector) &bull; 2026
 </div>
 
 <script>
@@ -290,7 +290,7 @@
     let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; 
     let currentCollIndex = 0, conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
     let allWords = [], studyWords = [], studyIndex = 0, geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
-    let isLiveRecording = false, liveRecObj = null, isChatSessionActive = false, chatRec = null, currentUser = null;
+    let cachedGeminiModel = null, isLiveRecording = false, liveRecObj = null, isChatSessionActive = false, chatRec = null, currentUser = null;
     
     let userXP = parseInt(localStorage.getItem('trainerXP') || '0');
     let userStreak = parseInt(localStorage.getItem('trainerStreak') || '0');
@@ -326,7 +326,7 @@
 
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
-    function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); }
+    function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); cachedGeminiModel = null; }
 
     function showTab(n) { 
         if(isLiveRecording) toggleLiveRecord(); if(isChatSessionActive) toggleChatRecord();
@@ -401,7 +401,7 @@
 
 
     // ==========================================
-    // 🟢 NEUER ROBUSTER KI-CONNECTOR 
+    // 🟢 KI-CONNECTOR (Dynamisches Modell)
     // ==========================================
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
         if(!geminiApiKey) { 
@@ -409,8 +409,22 @@
             return null; 
         }
 
-        // Wir nutzen hier fest das aktuellste und stabilste Modell, um API-Fehler bei der Modellanfrage zu sparen.
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+        // Wir holen uns dynamisch das korrekte, verfügbare Flash-Modell
+        if (!cachedGeminiModel) {
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
+                const data = await res.json();
+                // Sucht explizit nach dem 1.5 Flash Modell
+                const m = data.models.find(mod => mod.name.includes("1.5-flash") && mod.supportedGenerationMethods.includes("generateContent"));
+                if(m) cachedGeminiModel = m.name.replace('models/', '');
+            } catch(e) {
+                console.warn("Konnte Modelliste nicht laden:", e);
+            }
+            if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest"; // Letztes Fallback
+        }
+
+        // URL nutzt das dynamische Modell
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${cachedGeminiModel}:generateContent?key=${geminiApiKey}`;
 
         let payload = { contents: [] };
 
@@ -452,13 +466,12 @@
         } catch(e) {
             alert("⚠️ KI-Fehler: " + e.message);
             console.error("Gemini API Error:", e);
+            // Fallback löschen, falls es das falsche war
+            cachedGeminiModel = null;
             return null;
         }
     }
 
-    // ==========================================
-    // 📸 NEUER FAIL-SAFE BILD SCANNER 
-    // ==========================================
     function handleImageScan(input) {
         const file = input.files[0]; 
         if(!file) return; 
@@ -474,7 +487,6 @@
             img.onload = async () => {
                 let finalImageBase64 = originalDataUrl;
 
-                // Komprimierung versuchen
                 try {
                     const canvas = document.createElement('canvas');
                     let w = img.width, h = img.height; 
@@ -516,7 +528,6 @@
                 input.value = ""; 
             };
 
-            // Wenn das Bildformat vom Browser gar nicht geladen werden kann (z.B. pures HEIC in Chrome)
             img.onerror = async () => {
                 document.getElementById('loader').innerText = '✨ KI analysiert Originalbild...';
                 const prompt = `Look at this image. Identify the single main everyday object in it. Translate its name into these exact language codes: ${conf.l1}, ${conf.l2}, ${conf.l3}. Respond ONLY with a valid JSON object. Example format: {"${conf.l1}":"Apfel", "${conf.l2}":"Apple", "${conf.l3}":"Äpple"}`;
@@ -546,9 +557,6 @@
         reader.readAsDataURL(file);
     }
 
-    // ==========================================
-    // 📸 NEUER FAIL-SAFE BILD SCHATZSUCHE 
-    // ==========================================
     let huntTarget = ""; 
     function initHunt() { 
         huntTarget = allWords.length ? allWords[Math.floor(Math.random()*allWords.length)][conf.l3] : "Äpple"; 
