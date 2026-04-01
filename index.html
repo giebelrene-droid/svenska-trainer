@@ -1,11 +1,11 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SprachTutor AI</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234F46E5%22 rx=%2220%22/><text x=%2250%22 y=%2268%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23ffffff%22>🇸🇪</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234F46E5%22 rx=%2220%22/><text x=%2250%22 y=%2268%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23ffffff%22>🌍</text></svg>">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -59,6 +59,7 @@
         .btn-magic { background: linear-gradient(135deg, #a855f7, #ec4899); box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2); margin-top: 0; margin-bottom: 20px;}
 
         .icon-btn { background: white; border: 2px solid var(--border-soft); font-size: 1.2rem; cursor: pointer; border-radius: 14px; padding: 12px; display:flex; align-items:center; justify-content:center; color: var(--text-light); transition: all 0.2s; flex-shrink: 0;}
+        .icon-btn:hover, .icon-btn:focus { border-color: var(--primary); color: var(--primary); }
         .icon-btn.danger { color: #EF4444; background: #FEF2F2; border-color: #FECACA; }
         .mic-active { background: #FEF2F2 !important; border-color: #EF4444 !important; color: #EF4444 !important; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
@@ -77,7 +78,6 @@
 
         .bomb-container { text-align: center; margin: 30px 0; }
         .bomb-icon { font-size: 5rem; animation: shake 0.5s infinite; }
-        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px) rotate(-5deg); } 50% { transform: translateX(5px) rotate(5deg); } 75% { transform: translateX(-5px) rotate(-5deg); } 100% { transform: translateX(0); } }
         .timer-bar { height: 20px; background: #E5E7EB; border-radius: 10px; overflow: hidden; margin-top: 20px; }
         .timer-fill { height: 100%; background: #EF4444; width: 100%; transition: width 0.1s linear; }
 
@@ -86,11 +86,8 @@
         .bubble-user { background: var(--primary-gradient); color: white; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: var(--shadow-float); }
         .bubble-ai { background: white; border: 1px solid var(--border-soft); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: var(--shadow-soft); }
         .bubble-feedback { background: #ECFDF5; border: 1px dashed #10B981; color: #065F46; font-size: 0.85rem; padding: 10px 15px; border-radius: 0 20px 20px 20px; align-self: flex-start; max-width: 80%; margin-top: -8px; margin-bottom: 8px; margin-left: 10px; }
-        .story-box { background: #FFFBEB; border: 2px dashed #FCD34D; padding: 20px; border-radius: 20px; font-size: 1.1rem; line-height: 1.8; margin-top: 20px; display: none; }
 
         .verb-section { display: none; background: #F9FAFB; padding: 20px; border-radius: 16px; margin-top: 15px; border: 1px solid var(--border-soft); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-        .verb-lang-title { font-weight: 800; font-size: 0.85rem; color: var(--text-light); margin-bottom: 10px; margin-top: 15px; letter-spacing: 0.5px;}
-
         .loader { color:var(--primary); text-align:center; display:none; font-weight:800; margin: 15px 0; font-size: 0.9rem; }
         #settingsOverlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.7); display: none; z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(5px); padding: 20px;}
         .settings-box { background: var(--bg); padding: 30px; border-radius: 30px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
@@ -109,6 +106,13 @@
         <label style="margin-top: 20px;">👤 Aktiver Benutzer</label>
         <select id="selUser" onchange="switchUser()" style="margin-bottom:15px;"></select>
         
+        <label>🌍 Lern-Sprachen</label>
+        <div style="display:flex; gap:10px; margin-bottom: 10px;">
+            <select id="selL1" onchange="langChanged()"></select>
+            <select id="selL2" onchange="langChanged()"></select>
+            <select id="selL3" onchange="langChanged()"></select>
+        </div>
+
         <div style="background:#F9FAFB; padding:15px; border-radius:16px; border:1px solid var(--border-soft); margin-bottom:20px;">
             <p style="font-size:0.75rem; font-weight:800; color:var(--text-light); margin-top:0;">BENUTZER UMBENENNEN</p>
             <div id="renameContainer"></div>
@@ -146,29 +150,25 @@
         <div class="arcade-card" onclick="openMiniGame('Duel')"><div class="arcade-icon">⚔️</div><div class="arcade-title">Familien-Duell</div></div>
         <div class="arcade-card" onclick="openMiniGame('Adventure')"><div class="arcade-icon">🗺️</div><div class="arcade-title">Abenteuer</div></div>
     </div>
-    
     <div id="gameRallye" style="display:none; text-align:center;">
         <h3 style="color: #EF4444;">💣 Hot-Potato Rallye</h3>
         <div class="bomb-container"><div class="bomb-icon" id="rallyeBomb">💣</div><h2 id="rallyeCategory" style="margin: 15px 0; color: var(--primary);">Kategorie: Tiere</h2><div class="timer-bar"><div class="timer-fill" id="rallyeTimerFill"></div></div></div>
         <button class="action-btn" id="btnRallyeMic" onclick="playRallyeRound()">🎤 Wort sagen</button><div id="rallyeLoader" class="loader">KI prüft...</div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
     </div>
-    
     <div id="gameHunt" style="display:none;">
         <h3>📷 Die Schatzsuche</h3>
-        <div class="mission-bubble" style="text-align:center;"><span style="color:var(--text-light);">Finde folgendes auf Schwedisch:</span><br><strong id="huntTargetWord" style="font-size:2rem; color:var(--primary);">---</strong></div>
+        <div class="mission-bubble" style="text-align:center;"><span style="color:var(--text-light);">Finde folgendes:</span><br><strong id="huntTargetWord" style="font-size:2rem; color:var(--primary);">---</strong></div>
         <input type="file" id="huntInput" accept="image/*" capture="environment" style="display:none" onchange="checkHuntImage(this)">
         <button class="action-btn btn-magic" onclick="document.getElementById('huntInput').click()">📸 Objekt fotografieren</button>
         <img id="huntPreview" src="" style="width:100%; border-radius:16px; margin-top:15px; display:none;">
         <div id="huntLoader" class="loader">KI prüft das Bild...</div><div id="huntResult" style="text-align:center; font-weight:bold; font-size:1.2rem; margin-top:10px;"></div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
     </div>
-    
     <div id="gameDuel" style="display:none;">
         <h3>⚔️ Split-Screen Duell</h3>
         <button class="action-btn" onclick="startDuelRound()" id="btnStartDuel">Runde starten</button>
         <div class="duel-container" id="duelArea" style="display:none; position:relative;"><div class="duel-word" id="duelWord">Achtung...</div><div class="duel-player duel-p1" onclick="duelTap('Rot')">SPIELER 1</div><div class="duel-player duel-p2" onclick="duelTap('Blau')">SPIELER 2</div></div>
         <div id="duelResult" style="text-align:center; font-weight:bold; font-size:1.2rem; margin-top:15px; color:var(--primary);"></div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
     </div>
-    
     <div id="gameAdventure" style="display:none;">
         <h3>🗺️ Interaktives Abenteuer</h3>
         <button class="action-btn" onclick="startAdventure()" id="btnStartAdv">Abenteuer starten</button>
@@ -178,33 +178,31 @@
 </div>
 
 <div id="tabStory" class="card" style="display:none">
-    <h2>📖 Das irre Vokabel-Märchen</h2>
+    <h2>📖 KI-Märchen</h2>
     <button class="action-btn btn-magic" onclick="generateStory()">✨ Geschichte generieren</button>
-    <div id="loaderStory" class="loader">🧙‍♂️ KI schreibt ein Meisterwerk...</div>
-    <div id="storyBox" class="story-box"><div id="storyContent" style="font-weight: 800; font-size: 1.2rem; color: var(--primary); margin-bottom: 15px;"></div><div id="storyTranslation" style="font-size: 0.9rem; color: var(--text-light); border-top: 1px solid #FCD34D; padding-top: 10px;"></div><button class="action-btn btn-secondary" onclick="speakStory()" style="margin-top: 15px;">🔊 Vorlesen</button></div>
+    <div id="loaderStory" class="loader">🧙‍♂️ KI schreibt...</div>
+    <div id="storyBox" class="story-box"><div id="storyContent" style="font-weight: 800; font-size: 1.2rem; color: var(--primary); margin-bottom: 15px;"></div><div id="storyTranslation" style="font-size: 0.9rem; color: var(--text-light); border-top: 1px solid #FCD34D; padding-top: 10px;"></div><button class="action-btn btn-secondary" onclick="speakStory()">🔊 Vorlesen</button></div>
 </div>
 
 <div id="tabAdd" class="card">
     <h2 id="addTitle">➕ Neues Wort</h2>
-    
     <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none" onchange="handleImageScan(this)">
-    <button class="action-btn btn-magic" onclick="document.getElementById('camInput').click()">📸 Objekt fotografieren & Auto-Fill</button>
-    
+    <button class="action-btn btn-magic" onclick="document.getElementById('camInput').click()">📸 Foto-Scanner & Auto-Fill</button>
     <div id="loader" class="loader">🤖 KI übersetzt...</div>
     
-    <label>Deutsch</label><div class="input-row"><input type="text" id="inDe"><button class="icon-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
-    <label>Englisch</label><div class="input-row"><input type="text" id="inEn"><button class="icon-btn" onclick="listen(2, 'inEn', this)">🎤</button></div>
-    <label>Schwedisch</label><div class="input-row"><input type="text" id="inSv"><button class="icon-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
+    <label id="lblL1">Deutsch</label><div class="input-row"><input type="text" id="inDe"><button class="icon-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
+    <label id="lblL2">Englisch</label><div class="input-row"><input type="text" id="inEn"><button class="icon-btn" onclick="listen(2, 'inEn', this)">🎤</button></div>
+    <label id="lblL3">Schwedisch</label><div class="input-row"><input type="text" id="inSv"><button class="icon-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
     
     <button class="action-btn btn-secondary" onclick="toggleVerbSection()" style="margin-top: 15px; font-size: 0.9rem; padding: 12px; background: transparent;">📝 Verb-Details (Optional) ▾</button>
     
     <div id="verbSection" class="verb-section">
-        <div class="verb-lang-title" style="margin-top: 0;">DEUTSCH</div>
-        <div class="input-row"><input type="text" id="inDePast" placeholder="Präteritum (er...)"><input type="text" id="inDeFut" placeholder="Futur (er wird...)"></div>
-        <div class="verb-lang-title">ENGLISCH</div>
-        <div class="input-row"><input type="text" id="inEnPast" placeholder="Past (he...)"><input type="text" id="inEnFut" placeholder="Future (he will...)"></div>
-        <div class="verb-lang-title">SCHWEDISCH</div>
-        <div class="input-row"><input type="text" id="inSvPast" placeholder="Dåtid (han...)"><input type="text" id="inSvFut" placeholder="Framtid (han kommer...)"></div>
+        <div id="vTitle1" class="verb-lang-title">DEUTSCH</div>
+        <div class="input-row"><input type="text" id="inDePast" placeholder="Vergangenheit"><input type="text" id="inDeFut" placeholder="Zukunft"></div>
+        <div id="vTitle2" class="verb-lang-title">ENGLISCH</div>
+        <div class="input-row"><input type="text" id="inEnPast" placeholder="Past"><input type="text" id="inEnFut" placeholder="Future"></div>
+        <div id="vTitle3" class="verb-lang-title">SCHWEDISCH</div>
+        <div class="input-row"><input type="text" id="inSvPast" placeholder="Dåtid"><input type="text" id="inSvFut" placeholder="Framtid"></div>
         <button class="action-btn btn-magic" style="margin-bottom: 0;" onclick="fetchVerbForms()">⚡ Formen automatisch suchen</button>
     </div>
 
@@ -212,16 +210,15 @@
 </div>
 
 <div id="tabChat" class="card" style="display:none">
-    <h2>💬 KI-Sprachtutor</h2>
-    <div class="input-row" style="margin-bottom: 15px;"><select id="chatSrcLang"><option value="de">Ich spreche Deutsch</option><option value="en">Ich spreche Englisch</option><option value="sv">Ich spreche Schwedisch</option></select><select id="chatTgtLang"><option value="sv" selected>Tutor spricht Schwedisch</option><option value="en">Tutor spricht Englisch</option><option value="de">Tutor spricht Deutsch</option></select></div>
-    <div class="chat-box" id="chatHistory"><div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns ein bisschen üben. 👋</div></div>
+    <h2>💬 Sprachtutor</h2>
+    <div class="chat-box" id="chatHistory"><div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns üben. 👋</div></div>
     <div id="loaderChat" class="loader">👨‍🏫 Tutor denkt nach...</div>
     <div class="input-row"><button id="btnChatRecord" class="action-btn" onclick="toggleChatRecord()" style="margin-top:0;">🎤 Chat Starten</button><button class="icon-btn danger" onclick="clearChat()">🗑️</button></div>
 </div>
 
 <div id="tabLive" class="card" style="display:none">
     <h2>🎙️ Live Übersetzer</h2>
-    <div class="input-row"><select id="liveSrcLang"><option value="en">Englisch</option><option value="de" selected>Deutsch</option><option value="sv">Schwedisch</option></select><span>➡️</span><select id="liveTgtLang"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="sv" selected>Schwedisch</option></select></div>
+    <div class="input-row"><select id="liveSrcLang"></select><span>➡️</span><select id="liveTgtLang"></select></div>
     <button id="btnLiveRecord" class="action-btn" onclick="toggleLiveRecord()">🎤 Start</button>
     <label>Gehört:</label><textarea id="liveSourceText" rows="2" readonly></textarea>
     <div id="loaderLive" class="loader">🤖 KI...</div><label>Übersetzung:</label><textarea id="liveResultText" rows="3" readonly style="color: var(--primary);"></textarea>
@@ -235,399 +232,295 @@
 </div>
 
 <div id="tabList" class="card" style="display:none">
-    <h2>📚 Vokabelheft</h2>
-    <div style="text-align:center; margin-bottom: 15px;">
-        <span style="background: var(--primary-gradient); color: white; padding: 6px 16px; border-radius: 20px; font-weight: 800; box-shadow: var(--shadow-float);">
-            📚 <span id="wordCount">0</span> Wörter
-        </span>
-    </div>
-    <div id="listCont" style="margin-top: 15px;"></div>
+    <h2>📚 Liste</h2>
+    <div style="text-align:center; margin-bottom: 15px;"><span style="background: var(--primary-gradient); color: white; padding: 6px 16px; border-radius: 20px; font-weight: 800;">📚 <span id="wordCount">0</span> Wörter</span></div>
+    <div id="listCont"></div>
 </div>
 
 <script>
-    const VERSION = "13.4 (Family Profiles Restored)";
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" };
-    firebase.initializeApp(firebaseConfig); 
-    const db = firebase.firestore();
+    firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
+    db.enablePersistence().catch(()=>{});
 
-    db.enablePersistence().catch(function(err) { console.warn("Offline-Speicherung konnte nicht aktiviert werden:", err.code); });
+    const ALL_LANGS = { 
+        'de':{name:'Deutsch',tts:'de-DE',flag:'🇩🇪'}, 
+        'en':{name:'Englisch',tts:'en-US',flag:'🇬🇧'}, 
+        'sv':{name:'Schwedisch',tts:'sv-SE',flag:'🇸🇪'}, 
+        'fr':{name:'Französisch',tts:'fr-FR',flag:'🇫🇷'}, 
+        'no':{name:'Norwegisch',tts:'nb-NO',flag:'🇳🇴'}, 
+        'es':{name:'Spanisch',tts:'es-ES',flag:'🇪🇸'}, 
+        'it':{name:'Italienisch',tts:'it-IT',flag:'🇮🇹'} 
+    };
 
-    window.addEventListener('online', () => document.getElementById('offlineBanner').style.display = 'none');
-    window.addEventListener('offline', () => document.getElementById('offlineBanner').style.display = 'block');
-    if (!navigator.onLine) document.getElementById('offlineBanner').style.display = 'block';
-
-    const LANGS = { 'de':{name:'Deutsch',tts:'de-DE'}, 'en':{name:'Englisch',tts:'en-US'}, 'sv':{name:'Schwedisch',tts:'sv-SE'} };
-    
-    // FAMILIEN-PROFILE VARIABLEN
     let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; 
     let currentCollIndex = 0; 
-    
+    let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
     let allWords = [], studyWords = [], studyIndex = 0;
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
     let cachedGeminiModel = null;
-    let isLiveRecording = false, liveRec = null, chatRec = null, isChatSessionActive = false;
-    let currentUser = null;
+    let isLiveRecording = false, liveRec = null, chatRec = null, isChatSessionActive = false, currentUser = null;
 
     function escapeHTML(str) { return !str ? "" : String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[m]); }
     function safeJS(str) { return !str ? "" : String(str).replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
 
     function init() { 
         document.getElementById('inpGeminiKey').value = geminiApiKey; 
-        
-        // Profil-Daten laden
         const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames);
         const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx);
-        renderRenameInputs(); updateUserDropdown();
-
+        loadUserLangs(); renderRenameInputs(); updateUserDropdown(); populateLangSelects();
         showTab('add'); 
-        firebase.auth().signInAnonymously().catch((error) => console.error("Auth-Fehler:", error));
+        firebase.auth().signInAnonymously().catch(()=>{});
         firebase.auth().onAuthStateChanged((user) => { if (user) { currentUser = user; refreshData(); } });
     }
 
-    // Profil-Management Funktionen
-    function renderRenameInputs() { 
-        document.getElementById('renameContainer').innerHTML = userNames.map((n, i) => `
-            <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
-                <span style="font-weight:bold; color:var(--primary); width:20px;">${i+1}.</span>
-                <input type="text" id="name${i}" value="${escapeHTML(n)}" onchange="saveName(${i})" style="padding: 10px;">
-            </div>
-        `).join(''); 
+    function loadUserLangs() {
+        const saved = localStorage.getItem('trainerLangs_' + currentCollIndex);
+        if(saved) conf = JSON.parse(saved);
+        else conf = { l1: 'de', l2: 'en', l3: 'sv' };
+        updateUIForLangs();
     }
-    function updateUserDropdown() { 
-        document.getElementById('selUser').innerHTML = userNames.map((n, i) => `<option value="${i}" ${i===currentCollIndex?'selected':''}>👤 ${escapeHTML(n)}</option>`).join(''); 
+
+    function populateLangSelects() {
+        const opts = Object.keys(ALL_LANGS).map(k => `<option value="${k}">${ALL_LANGS[k].flag} ${ALL_LANGS[k].name}</option>`).join('');
+        ['selL1','selL2','selL3','liveSrcLang','liveTgtLang'].forEach(id => {
+            const el = document.getElementById(id);
+            el.innerHTML = opts;
+            if(id === 'selL1') el.value = conf.l1;
+            if(id === 'selL2') el.value = conf.l2;
+            if(id === 'selL3') el.value = conf.l3;
+        });
     }
-    function saveName(idx) { 
-        const val = document.getElementById('name'+idx).value.trim(); 
-        if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } 
+
+    function langChanged() {
+        conf.l1 = document.getElementById('selL1').value;
+        conf.l2 = document.getElementById('selL2').value;
+        conf.l3 = document.getElementById('selL3').value;
+        localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf));
+        updateUIForLangs();
+        refreshData();
     }
-    function switchUser() { 
-        currentCollIndex = parseInt(document.getElementById('selUser').value); 
-        localStorage.setItem('trainerUserIdx', currentCollIndex); 
-        refreshData(); // Läd die Wörter des neu gewählten Profils
+
+    function updateUIForLangs() {
+        document.getElementById('lblL1').innerText = ALL_LANGS[conf.l1].name;
+        document.getElementById('lblL2').innerText = ALL_LANGS[conf.l2].name;
+        document.getElementById('lblL3').innerText = ALL_LANGS[conf.l3].name;
+        document.getElementById('vTitle1').innerText = ALL_LANGS[conf.l1].name.toUpperCase();
+        document.getElementById('vTitle2').innerText = ALL_LANGS[conf.l2].name.toUpperCase();
+        document.getElementById('vTitle3').innerText = ALL_LANGS[conf.l3].name.toUpperCase();
     }
+
+    function renderRenameInputs() { document.getElementById('renameContainer').innerHTML = userNames.map((n, i) => `<div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;"><span style="font-weight:bold; color:var(--primary); width:20px;">${i+1}.</span><input type="text" id="name${i}" value="${escapeHTML(n)}" onchange="saveName(${i})" style="padding: 10px;"></div>`).join(''); }
+    function updateUserDropdown() { document.getElementById('selUser').innerHTML = userNames.map((n, i) => `<option value="${i}" ${i===currentCollIndex?'selected':''}>👤 ${escapeHTML(n)}</option>`).join(''); }
+    function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
+    function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
     function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); }
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
 
     function showTab(n) { 
-        if(isLiveRecording) toggleLiveRecord(); 
-        if(isChatSessionActive) toggleChatRecord(); 
+        if(isLiveRecording) toggleLiveRecord(); if(isChatSessionActive) toggleChatRecord(); 
         document.querySelectorAll('.nav-scroll button').forEach(b=>b.classList.remove('active')); 
         const btnMap = { 'add':'btn1', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'arcade':'btnArcade', 'story':'btnStory' };
         if(btnMap[n] && document.getElementById(btnMap[n])) document.getElementById(btnMap[n]).classList.add('active');
         ['tabAdd','tabChat','tabLive','tabStudy','tabList','tabArcade','tabStory'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
         const activeTab = document.getElementById('tab'+n.charAt(0).toUpperCase() + n.slice(1));
         if(activeTab) activeTab.style.display = 'block';
-        if(n === 'list') renderList(); if(n === 'study') { filterStudyWords(); } if(n === 'arcade') openMiniGame('Menu');
+        if(n === 'list') renderList(); if(n === 'study') filterStudyWords(); if(n === 'arcade') openMiniGame('Menu');
     }
 
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
-        if (!navigator.onLine) { alert("⚠️ Du bist offline! KI-Funktionen benötigen eine Internetverbindung."); return null; }
-        if(!geminiApiKey) { alert("⚠️ Bitte trage deinen Gemini API-Schlüssel in den Einstellungen ein!"); return null; }
+        if(!geminiApiKey) { alert("API Key fehlt!"); return null; }
         if (!cachedGeminiModel) {
             try {
-                const modelRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
-                const modelData = await modelRes.json();
-                if(!modelData.error) {
-                    const validModel = modelData.models.find(m => m.name.includes("gemini") && m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"));
-                    if(validModel) cachedGeminiModel = validModel.name.replace('models/', '');
-                }
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
+                const data = await res.json();
+                const m = data.models.find(mod => mod.name.includes("gemini") && mod.supportedGenerationMethods.includes("generateContent"));
+                if(m) cachedGeminiModel = m.name.replace('models/', '');
             } catch(e) {}
-            if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest"; 
+            if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest";
         }
-
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${cachedGeminiModel}:generateContent?key=${geminiApiKey}`;
-        let contents = [];
-        if (systemPrompt) contents.push({ role: "user", parts: [{ text: "SYSTEM-ANWEISUNG: " + systemPrompt }] }, { role: "model", parts: [{ text: "Verstanden." }] });
-        
-        let userParts = [{ text: prompt }];
-        if (imageBase64) userParts.push({ inlineData: { mimeType: "image/jpeg", data: imageBase64.split(',')[1] } });
-        contents.push({ role: "user", parts: userParts });
-
+        let contents = systemPrompt ? [{role:"user",parts:[{text:"SYSTEM:"+systemPrompt}]},{role:"model",parts:[{text:"OK"}]}] : [];
+        let userParts = [{text:prompt}];
+        if(imageBase64) userParts.push({inlineData:{mimeType:"image/jpeg",data:imageBase64.split(',')[1]}});
+        contents.push({role:"user",parts:userParts});
         try {
-            const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: contents }) });
-            const data = await response.json(); 
-            if(data.error) throw new Error(data.error.message);
-            return data.candidates[0].content.parts[0].text.trim();
-        } catch(e) { alert("API Fehler: " + e.message); return null; }
+            const resp = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({contents})});
+            const d = await resp.json(); return d.candidates[0].content.parts[0].text.trim();
+        } catch(e) { return null; }
     }
 
     function handleImageScan(input) {
         const file = input.files[0]; if(!file) return;
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const imgBase64 = e.target.result;
             document.getElementById('loader').style.display = 'block';
-            document.getElementById('loader').innerText = '✨ KI analysiert das Bild...';
-            
-            const prompt = `Identify the single main everyday object in this image. Translate it. Respond STRICTLY in valid JSON format exactly like this: {"de":"Apfel","en":"Apple","sv":"Äpple"}`;
-            const resultText = await callGemini(prompt, imgBase64);
-            
+            const prompt = `Identify object. JSON format: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`;
+            const res = await callGemini(prompt, e.target.result);
             document.getElementById('loader').style.display = 'none';
-            document.getElementById('loader').innerText = '🤖 KI übersetzt...'; 
-            
-            if(resultText) {
+            if(res) {
                 try {
-                    let cleanJson = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
-                    const obj = JSON.parse(cleanJson);
-                    document.getElementById('inDe').value = obj.de || "";
-                    document.getElementById('inEn').value = obj.en || "";
-                    document.getElementById('inSv').value = obj.sv || "";
-                } catch(err) { alert("Konnte das Bild nicht eindeutig erkennen. Versuch es noch einmal!"); }
+                    const obj = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim());
+                    document.getElementById('inDe').value = obj[conf.l1] || "";
+                    document.getElementById('inEn').value = obj[conf.l2] || "";
+                    document.getElementById('inSv').value = obj[conf.l3] || "";
+                } catch(err) {}
             }
-        };
-        reader.readAsDataURL(file);
+        }; reader.readAsDataURL(file);
     }
 
-    function toggleVerbSection() {
-        const vs = document.getElementById('verbSection');
-        vs.style.display = vs.style.display === 'block' ? 'none' : 'block';
-    }
+    function toggleVerbSection() { const vs = document.getElementById('verbSection'); vs.style.display = vs.style.display === 'block' ? 'none' : 'block'; }
 
     async function fetchVerbForms() {
-        const baseDe = document.getElementById('inDe').value.trim();
-        const baseEn = document.getElementById('inEn').value.trim();
-        if(!baseDe && !baseEn) return alert("Bitte gib zuerst ein Wort bei Deutsch oder Englisch ein!");
-        
-        document.getElementById('loader').style.display = "block";
-        const prompt = `Konjugiere das Verb "${baseDe || baseEn}" in der 3. Person Singular. Gib das Präteritum (Vergangenheit) und Futur (Zukunft) für Deutsch, Englisch und Schwedisch. Antworte NUR im validen JSON Format exakt so: {"deP":"er ...", "deF":"er wird ...", "enP":"he ...", "enF":"he will ...", "svP":"han ...", "svF":"han kommer att ..."}`;
-        
+        const b = document.getElementById('inDe').value || document.getElementById('inEn').value;
+        if(!b) return; document.getElementById('loader').style.display = "block";
+        const prompt = `Verb "${b}". JSON: {"l1P":"...", "l1F":"...", "l2P":"...", "l2F":"...", "l3P":"...", "l3F":"..."} for languages ${conf.l1}, ${conf.l2}, ${conf.l3}`;
         const res = await callGemini(prompt);
         document.getElementById('loader').style.display = "none";
-        
         if(res) {
             try {
-                const obj = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim());
-                document.getElementById('inDePast').value = obj.deP || ""; document.getElementById('inDeFut').value = obj.deF || "";
-                document.getElementById('inEnPast').value = obj.enP || ""; document.getElementById('inEnFut').value = obj.enF || "";
-                document.getElementById('inSvPast').value = obj.svP || ""; document.getElementById('inSvFut').value = obj.svF || "";
-            } catch(e) { alert("Konnte Verbformen nicht einfügen. API Antwort war unklar."); }
+                const o = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim());
+                document.getElementById('inDePast').value = o.l1P; document.getElementById('inDeFut').value = o.l1F;
+                document.getElementById('inEnPast').value = o.l2P; document.getElementById('inEnFut').value = o.l2F;
+                document.getElementById('inSvPast').value = o.l3P; document.getElementById('inSvFut').value = o.l3F;
+            } catch(e) {}
         }
     }
 
-    function openMiniGame(game) {
+    function openMiniGame(g) {
         ['arcadeMenu', 'gameRallye', 'gameHunt', 'gameDuel', 'gameAdventure'].forEach(id => document.getElementById(id).style.display = 'none');
-        if(game === 'Menu') document.getElementById('arcadeMenu').style.display = 'grid';
-        else document.getElementById('game' + game).style.display = 'block';
-        if(game === 'Rallye') initRallye(); if(game === 'Hunt') initHunt();
+        if(g === 'Menu') document.getElementById('arcadeMenu').style.display = 'grid';
+        else document.getElementById('game' + g).style.display = 'block';
+        if(g === 'Rallye') initRallye(); if(g === 'Hunt') initHunt();
     }
 
-    let rallyeTimer, rallyeTimeLeft = 30000, currentRallyeCat = "";
-    const rallyeCats = ["Tiere", "Farben", "Essen & Trinken", "Kleidung", "Möbel"];
-    function initRallye() {
-        currentRallyeCat = rallyeCats[Math.floor(Math.random() * rallyeCats.length)];
-        document.getElementById('rallyeCategory').innerText = "Kategorie: " + currentRallyeCat;
-        rallyeTimeLeft = 30000; updateRallyeUI(); clearInterval(rallyeTimer);
-        rallyeTimer = setInterval(() => { rallyeTimeLeft -= 100; updateRallyeUI(); if(rallyeTimeLeft <= 0) { clearInterval(rallyeTimer); alert("💥 BOOM! Verloren!"); initRallye(); } }, 100);
-    }
-    function updateRallyeUI() { document.getElementById('rallyeTimerFill').style.width = (rallyeTimeLeft / 30000 * 100) + "%"; }
+    let rallyeTimer, rallyeTimeLeft = 30000;
+    function initRallye() { rallyeTimeLeft = 30000; clearInterval(rallyeTimer); rallyeTimer = setInterval(() => { rallyeTimeLeft -= 100; document.getElementById('rallyeTimerFill').style.width = (rallyeTimeLeft/300)+'%'; if(rallyeTimeLeft<=0){clearInterval(rallyeTimer); alert("BOOM!"); initRallye();} }, 100); }
     function playRallyeRound() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = 'sv-SE';
-        document.getElementById('btnRallyeMic').innerText = "Hört zu..."; document.getElementById('btnRallyeMic').classList.add('mic-active');
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); rec.lang = ALL_LANGS[conf.l3].tts;
         rec.onresult = async (e) => {
-            const word = e.results[0][0].transcript;
-            document.getElementById('btnRallyeMic').classList.remove('mic-active');
-            document.getElementById('rallyeLoader').style.display = 'block';
-            const check = await callGemini(`Der Nutzer hat "${word}" gesagt. Passt es zu "${currentRallyeCat}"? Antworte NUR mit JA oder NEIN.`);
+            const w = e.results[0][0].transcript; document.getElementById('rallyeLoader').style.display = 'block';
+            const res = await callGemini(`Is "${w}" in category "${document.getElementById('rallyeCategory').innerText}"? JA/NEIN`);
             document.getElementById('rallyeLoader').style.display = 'none';
-            document.getElementById('btnRallyeMic').innerText = "🎤 Wort sagen";
-            if(check && check.toUpperCase().includes("JA")) { alert(`✅ Richtig! Weitergeben!`); rallyeTimeLeft = Math.min(30000, rallyeTimeLeft + 15000); } 
-            else { alert(`❌ Falsch! Versuch es nochmal!`); }
+            if(res && res.includes("JA")) { rallyeTimeLeft = Math.min(30000, rallyeTimeLeft+10000); }
         }; rec.start();
     }
 
     let huntTarget = "";
-    function initHunt() {
-        if(allWords.length === 0) { huntTarget = "Äpple"; } else { huntTarget = allWords[Math.floor(Math.random() * allWords.length)].sv; }
-        document.getElementById('huntTargetWord').innerText = huntTarget; document.getElementById('huntPreview').style.display = 'none'; document.getElementById('huntResult').innerText = "";
-    }
-    function checkHuntImage(input) {
-        const file = input.files[0]; if(!file) return; const reader = new FileReader();
-        reader.onload = async (e) => {
-            const imgBase64 = e.target.result;
-            document.getElementById('huntPreview').src = imgBase64; document.getElementById('huntPreview').style.display = 'block'; document.getElementById('huntLoader').style.display = 'block';
-            const check = await callGemini(`Does this show the object for Swedish word "${huntTarget}"? Answer ONLY YES or NO.`, imgBase64);
+    function initHunt() { huntTarget = allWords.length ? allWords[Math.floor(Math.random()*allWords.length)][conf.l3] : "Äpple"; document.getElementById('huntTargetWord').innerText = huntTarget; }
+    function checkHuntImage(i) {
+        const r = new FileReader(); r.onload = async (e) => {
+            document.getElementById('huntLoader').style.display = 'block';
+            const c = await callGemini(`Is this "${huntTarget}"? YES/NO`, e.target.result);
             document.getElementById('huntLoader').style.display = 'none';
-            if(check && check.toUpperCase().includes("YES")) { document.getElementById('huntResult').style.color = "var(--secondary)"; document.getElementById('huntResult').innerText = "🎉 Gefunden!"; } 
-            else { document.getElementById('huntResult').style.color = "#EF4444"; document.getElementById('huntResult').innerText = "❌ Das ist es nicht."; }
-        }; reader.readAsDataURL(file);
+            document.getElementById('huntResult').innerText = c && c.includes("YES") ? "✅ Richtig!" : "❌ Falsch";
+        }; r.readAsDataURL(i.files[0]);
     }
 
-    let duelWordObj = null, duelCanTap = false;
+    let duelWord = null, duelCanTap = false;
     function startDuelRound() {
-        if(allWords.length === 0) return alert("Füge erst Vokabeln hinzu!");
-        document.getElementById('btnStartDuel').style.display = 'none'; document.getElementById('duelArea').style.display = 'flex'; document.getElementById('duelResult').innerText = ""; document.getElementById('duelWord').innerText = "Achtung..."; duelCanTap = false;
-        setTimeout(() => { duelWordObj = allWords[Math.floor(Math.random() * allWords.length)]; document.getElementById('duelWord').innerText = duelWordObj.de; duelCanTap = true; }, Math.random() * 2000 + 1000); 
+        if(!allWords.length) return; document.getElementById('duelWord').innerText = "Warten..."; duelCanTap = false;
+        setTimeout(() => { duelWord = allWords[Math.floor(Math.random()*allWords.length)]; document.getElementById('duelWord').innerText = duelWord[conf.l1]; duelCanTap = true; }, 1500);
     }
-    function duelTap(player) {
-        if(!duelCanTap) return; duelCanTap = false; document.getElementById('duelResult').style.color = "var(--text)"; document.getElementById('duelResult').innerText = `🎤 Spieler ${player} spricht!`;
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = 'sv-SE';
+    function duelTap(p) {
+        if(!duelCanTap) return; duelCanTap = false;
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); rec.lang = ALL_LANGS[conf.l3].tts;
         rec.onresult = (e) => {
-            const spoken = e.results[0][0].transcript.toLowerCase();
-            if(spoken.includes(duelWordObj.sv.toLowerCase())) { document.getElementById('duelResult').style.color = "var(--secondary)"; document.getElementById('duelResult').innerText = `🏆 Richtig! Punkt für ${player}!`; } 
-            else { document.getElementById('duelResult').style.color = "#EF4444"; document.getElementById('duelResult').innerText = `❌ Falsch! Lösung war "${duelWordObj.sv}".`; }
-            document.getElementById('btnStartDuel').style.display = 'block'; document.getElementById('btnStartDuel').innerText = "Nächste Runde";
+            const s = e.results[0][0].transcript.toLowerCase();
+            document.getElementById('duelResult').innerText = s.includes(duelWord[conf.l3].toLowerCase()) ? `Punkt für ${p}!` : "Leider falsch";
         }; rec.start();
     }
 
-    let advContext = "Du bist der Spielleiter eines Text-Adventures auf SCHWEDISCH. Der Nutzer ist in einem Wald. Beschreibe kurz (2 Sätze) und gib 2 Optionen.";
     async function startAdventure() {
-        document.getElementById('btnStartAdv').style.display = 'none'; document.getElementById('advArea').style.display = 'block'; document.getElementById('advLoader').style.display = 'block';
-        const reply = await callGemini("Starte das Abenteuer.", null, advContext);
-        document.getElementById('advLoader').style.display = 'none';
-        if(reply) { document.getElementById('advHistory').innerHTML = `<div class="chat-bubble bubble-ai">${escapeHTML(reply)}</div>`; speak(reply, 'sv'); }
-    }
-    function advTurn() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = 'sv-SE';
-        document.getElementById('btnAdvMic').classList.add('mic-active');
-        rec.onresult = async (e) => {
-            const text = e.results[0][0].transcript; document.getElementById('btnAdvMic').classList.remove('mic-active');
-            document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-user">${escapeHTML(text)}</div>`; document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight; document.getElementById('advLoader').style.display = 'block';
-            const reply = await callGemini(text, null, advContext);
-            document.getElementById('advLoader').style.display = 'none';
-            if(reply) { document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(reply)}</div>`; document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight; speak(reply, 'sv'); }
-        }; rec.start();
+        document.getElementById('advArea').style.display='block'; document.getElementById('advLoader').style.display='block';
+        const r = await callGemini(`Starte Kurz-Abenteuer auf ${ALL_LANGS[conf.l3].name}. 2 Sätze + 2 Optionen.`);
+        document.getElementById('advLoader').style.display='none';
+        if(r) { document.getElementById('advHistory').innerHTML = `<div class="chat-bubble bubble-ai">${r}</div>`; speak(r, conf.l3); }
     }
 
     async function toggleChatRecord() {
-        if (isChatSessionActive) {
-            isChatSessionActive = false; if(chatRec) { try{ chatRec.abort(); }catch(e){} }
-            document.getElementById('btnChatRecord').innerText = "🎤 Chat Starten"; document.getElementById('btnChatRecord').style.background = "var(--primary-gradient)"; document.getElementById('btnChatRecord').classList.remove("mic-active");
-        } else {
-            isChatSessionActive = true; document.getElementById('btnChatRecord').innerText = "⏹️ Chat beenden"; document.getElementById('btnChatRecord').style.background = "#EF4444"; document.getElementById('btnChatRecord').classList.add("mic-active"); startTutorMic();
-        }
+        if(isChatSessionActive) { isChatSessionActive=false; return; }
+        isChatSessionActive=true; startTutorMic();
     }
     function startTutorMic() {
-        if (!isChatSessionActive) return; const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return;
-        chatRec = new SpeechRecognition(); const srcVal = document.getElementById('chatSrcLang').value; const tgtVal = document.getElementById('chatTgtLang').value;
-        chatRec.lang = LANGS[srcVal].tts; chatRec.continuous = false;
-        chatRec.onresult = async (e) => {
-            const text = e.results[0][0].transcript; document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-user">${escapeHTML(text)}</div>`; document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight; document.getElementById('loaderChat').style.display = 'block';
-            const reply = await callGemini(text, null, `Du bist Sprachtutor. Nutzer spricht ${LANGS[srcVal].name}, lernt ${LANGS[tgtVal].name}. Format: Teil 1: Natürliche Antwort auf ${LANGS[tgtVal].name}. ||| Teil 2: Kurzes Feedback auf Deutsch.`);
-            document.getElementById('loaderChat').style.display = 'none';
-            if(reply && isChatSessionActive) {
-                let chatText = reply, feedbackText = ""; if(reply.includes("|||")) { const parts = reply.split("|||"); chatText = parts[0].trim(); feedbackText = parts[1] ? parts[1].trim() : ""; }
-                document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(chatText)}</div>`; if(feedbackText) document.getElementById('chatHistory').innerHTML += `<div class="bubble-feedback">👨‍🏫 <b>Tutor:</b> ${escapeHTML(feedbackText)}</div>`; speak(chatText, tgtVal);
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); rec.lang = ALL_LANGS[conf.l1].tts;
+        rec.onresult = async (e) => {
+            const t = e.results[0][0].transcript;
+            document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-user">${t}</div>`;
+            document.getElementById('loaderChat').style.display='block';
+            const r = await callGemini(t, null, `Tutor für ${ALL_LANGS[conf.l3].name}. Antwort auf ${ALL_LANGS[conf.l3].name} ||| Feedback auf Deutsch.`);
+            document.getElementById('loaderChat').style.display='none';
+            if(r) {
+                const p = r.split('|||');
+                document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${p[0]}</div><div class="bubble-feedback">${p[1]||''}</div>`;
+                speak(p[0], conf.l3);
             }
-            document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight;
-        };
-        chatRec.onend = () => { if(isChatSessionActive) setTimeout(() => { if(isChatSessionActive) try{ chatRec.start(); }catch(err){} }, 1000); }; try { chatRec.start(); } catch(err) {}
+        }; rec.onend = () => { if(isChatSessionActive) rec.start(); }; rec.start();
     }
-    function clearChat() { document.getElementById('chatHistory').innerHTML = `<div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns ein bisschen üben. 👋</div>`; }
 
     async function generateStory() {
-        if(allWords.length < 3) return alert("Du brauchst mindestens 3 Vokabeln im Heft!");
-        document.getElementById('loaderStory').style.display = 'block'; document.getElementById('storyBox').style.display = 'none';
-        const selected = allWords.sort(() => 0.5 - Math.random()).slice(0, 4).map(w => w.sv).join(", ");
-        const res = await callGemini(`Schreibe ein absurdes Märchen (max 3 Sätze) auf Schwedisch. Baue diese Wörter ein: ${selected}. Format: Schwedisch --- Deutsch.`);
-        document.getElementById('loaderStory').style.display = 'none';
-        if(res) { const parts = res.split('---'); currentStoryText = parts[0].trim(); document.getElementById('storyContent').innerText = currentStoryText; document.getElementById('storyTranslation').innerText = parts[1] ? parts[1].trim() : ""; document.getElementById('storyBox').style.display = 'block'; speak(currentStoryText, 'sv'); }
-    }
-    function speakStory() { if(currentStoryText) speak(currentStoryText, 'sv'); }
-
-    function speak(txt, langCode) { window.speechSynthesis.cancel(); const ut = new SpeechSynthesisUtterance(txt); ut.lang = LANGS[langCode].tts; window.speechSynthesis.speak(ut); }
-    function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = slot === 1 ? 'de-DE' : (slot === 2 ? 'en-US' : 'sv-SE'); btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); }
-
-    async function handleSmartTranslate() { 
-        const txt = document.getElementById('inDe').value.trim() || document.getElementById('inEn').value.trim() || document.getElementById('inSv').value.trim(); 
-        if(!txt) return; document.getElementById('loader').style.display = "block"; 
-        try { const res = await callGemini(`Übersetze das Wort "${txt}" in Deutsch, Englisch und Schwedisch. Antworte NUR im JSON Format: {"de":"...", "en":"...", "sv":"..."}`); const obj = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim()); document.getElementById('inDe').value = obj.de || ""; document.getElementById('inEn').value = obj.en || ""; document.getElementById('inSv').value = obj.sv || ""; } catch(e) {} document.getElementById('loader').style.display = "none"; 
+        const words = allWords.sort(()=>0.5-Math.random()).slice(0,3).map(w=>w[conf.l3]).join(", ");
+        document.getElementById('loaderStory').style.display='block';
+        const r = await callGemini(`Märchen auf ${ALL_LANGS[conf.l3].name} mit Wörtern: ${words}. Format: Geschichte --- Übersetzung.`);
+        document.getElementById('loaderStory').style.display='none';
+        if(r) {
+            const p = r.split('---');
+            document.getElementById('storyContent').innerText = p[0];
+            document.getElementById('storyTranslation').innerText = p[1] || "";
+            document.getElementById('storyBox').style.display='block'; speak(p[0], conf.l3);
+        }
     }
 
-    function manualSave() { 
-        if(!currentUser) return alert("Verbindung zur Datenbank wird hergestellt...");
-        const vData = {
+    function speak(t, l) { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = ALL_LANGS[l].tts; window.speechSynthesis.speak(u); }
+    function listen(s, t, b) { 
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); 
+        rec.lang = ALL_LANGS[s===1?conf.l1:(s===2?conf.l2:conf.l3)].tts;
+        rec.onresult = (e) => document.getElementById(t).value = e.results[0][0].transcript; rec.start();
+    }
+
+    async function handleSmartTranslate() {
+        const v = document.getElementById('inDe').value || document.getElementById('inEn').value || document.getElementById('inSv').value;
+        if(!v) return; document.getElementById('loader').style.display='block';
+        const r = await callGemini(`Translate "${v}". JSON: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`);
+        document.getElementById('loader').style.display='none';
+        if(r) {
+            const o = JSON.parse(r.replace(/```json/g, '').replace(/```/g, '').trim());
+            document.getElementById('inDe').value = o[conf.l1]; document.getElementById('inEn').value = o[conf.l2]; document.getElementById('inSv').value = o[conf.l3];
+        }
+    }
+
+    function manualSave() {
+        if(!currentUser) return;
+        const d = { 
+            [conf.l1]: document.getElementById('inDe').value, [conf.l2]: document.getElementById('inEn').value, [conf.l3]: document.getElementById('inSv').value,
+            ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0,
             deP: document.getElementById('inDePast').value, deF: document.getElementById('inDeFut').value,
             enP: document.getElementById('inEnPast').value, enF: document.getElementById('inEnFut').value,
             svP: document.getElementById('inSvPast').value, svF: document.getElementById('inSvFut').value
         };
-        const data = { de: document.getElementById('inDe').value, en: document.getElementById('inEn').value, sv: document.getElementById('inSv').value, ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0, ...vData }; 
-        if(!data.de || !data.sv) return; 
-        
-        // Nutze den currentCollIndex (0, 1, 2, 3), um die Wörter des aktuellen Profils zu trennen
-        db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).add(data).then(() => { 
-            refreshData(); 
-            document.getElementById('inDe').value=''; document.getElementById('inEn').value=''; document.getElementById('inSv').value=''; 
-            document.getElementById('inDePast').value=''; document.getElementById('inDeFut').value='';
-            document.getElementById('inEnPast').value=''; document.getElementById('inEnFut').value='';
-            document.getElementById('inSvPast').value=''; document.getElementById('inSvFut').value='';
-            document.getElementById('verbSection').style.display = 'none';
-            showTab('list'); 
-        }); 
+        db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).add(d).then(() => { refreshData(); showTab('list'); });
     }
 
-    async function refreshData() { 
+    async function refreshData() {
         if(!currentUser) return;
-        try {
-            // Lade die Vokabeln des AKTUELLEN Familien-Profils
-            const s = await db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).orderBy("ts", "desc").get(); 
-            allWords = s.docs.map(d => ({id: d.id, ...d.data()})); 
-            
-            // Wortzähler updaten
-            const wordCountEl = document.getElementById('wordCount');
-            if(wordCountEl) wordCountEl.innerText = allWords.length;
-            
-            renderList(); filterStudyWords();
-        } catch(err) {}
+        const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).orderBy("ts", "desc").get();
+        allWords = s.docs.map(d => ({id: d.id, ...d.data()}));
+        document.getElementById('wordCount').innerText = allWords.length;
+        renderList(); renderStudyWord();
+    }
+
+    function renderList() { 
+        document.getElementById('listCont').innerHTML = allWords.map(w => `<div class="card" style="padding:15px; margin-bottom:10px;"><div style="font-weight:800; color:var(--primary);">${escapeHTML(w[conf.l1])}</div><div style="color:var(--text-light); font-size:0.9rem;">${escapeHTML(w[conf.l3])} | ${escapeHTML(w[conf.l2])}</div></div>`).join(''); 
     }
     
-    async function nukeDatabase() { 
-        if(!currentUser) return; if(!confirm(`⚠️ Möchtest du wirklich ALLE Vokabeln DIESES PROFILs löschen?`)) return; 
-        const s = await db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).get(); const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); refreshData(); 
+    function renderStudyWord() {
+        if(!allWords.length) return; const w = allWords[studyIndex] || allWords[0];
+        document.getElementById('studyWordCount').innerText = `${studyIndex+1}/${allWords.length}`;
+        document.getElementById('studyContainer').innerHTML = `<div style="font-size:2rem; font-weight:800; color:var(--primary); text-align:center;">${escapeHTML(w[conf.l1])}</div><div style="text-align:center; font-size:1.5rem; margin-top:10px;">${escapeHTML(w[conf.l3])} <button class="icon-btn" style="border:none;" onclick="speak('${safeJS(w[conf.l3])}','${conf.l3}')">🔊</button></div>`;
     }
-
-    async function migrateOldData() {
-        if(!currentUser) return alert("Nicht eingeloggt! Lade die Seite kurz neu.");
-        try {
-            const oldSnapshot = await db.collection('words').get();
-            if(oldSnapshot.empty) return alert("Keine alten Wörter auf dem öffentlichen Server gefunden!");
-            
-            let count = 0;
-            const batch = db.batch();
-            oldSnapshot.forEach(doc => {
-                const newData = doc.data();
-                const newRef = db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).doc();
-                batch.set(newRef, newData);
-                count++;
-            });
-            await batch.commit();
-            alert(`🎉 Erfolg! ${count} Vokabeln wurden erfolgreich in dieses Profil importiert!`);
-            closeSettings();
-            refreshData();
-        } catch(e) {
-            alert("Fehler beim Importieren: " + e.message);
-        }
-    }
-
-    function renderList() { document.getElementById('listCont').innerHTML = allWords.map(w => `<div class="card" style="padding:15px; margin-bottom:10px;"><div style="font-weight:800; font-size:1.1rem; color:var(--primary);">${escapeHTML(w.de)}</div><div style="color:var(--text-light);">${escapeHTML(w.sv)} | ${escapeHTML(w.en)}</div></div>`).join(''); }
-
-    let searchDebounceTimer;
-    function debouncedFilterStudyWords() { clearTimeout(searchDebounceTimer); searchDebounceTimer = setTimeout(filterStudyWords, 300); }
-    function filterStudyWords() { const q = document.getElementById('studySearch').value.toLowerCase().trim(); studyWords = q ? allWords.filter(w => (w.de&&w.de.toLowerCase().includes(q)) || (w.sv&&w.sv.toLowerCase().includes(q))) : [...allWords]; studyIndex = 0; renderStudyWord(); }
-    
-    function renderStudyWord() { 
-        if(!studyWords.length) { document.getElementById('studyContainer').innerHTML = "-"; document.getElementById('studyWordCount').innerText="0/0"; return;}
-        if(studyIndex < 0) studyIndex = studyWords.length-1; if(studyIndex >= studyWords.length) studyIndex=0; const w = studyWords[studyIndex];
-        document.getElementById('studyWordCount').innerText = `${studyIndex+1}/${studyWords.length}`;
-        
-        const vL2 = w.enP ? `<div style="font-size:0.85rem; color:var(--text-light); margin-top:5px; font-weight:600;">🕒 ${escapeHTML(w.enP)} | 🔮 ${escapeHTML(w.enF)}</div>` : ""; 
-        const vL3 = w.svP ? `<div style="font-size:0.85rem; color:var(--text-light); margin-top:5px; font-weight:600;">🕒 ${escapeHTML(w.svP)} | 🔮 ${escapeHTML(w.svF)}</div>` : ""; 
-        
-        document.getElementById('studyContainer').innerHTML = `
-            <div style="font-size:2rem; font-weight:800; color:var(--primary); text-align:center; margin:20px 0;">${escapeHTML(w.de)}</div>
-            <div style="text-align:center; margin-bottom:15px;">
-                <div style="font-size:1.5rem;">🇸🇪 ${escapeHTML(w.sv)} <button class="icon-btn" style="display:inline-flex; border:none; background:transparent;" onclick="speak('${safeJS(w.sv)}','sv')">🔊</button></div>
-                ${vL3}
-            </div>
-            <div style="text-align:center;">
-                <div style="font-size:1.2rem; color:var(--text-light);">🇬🇧 ${escapeHTML(w.en)}</div>
-                ${vL2}
-            </div>
-        `;
-    }
-    function nextStudyWord() { studyIndex++; renderStudyWord(); } function prevStudyWord() { studyIndex--; renderStudyWord(); }
+    function nextStudyWord() { studyIndex = (studyIndex+1)%allWords.length; renderStudyWord(); }
+    function prevStudyWord() { studyIndex = (studyIndex-1+allWords.length)%allWords.length; renderStudyWord(); }
 
     window.onload = init;
 </script>
