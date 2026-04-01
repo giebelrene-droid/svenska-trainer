@@ -272,7 +272,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 16.5 (Smart KI-Connector) &bull; 2026
+    SprachTutor AI &bull; Version 16.6 (Stable KI-Connector) &bull; 2026
 </div>
 
 <script>
@@ -290,7 +290,7 @@
     let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; 
     let currentCollIndex = 0, conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
     let allWords = [], studyWords = [], studyIndex = 0, geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
-    let cachedGeminiModel = null, isLiveRecording = false, liveRecObj = null, isChatSessionActive = false, chatRec = null, currentUser = null;
+    let isLiveRecording = false, liveRecObj = null, isChatSessionActive = false, chatRec = null, currentUser = null;
     
     let userXP = parseInt(localStorage.getItem('trainerXP') || '0');
     let userStreak = parseInt(localStorage.getItem('trainerStreak') || '0');
@@ -326,7 +326,7 @@
 
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
-    function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); cachedGeminiModel = null; }
+    function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); }
 
     function showTab(n) { 
         if(isLiveRecording) toggleLiveRecord(); if(isChatSessionActive) toggleChatRecord();
@@ -399,9 +399,8 @@
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
     function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
-
     // ==========================================
-    // 🟢 KI-CONNECTOR (Dynamisches Modell)
+    // 🟢 KI-CONNECTOR (Hardcoded Standard Modell)
     // ==========================================
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
         if(!geminiApiKey) { 
@@ -409,22 +408,9 @@
             return null; 
         }
 
-        // Wir holen uns dynamisch das korrekte, verfügbare Flash-Modell
-        if (!cachedGeminiModel) {
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
-                const data = await res.json();
-                // Sucht explizit nach dem 1.5 Flash Modell
-                const m = data.models.find(mod => mod.name.includes("1.5-flash") && mod.supportedGenerationMethods.includes("generateContent"));
-                if(m) cachedGeminiModel = m.name.replace('models/', '');
-            } catch(e) {
-                console.warn("Konnte Modelliste nicht laden:", e);
-            }
-            if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest"; // Letztes Fallback
-        }
-
-        // URL nutzt das dynamische Modell
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${cachedGeminiModel}:generateContent?key=${geminiApiKey}`;
+        // Wir nutzen jetzt absolut hartkodiert den stabilsten Modell-Namen von Google.
+        const modelName = "gemini-1.5-flash";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
 
         let payload = { contents: [] };
 
@@ -466,8 +452,6 @@
         } catch(e) {
             alert("⚠️ KI-Fehler: " + e.message);
             console.error("Gemini API Error:", e);
-            // Fallback löschen, falls es das falsche war
-            cachedGeminiModel = null;
             return null;
         }
     }
