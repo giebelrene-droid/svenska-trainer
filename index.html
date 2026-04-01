@@ -56,7 +56,7 @@
         .action-btn { width: 100%; padding: 16px; background: var(--primary-gradient); color: white; border: none; border-radius: 16px; cursor: pointer; font-weight: 800; font-size: 1rem; margin-top: 15px; transition: all 0.2s; box-shadow: var(--shadow-float); display: flex; justify-content: center; align-items: center; gap: 8px;}
         .action-btn:active { transform: scale(0.97); box-shadow: none; }
         .btn-secondary { background: #F3F4F6; color: var(--text); box-shadow: none; border: 1px solid var(--border-soft); }
-        .btn-magic { background: linear-gradient(135deg, #a855f7, #ec4899); box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2); }
+        .btn-magic { background: linear-gradient(135deg, #a855f7, #ec4899); box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2); margin-top: 0; margin-bottom: 20px;}
 
         .icon-btn { background: white; border: 2px solid var(--border-soft); font-size: 1.2rem; cursor: pointer; border-radius: 14px; padding: 12px; display:flex; align-items:center; justify-content:center; color: var(--text-light); transition: all 0.2s; flex-shrink: 0;}
         .icon-btn.danger { color: #EF4444; background: #FEF2F2; border-color: #FECACA; }
@@ -88,7 +88,6 @@
         .bubble-feedback { background: #ECFDF5; border: 1px dashed #10B981; color: #065F46; font-size: 0.85rem; padding: 10px 15px; border-radius: 0 20px 20px 20px; align-self: flex-start; max-width: 80%; margin-top: -8px; margin-bottom: 8px; margin-left: 10px; }
         .story-box { background: #FFFBEB; border: 2px dashed #FCD34D; padding: 20px; border-radius: 20px; font-size: 1.1rem; line-height: 1.8; margin-top: 20px; display: none; }
 
-        /* Verb Dropdown Styling */
         .verb-section { display: none; background: #F9FAFB; padding: 20px; border-radius: 16px; margin-top: 15px; border: 1px solid var(--border-soft); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         .verb-lang-title { font-weight: 800; font-size: 0.85rem; color: var(--text-light); margin-bottom: 10px; margin-top: 15px; letter-spacing: 0.5px;}
 
@@ -137,11 +136,13 @@
         <div class="arcade-card" onclick="openMiniGame('Duel')"><div class="arcade-icon">⚔️</div><div class="arcade-title">Familien-Duell</div></div>
         <div class="arcade-card" onclick="openMiniGame('Adventure')"><div class="arcade-icon">🗺️</div><div class="arcade-title">Abenteuer</div></div>
     </div>
+    
     <div id="gameRallye" style="display:none; text-align:center;">
         <h3 style="color: #EF4444;">💣 Hot-Potato Rallye</h3>
         <div class="bomb-container"><div class="bomb-icon" id="rallyeBomb">💣</div><h2 id="rallyeCategory" style="margin: 15px 0; color: var(--primary);">Kategorie: Tiere</h2><div class="timer-bar"><div class="timer-fill" id="rallyeTimerFill"></div></div></div>
         <button class="action-btn" id="btnRallyeMic" onclick="playRallyeRound()">🎤 Wort sagen</button><div id="rallyeLoader" class="loader">KI prüft...</div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
     </div>
+    
     <div id="gameHunt" style="display:none;">
         <h3>📷 Die Schatzsuche</h3>
         <div class="mission-bubble" style="text-align:center;"><span style="color:var(--text-light);">Finde folgendes auf Schwedisch:</span><br><strong id="huntTargetWord" style="font-size:2rem; color:var(--primary);">---</strong></div>
@@ -150,12 +151,14 @@
         <img id="huntPreview" src="" style="width:100%; border-radius:16px; margin-top:15px; display:none;">
         <div id="huntLoader" class="loader">KI prüft das Bild...</div><div id="huntResult" style="text-align:center; font-weight:bold; font-size:1.2rem; margin-top:10px;"></div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
     </div>
+    
     <div id="gameDuel" style="display:none;">
         <h3>⚔️ Split-Screen Duell</h3>
         <button class="action-btn" onclick="startDuelRound()" id="btnStartDuel">Runde starten</button>
         <div class="duel-container" id="duelArea" style="display:none; position:relative;"><div class="duel-word" id="duelWord">Achtung...</div><div class="duel-player duel-p1" onclick="duelTap('Rot')">SPIELER 1</div><div class="duel-player duel-p2" onclick="duelTap('Blau')">SPIELER 2</div></div>
         <div id="duelResult" style="text-align:center; font-weight:bold; font-size:1.2rem; margin-top:15px; color:var(--primary);"></div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Zurück zum Menü</button>
     </div>
+    
     <div id="gameAdventure" style="display:none;">
         <h3>🗺️ Interaktives Abenteuer</h3>
         <button class="action-btn" onclick="startAdventure()" id="btnStartAdv">Abenteuer starten</button>
@@ -173,6 +176,10 @@
 
 <div id="tabAdd" class="card">
     <h2 id="addTitle">➕ Neues Wort</h2>
+    
+    <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none" onchange="handleImageScan(this)">
+    <button class="action-btn btn-magic" onclick="document.getElementById('camInput').click()">📸 Objekt fotografieren & Auto-Fill</button>
+    
     <div id="loader" class="loader">🤖 KI übersetzt...</div>
     
     <label>Deutsch</label><div class="input-row"><input type="text" id="inDe"><button class="icon-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
@@ -191,7 +198,7 @@
         <div class="verb-lang-title">SCHWEDISCH</div>
         <div class="input-row"><input type="text" id="inSvPast" placeholder="Dåtid (han...)"><input type="text" id="inSvFut" placeholder="Framtid (han kommer...)"></div>
         
-        <button class="action-btn btn-magic" onclick="fetchVerbForms()" style="margin-top: 20px; font-size: 0.95rem;">⚡ Formen automatisch suchen</button>
+        <button class="action-btn btn-magic" style="margin-bottom: 0;" onclick="fetchVerbForms()">⚡ Formen automatisch suchen</button>
     </div>
 
     <div style="display: flex; gap: 10px; margin-top: 25px;"><button class="action-btn btn-secondary" onclick="handleSmartTranslate()">⚡ Auto-Fill</button><button class="action-btn" onclick="manualSave()">💾 Speichern</button></div>
@@ -212,19 +219,21 @@
     <label>Gehört:</label><textarea id="liveSourceText" rows="2" readonly></textarea>
     <div id="loaderLive" class="loader">🤖 KI...</div><label>Übersetzung:</label><textarea id="liveResultText" rows="3" readonly style="color: var(--primary);"></textarea>
 </div>
+
 <div id="tabStudy" class="card" style="display:none">
     <div style="text-align:center;"><h2>👀 Lernen</h2><p id="studyWordCount" style="font-weight:800; color:var(--primary);">0/0</p></div>
     <input type="text" id="studySearch" placeholder="🔍 Suchen..." oninput="debouncedFilterStudyWords()" style="margin-bottom: 20px;">
     <div id="studyContainer"></div>
     <div style="display: flex; gap: 10px; margin-top:20px;"><button class="action-btn btn-secondary" onclick="prevStudyWord()">⬅️ Zurück</button><button class="action-btn" onclick="nextStudyWord()">Weiter ➡️</button></div>
 </div>
+
 <div id="tabList" class="card" style="display:none">
     <h2>📚 Vokabelheft</h2>
     <div id="listCont" style="margin-top: 15px;"></div>
 </div>
 
 <script>
-    const VERSION = "13.1 (Verbs & Auth Ready)";
+    const VERSION = "13.2 (Scanner Restored)";
     const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" };
     firebase.initializeApp(firebaseConfig); 
     const db = firebase.firestore();
@@ -268,33 +277,6 @@
         if(n === 'list') renderList(); if(n === 'study') { filterStudyWords(); } if(n === 'arcade') openMiniGame('Menu');
     }
 
-    // Verb Funktionen
-    function toggleVerbSection() {
-        const vs = document.getElementById('verbSection');
-        vs.style.display = vs.style.display === 'block' ? 'none' : 'block';
-    }
-
-    async function fetchVerbForms() {
-        const baseDe = document.getElementById('inDe').value.trim();
-        const baseEn = document.getElementById('inEn').value.trim();
-        if(!baseDe && !baseEn) return alert("Bitte gib zuerst ein Wort bei Deutsch oder Englisch ein!");
-        
-        document.getElementById('loader').style.display = "block";
-        const prompt = `Konjugiere das Verb "${baseDe || baseEn}" in der 3. Person Singular. Gib das Präteritum (Vergangenheit) und Futur (Zukunft) für Deutsch, Englisch und Schwedisch. Antworte NUR im validen JSON Format exakt so: {"deP":"er ...", "deF":"er wird ...", "enP":"he ...", "enF":"he will ...", "svP":"han ...", "svF":"han kommer att ..."}`;
-        
-        const res = await callGemini(prompt);
-        document.getElementById('loader').style.display = "none";
-        
-        if(res) {
-            try {
-                const obj = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim());
-                document.getElementById('inDePast').value = obj.deP || ""; document.getElementById('inDeFut').value = obj.deF || "";
-                document.getElementById('inEnPast').value = obj.enP || ""; document.getElementById('inEnFut').value = obj.enF || "";
-                document.getElementById('inSvPast').value = obj.svP || ""; document.getElementById('inSvFut').value = obj.svF || "";
-            } catch(e) { alert("Konnte Verbformen nicht einfügen. API Antwort war unklar."); }
-        }
-    }
-
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
         if (!navigator.onLine) { alert("⚠️ Du bist offline! KI-Funktionen benötigen eine Internetverbindung."); return null; }
         if(!geminiApiKey) { alert("⚠️ Bitte trage deinen Gemini API-Schlüssel in den Einstellungen ein!"); return null; }
@@ -324,6 +306,61 @@
             if(data.error) throw new Error(data.error.message);
             return data.candidates[0].content.parts[0].text.trim();
         } catch(e) { alert("API Fehler: " + e.message); return null; }
+    }
+
+    // --- DER WIEDERHERGESTELLTE KI-SCANNER ---
+    function handleImageScan(input) {
+        const file = input.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const imgBase64 = e.target.result;
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('loader').innerText = '✨ KI analysiert das Bild...';
+            
+            const prompt = `Identify the single main everyday object in this image. Translate it. Respond STRICTLY in valid JSON format exactly like this: {"de":"Apfel","en":"Apple","sv":"Äpple"}`;
+            const resultText = await callGemini(prompt, imgBase64);
+            
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('loader').innerText = '🤖 KI übersetzt...'; // Zurücksetzen für den Standard-Text
+            
+            if(resultText) {
+                try {
+                    let cleanJson = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const obj = JSON.parse(cleanJson);
+                    document.getElementById('inDe').value = obj.de || "";
+                    document.getElementById('inEn').value = obj.en || "";
+                    document.getElementById('inSv').value = obj.sv || "";
+                } catch(err) { alert("Konnte das Bild nicht eindeutig erkennen. Versuch es noch einmal!"); }
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Verb Funktionen
+    function toggleVerbSection() {
+        const vs = document.getElementById('verbSection');
+        vs.style.display = vs.style.display === 'block' ? 'none' : 'block';
+    }
+
+    async function fetchVerbForms() {
+        const baseDe = document.getElementById('inDe').value.trim();
+        const baseEn = document.getElementById('inEn').value.trim();
+        if(!baseDe && !baseEn) return alert("Bitte gib zuerst ein Wort bei Deutsch oder Englisch ein!");
+        
+        document.getElementById('loader').style.display = "block";
+        const prompt = `Konjugiere das Verb "${baseDe || baseEn}" in der 3. Person Singular. Gib das Präteritum (Vergangenheit) und Futur (Zukunft) für Deutsch, Englisch und Schwedisch. Antworte NUR im validen JSON Format exakt so: {"deP":"er ...", "deF":"er wird ...", "enP":"he ...", "enF":"he will ...", "svP":"han ...", "svF":"han kommer att ..."}`;
+        
+        const res = await callGemini(prompt);
+        document.getElementById('loader').style.display = "none";
+        
+        if(res) {
+            try {
+                const obj = JSON.parse(res.replace(/```json/g, '').replace(/```/g, '').trim());
+                document.getElementById('inDePast').value = obj.deP || ""; document.getElementById('inDeFut').value = obj.deF || "";
+                document.getElementById('inEnPast').value = obj.enP || ""; document.getElementById('inEnFut').value = obj.enF || "";
+                document.getElementById('inSvPast').value = obj.svP || ""; document.getElementById('inSvFut').value = obj.svF || "";
+            } catch(e) { alert("Konnte Verbformen nicht einfügen. API Antwort war unklar."); }
+        }
     }
 
     function openMiniGame(game) {
