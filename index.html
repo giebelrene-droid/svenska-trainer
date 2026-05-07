@@ -384,6 +384,23 @@
         for(let i=0; i<50; i++) { const c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random() * 100 + 'vw'; c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]; c.style.top = '-10px'; c.style.animationDuration = (Math.random() * 2 + 2) + 's'; document.body.appendChild(c); setTimeout(() => c.remove(), 4000); }
         playSound('success');
     }
+    
+    function speak(text, langKey) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); 
+            const msg = new SpeechSynthesisUtterance(text);
+            
+            if (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) {
+                msg.lang = ALL_LANGS[langKey].tts;
+            } else {
+                msg.lang = 'de-DE';
+            }
+            
+            window.speechSynthesis.speak(msg);
+        } else {
+            alert("⚠️ Dein Browser unterstützt leider keine Sprachausgabe.");
+        }
+    }
 
     function checkStreak() { const today = new Date().toDateString(); if(lastActiveDate !== today) { const yesterday = new Date(Date.now() - 86400000).toDateString(); if(lastActiveDate === yesterday) { userStreak++; } else { userStreak = 1; } lastActiveDate = today; localStorage.setItem('trainerLastDate', today); localStorage.setItem('trainerStreak', userStreak); } updateStatsUI(); }
     function addXP(amount) { userXP += amount; localStorage.setItem('trainerXP', userXP); updateStatsUI(); }
@@ -409,18 +426,14 @@
             return null; 
         }
 
-        // 1. Suche nach dem korrekten Modellnamen über die API, falls noch nicht bekannt
         if (!cachedGeminiModel) {
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
                 const data = await res.json();
                 
                 if (data.models) {
-                    // Wir suchen bevorzugt ein Flash-Modell, das NICHT auf "-latest" endet (das macht oft Probleme)
                     let m = data.models.find(mod => mod.name.includes("flash") && !mod.name.includes("latest") && mod.supportedGenerationMethods.includes("generateContent"));
-                    // Fallback 1: Irgendein Flash-Modell
                     if(!m) m = data.models.find(mod => mod.name.includes("flash") && mod.supportedGenerationMethods.includes("generateContent"));
-                    // Fallback 2: Das erste verfügbare Modell
                     if(!m) m = data.models.find(mod => mod.name.includes("gemini") && mod.supportedGenerationMethods.includes("generateContent"));
                     
                     if (m) cachedGeminiModel = m.name.replace('models/', '');
@@ -429,7 +442,6 @@
                 console.warn("Modell-Suche fehlgeschlagen:", e);
             }
             
-            // Absoluter Notnagel, falls die Netzabfrage fehlschlägt
             if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash"; 
         }
 
@@ -437,7 +449,6 @@
 
         let payload = { contents: [] };
 
-        // Robuste Methode für System-Prompts, die JEDES Gemini-Modell versteht
         if (systemPrompt) {
             payload.contents.push({ role: "user", parts: [{ text: "SYSTEM-ANWEISUNG (STRIKT BEFOLGEN): " + systemPrompt }] });
             payload.contents.push({ role: "model", parts: [{ text: "Verstanden. Ich werde mich exakt daran halten." }] });
@@ -464,7 +475,6 @@
             const d = await resp.json();
             
             if (d.error) {
-                // Wenn Google das Modell nicht mag, Cache leeren für die nächste automatische Suche
                 if (d.error.message.includes("is not found") || d.error.message.includes("is not supported")) {
                     cachedGeminiModel = null;
                 }
@@ -477,7 +487,7 @@
             return d.candidates[0].content.parts[0].text.trim();
         } catch(e) {
             alert(`⚠️ KI-Fehler (Modell: ${cachedGeminiModel || 'Suche...'}): ${e.message}\n\nTipp: Die App sucht beim nächsten Versuch automatisch ein neues Modell.`);
-            cachedGeminiModel = null; // Cache leeren für den Selbst-Heilungs-Prozess
+            cachedGeminiModel = null; 
             return null;
         }
     }
