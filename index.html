@@ -35,19 +35,21 @@
         
         #offlineBanner { display: none; background: #EF4444; color: white; text-align: center; padding: 10px; font-weight: 800; font-size: 0.9rem; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-float); }
 
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .top-stats { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
         .app-title { font-weight: 800; font-size: 1.5rem; color: var(--text); background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .stats-badge { display: flex; gap: 8px; background: white; padding: 8px 12px; border-radius: 20px; box-shadow: var(--shadow-soft); font-weight: 800; font-size: 0.85rem;}
         
         .settings-btn { background: var(--card-bg); border: 1px solid var(--border-soft); font-size: 1.2rem; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; box-shadow: var(--shadow-soft); color: var(--text); transition: transform 0.2s; display: flex; align-items: center; justify-content: center;}
         .settings-btn:active { transform: scale(0.9); }
 
-        .nav-scroll { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 15px; scrollbar-width: none; -ms-overflow-style: none; margin-bottom: 10px; }
+        /* nav-scroll hat jetzt position:relative und z-index, damit es immer oben anklickbar bleibt */
+        .nav-scroll { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 15px; scrollbar-width: none; -ms-overflow-style: none; margin-bottom: 10px; position: relative; z-index: 100; }
         .nav-scroll::-webkit-scrollbar { display: none; }
         .nav-scroll button { flex: 0 0 auto; background: var(--card-bg); padding: 12px 20px; font-size: 0.9rem; color: var(--text-light); border: 2px solid transparent; border-radius: 100px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow-soft); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 6px;}
         .nav-scroll button.active { background: var(--primary-gradient); color: white; box-shadow: var(--shadow-float); border-color: transparent; transform: translateY(-2px); }
         
-        .card { background: var(--card-bg); padding: 25px; border-radius: var(--radius); box-shadow: var(--shadow-soft); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.5); backdrop-filter: blur(10px); animation: fadeIn 0.4s ease-out; position: relative;}
+        .card { background: var(--card-bg); padding: 25px; border-radius: var(--radius); box-shadow: var(--shadow-soft); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.5); backdrop-filter: blur(10px); animation: fadeIn 0.4s ease-out; position: relative; z-index: 1;}
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; margin-top: 0; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;}
@@ -150,7 +152,7 @@
 
 <div class="top-bar">
     <div class="app-title">SprachTutor AI</div>
-    <div style="display: flex; gap: 8px; align-items: center;">
+    <div class="top-stats">
         <div class="stats-badge" style="color: var(--primary);">👑 <span id="uiLevel">1</span></div>
         <div class="stats-badge"><span style="color: var(--accent);">🔥 <span id="uiStreak">0</span></span></div>
         <div class="stats-badge"><span style="color: var(--secondary);">⭐ <span id="uiXP">0</span></span></div>
@@ -285,7 +287,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 18.1 (Full Fix) &bull; 2026
+    SprachTutor AI &bull; Version 18.2 (Robust UI Fix) &bull; 2026
 </div>
 
 <script>
@@ -309,16 +311,27 @@
     let userStreak = parseInt(localStorage.getItem('trainerStreak') || '0');
     let lastActiveDate = localStorage.getItem('trainerLastDate') || '';
     
-    let statsToday = JSON.parse(localStorage.getItem('trainerStatsToday') || '{"learned":0, "added":0, "date":""}');
+    let statsToday = {learned:0, added:0, date:""};
+    try { 
+        const rawStats = localStorage.getItem('trainerStatsToday');
+        if(rawStats && rawStats !== "undefined") statsToday = JSON.parse(rawStats); 
+    } catch(e) { console.warn("Stats Reset"); }
 
     function escapeHTML(str) { return !str ? "" : String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[m]); }
     function safeJS(str) { return !str ? "" : String(str).replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
 
     function setupPWA() {
-        const manifest = { name: "SprachTutor AI", short_name: "SprachTutor", start_url: ".", display: "standalone", background_color: "#F3F4F6", theme_color: "#4F46E5", icons: [{src: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234F46E5%22 rx=%2220%22/><text x=%2250%22 y=%2268%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23ffffff%22>🌍</text></svg>", sizes: "192x192", type: "image/svg+xml"}] };
-        const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-        document.getElementById('manifestLink').href = URL.createObjectURL(blob);
-        if('serviceWorker' in navigator) { const swCode = `self.addEventListener('fetch', function(e) {});`; const swBlob = new Blob([swCode], {type: 'application/javascript'}); navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{}); }
+        try {
+            const manifest = { name: "SprachTutor AI", short_name: "SprachTutor", start_url: ".", display: "standalone", background_color: "#F3F4F6", theme_color: "#4F46E5", icons: [{src: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234F46E5%22 rx=%2220%22/><text x=%2250%22 y=%2268%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23ffffff%22>🌍</text></svg>", sizes: "192x192", type: "image/svg+xml"}] };
+            const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+            const link = document.getElementById('manifestLink');
+            if(link) link.href = URL.createObjectURL(blob);
+            if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { 
+                const swCode = `self.addEventListener('fetch', function(e) {});`; 
+                const swBlob = new Blob([swCode], {type: 'application/javascript'}); 
+                navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{}); 
+            }
+        } catch(e) {}
     }
 
     function init() { 
@@ -341,16 +354,20 @@
     function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); cachedGeminiModel = null; }
 
     function showTab(n) { 
-        if(isLiveRecording) toggleLiveRecord(); if(isChatSessionActive) toggleChatRecord();
-        document.querySelectorAll('.nav-scroll button').forEach(b=>b.classList.remove('active')); 
-        const btnMap = { 'add':'btn1', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'arcade':'btnArcade', 'story':'btnStory' };
-        if(btnMap[n] && document.getElementById(btnMap[n])) document.getElementById(btnMap[n]).classList.add('active');
-        ['tabAdd','tabChat','tabLive','tabStudy','tabList','tabArcade','tabStory'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
-        const activeTab = document.getElementById('tab'+n.charAt(0).toUpperCase() + n.slice(1));
-        if(activeTab) activeTab.style.display = 'block';
-        if(n === 'list') { document.getElementById('listSearch').value = ''; renderList(); }
-        if(n === 'study') generateStudyList();
-        if(n === 'arcade') openMiniGame('Menu');
+        try {
+            if(isLiveRecording) toggleLiveRecord(); if(isChatSessionActive) toggleChatRecord();
+            document.querySelectorAll('.nav-scroll button').forEach(b=>b.classList.remove('active')); 
+            const btnMap = { 'add':'btn1', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'arcade':'btnArcade', 'story':'btnStory' };
+            if(btnMap[n] && document.getElementById(btnMap[n])) document.getElementById(btnMap[n]).classList.add('active');
+            ['tabAdd','tabChat','tabLive','tabStudy','tabList','tabArcade','tabStory'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+            const activeTab = document.getElementById('tab'+n.charAt(0).toUpperCase() + n.slice(1));
+            if(activeTab) activeTab.style.display = 'block';
+            if(n === 'list') { document.getElementById('listSearch').value = ''; renderList(); }
+            if(n === 'study') generateStudyList();
+            if(n === 'arcade') openMiniGame('Menu');
+        } catch(err) {
+            console.error("Tab Fehler", err);
+        }
     }
 
     function importData(e) {
@@ -396,8 +413,10 @@
     function updateStatsUI() { document.getElementById('uiStreak').innerText = userStreak; document.getElementById('uiXP').innerText = userXP; document.getElementById('uiLevel').innerText = getUserLevel(); }
     
     function updateQuests() {
-        if(statsToday.learned >= 5) document.getElementById('q1').classList.add('quest-done');
-        if(statsToday.added >= 2) document.getElementById('q2').classList.add('quest-done');
+        try {
+            if(statsToday.learned >= 5) { const q1 = document.getElementById('q1'); if(q1) q1.classList.add('quest-done'); }
+            if(statsToday.added >= 2) { const q2 = document.getElementById('q2'); if(q2) q2.classList.add('quest-done'); }
+        } catch(e){}
     }
 
     function loadUserLangs() { const saved = localStorage.getItem('trainerLangs_' + currentCollIndex); if(saved) conf = JSON.parse(saved); updateUIForLangs(); }
@@ -444,7 +463,6 @@
         } catch(e) { cachedGeminiModel = null; return null; }
     }
 
-    // --- ARCADE SPIELE FIX ---
     function openMiniGame(game) {
         document.getElementById('arcadeMenu').style.display = game === 'Menu' ? 'grid' : 'none';
         ['gameRallye', 'gameHunt', 'gameDuel', 'gameAdventure'].forEach(id => document.getElementById(id).style.display = 'none');
@@ -569,7 +587,6 @@
         rec.start();
     }
     
-    // --- CHAT TUTOR FIX ---
     function startTutorMic() { 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
         if (!SpeechRecognition) { alert("⚠️ Browser unterstützt keine Spracherkennung."); return; } 
@@ -617,7 +634,6 @@
         document.getElementById('chatHistory').innerHTML = `<div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns üben. 👋</div>`; 
     }
 
-    // --- MÄRCHEN FIX ---
     async function generateStory() { 
         if(allWords.length < 3) return alert("Min. 3 Wörter im Wörterbuch nötig!"); 
         const words = allWords.sort(()=>0.5-Math.random()).slice(0,4).map(w=>w[conf.l3]).join(", "); 
@@ -638,7 +654,6 @@
         if(t) speak(t, conf.l3); 
     }
 
-    // --- LIVE ÜBERSETZER FIX ---
     async function toggleLiveRecord() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if(!SpeechRecognition) return;
@@ -675,7 +690,6 @@
         liveRecObj.start();
     }
 
-    // --- ZUSATZFUNKTIONEN FÜR NEUE WÖRTER FIX ---
     function handleImageScan(input) {
         const file = input.files[0]; if(!file) return; 
         document.getElementById('loader').style.display = 'block';
@@ -699,7 +713,8 @@
 
                 if(res) {
                     try {
-                        let cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim();
+                        let cleanStr = res.replace(/```json/gi, '').replace(/
+```/g, '').trim();
                         const sIdx = cleanStr.indexOf('{'); const eIdx = cleanStr.lastIndexOf('}');
                         if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1);
                         const obj = JSON.parse(cleanStr);
@@ -737,8 +752,7 @@
         document.getElementById('loader').style.display = "none"; 
         if(res) { 
             try { 
-                const cleanStr = res.replace(/
-```json/gi, '').replace(/```/g, '').trim();
+                const cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim();
                 const o = JSON.parse(cleanStr); 
                 document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||""; 
             } catch(e) {} 
@@ -752,7 +766,6 @@
     function renderList() { const q = document.getElementById('listSearch') ? document.getElementById('listSearch').value.toLowerCase().trim() : ""; const filtered = q ? allWords.filter(w => (w[conf.l1] && w[conf.l1].toLowerCase().includes(q)) || (w[conf.l3] && w[conf.l3].toLowerCase().includes(q))) : allWords; document.getElementById('listCont').innerHTML = filtered.map(w => `<div class="card" style="padding:15px; margin-bottom:10px;"><div class="word-item-actions"><button class="icon-btn" onclick="editWord('${w.id}')" style="padding:8px; font-size:1rem;">✎</button><button class="icon-btn danger" onclick="delWord('${w.id}')" style="padding:8px; font-size:1rem;">X</button></div><div style="font-weight:800; color:var(--primary); font-size:1.1rem; padding-right:80px;"><span class="level-dot lvl-${w.level||0}"></span>${escapeHTML(w[conf.l1])}</div><div style="color:var(--text-light); font-size:0.9rem; margin-top:5px; padding-left: 20px;">${escapeHTML(w[conf.l3])} | ${escapeHTML(w[conf.l2])}</div></div>`).join(''); }
     async function delWord(id) { if(confirm("Löschen?")) { await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(id).delete(); refreshData(); } }
     
-    // --- SPACED REPETITION ---
     function getNextReviewTimestamp(level) {
         const daysToWait = [0, 1, 3, 7, 14, 30]; 
         const nextDate = new Date();
