@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -174,9 +174,6 @@
     <button id="btn3" onclick="showTab('list')">📚 Liste</button>
 </div>
 
-<!-- TABS -->
-
-<!-- 📇 KARTEIKARTEN TAB -->
 <div id="tabFlashcards" class="card" style="display:none">
     <div style="text-align:center;">
         <h2>📇 Karteikarten</h2>
@@ -210,7 +207,6 @@
         <button class="action-btn btn-secondary" onclick="initFlashcards()">Stapel neu mischen</button>
     </div>
 
-    <!-- NEU: ORDNER UND UNDO FUNKTION -->
     <div style="margin-top: 30px; border-top: 2px dashed var(--border-soft); padding-top: 15px;">
         <p style="text-align:center; font-size:0.75rem; font-weight:800; color:var(--text-light); margin-top:0;">📂 ABLAGE (AKTUELLE SITZUNG)</p>
         <div style="display:flex; gap:10px; justify-content:center;">
@@ -768,30 +764,24 @@
         const item = fcSessionHistory[type][historyIndex];
         const w = item.word;
 
-        // Zustand in der Datenbank zurücksetzen (falls verändert)
         if (type === 'geuebt' || type === 'nochmals') {
             w.level = item.oldLvl;
             w.nextReview = item.oldNextReview;
             db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: item.oldLvl, nextReview: item.oldNextReview});
         } else if (type === 'spaeter') {
-            // "Später"-Wörter liegen ganz hinten im Array, wir nehmen es von dort weg
             const poolIdx = fcPool.findIndex(x => x.id === w.id);
             if(poolIdx > -1) {
                 fcPool.splice(poolIdx, 1);
             }
         }
         
-        // Aus der Historie löschen
         fcSessionHistory[type].splice(historyIndex, 1);
-        
-        // Karte direkt als nächstes (wieder oben auf den Stapel) legen
         fcPool.splice(fcIndex, 0, w);
         
         updateFcHistoryCounts();
         showFcList(type); 
         renderFc(); 
     }
-
 
     // ----------------------------------------------------
     // RESTLICHE FUNKTIONEN (Arcade, Chat, Märchen etc.)
@@ -928,8 +918,26 @@
     }
     
     async function handleSmartTranslate() { 
-        const txt = document.getElementById('inDe').value || document.getElementById('inEn').value || document.getElementById('inSv').value; if(!txt) return; document.getElementById('loader').style.display = "block"; 
-        try { const res = await callGemini(`Übersetze das Wort "${txt}". Antworte NUR im JSON Format: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`); const cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim(); const obj = JSON.parse(cleanStr); document.getElementById('inDe').value = obj[conf.l1] || ""; document.getElementById('inEn').value = obj[conf.l2] || ""; document.getElementById('inSv').value = obj[conf.l3] || ""; } catch(e) { alert("Übersetzung fehlgeschlagen."); } 
+        const txt = document.getElementById('inDe').value || document.getElementById('inEn').value || document.getElementById('inSv').value; 
+        if(!txt) return; 
+        document.getElementById('loader').style.display = "block"; 
+        
+        try { 
+            const res = await callGemini(`Übersetze das Wort "${txt}". Antworte NUR mit einem validen JSON Objekt: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`); 
+            let cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim(); 
+            const sIdx = cleanStr.indexOf('{'); 
+            const eIdx = cleanStr.lastIndexOf('}'); 
+            if(sIdx !== -1 && eIdx !== -1) {
+                cleanStr = cleanStr.substring(sIdx, eIdx + 1); 
+            }
+            const obj = JSON.parse(cleanStr); 
+            document.getElementById('inDe').value = obj[conf.l1] || ""; 
+            document.getElementById('inEn').value = obj[conf.l2] || ""; 
+            document.getElementById('inSv').value = obj[conf.l3] || ""; 
+        } catch(e) { 
+            alert("Übersetzung fehlgeschlagen. Antwort der KI konnte nicht gelesen werden."); 
+            console.error("JSON Error:", e);
+        } 
         document.getElementById('loader').style.display = "none"; 
     }
     
@@ -941,7 +949,35 @@
         if(res) { try { const cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim(); const o = JSON.parse(cleanStr); document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||""; } catch(e) {} } 
     }
 
-    function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; try { const rec = new SpeechRecognition(); rec.lang = ALL_LANGS[slot===1?conf.l1:(slot===2?conf.l2:conf.l3)].tts; btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; }; rec.onerror = () => btn.classList.remove('mic-active'); rec.onend = () => btn.classList.remove('mic-active'); rec.start(); } catch(err){} }
+    function listen(slot, targetId, btn) { 
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
+        if (!SpeechRecognition) {
+            alert("⚠️ Dein Browser unterstützt die integrierte Spracherkennung leider nicht.");
+            return; 
+        }
+        try { 
+            const rec = new SpeechRecognition(); 
+            const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3);
+            rec.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
+            btn.classList.add('mic-active'); 
+            rec.onresult = (e) => { 
+                document.getElementById(targetId).value = e.results[0][0].transcript; 
+            }; 
+            rec.onerror = (e) => {
+                btn.classList.remove('mic-active');
+                console.warn("Mikrofon-Fehler:", e.error);
+                if (e.error === 'not-allowed') {
+                    alert("⚠️ Mikrofon-Zugriff verweigert. Bitte prüfe die Browser-Berechtigungen.");
+                }
+            };
+            rec.onend = () => btn.classList.remove('mic-active'); 
+            rec.start(); 
+        } catch(err) {
+            btn.classList.remove('mic-active');
+            console.error("Spracherkennung Fehler:", err);
+        } 
+    }
+
     function editWord(id) { const w = allWords.find(item => item.id === id); if(!w) return; document.getElementById('editId').value = id; document.getElementById('inDe').value = w[conf.l1] || ""; document.getElementById('inEn').value = w[conf.l2] || ""; document.getElementById('inSv').value = w[conf.l3] || ""; document.getElementById('addTitle').innerText = "✎ Bearbeiten"; document.getElementById('cancelBtn').style.display = "block"; showTab('add'); }
     function resetAddForm() { document.getElementById('editId').value = ""; ['inDe','inEn','inSv'].forEach(id => document.getElementById(id).value = ""); document.getElementById('addTitle').innerText = "➕ Neues Wort"; document.getElementById('cancelBtn').style.display = "none"; }
     
