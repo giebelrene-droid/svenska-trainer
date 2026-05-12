@@ -415,7 +415,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 24.2 (Fehlersuche & Key-Rotation) &bull; 2026
+    SprachTutor AI &bull; Version 24.3 (Google API Fehler Analyse) &bull; 2026
 </div>
 
 <script>
@@ -669,7 +669,20 @@
         const activeLoader = Array.from(document.querySelectorAll('.loader')).find(el => el.offsetWidth > 0);
         const originalLoaderText = activeLoader ? activeLoader.innerText : "";
 
-        if (!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash";
+        if (!cachedGeminiModel) {
+            try {
+                // BUG WAR HIER: geminiApiKey enthielt Kommas, fetch schlug fehl.
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keys[0]}`);
+                const data = await res.json();
+                if (data.models) {
+                    let m = data.models.find(mod => mod.name.includes("flash") && !mod.name.includes("latest") && mod.supportedGenerationMethods.includes("generateContent"));
+                    if(!m) m = data.models.find(mod => mod.name.includes("gemini") && mod.supportedGenerationMethods.includes("generateContent"));
+                    if (m) cachedGeminiModel = m.name.replace('models/', '');
+                }
+            } catch(e) {}
+            // Fallback auf ein sehr sicheres Modell, falls fetch trotzdem fehlschlägt
+            if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest";
+        }
 
         let payload = { contents: [] };
         
