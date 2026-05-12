@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -196,7 +196,7 @@
         <input type="text" id="inpCustomTopic" placeholder="Z.B. Auto in der Werkstatt abgeben...">
     </div>
 
-    <!-- NEU: NIVEAU UND TEMPO EINSTELLUNGEN -->
+    <!-- NIVEAU UND TEMPO EINSTELLUNGEN -->
     <div class="input-row" style="gap:15px; margin-bottom: 20px;">
         <div style="flex:1">
             <label style="margin-top:0;">Niveau</label>
@@ -415,7 +415,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 22.0 (Roleplay Niveau & Tempo) &bull; 2026
+    SprachTutor AI &bull; Version 22.1 (Erweitertes Limit-Handling) &bull; 2026
 </div>
 
 <script>
@@ -610,13 +610,12 @@
         playSound('success');
     }
     
-    // ANGEPASST: Funktion nimmt nun auch die Geschwindigkeit (rate) als Parameter auf
     function speak(text, langKey, rate = 1.0) {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel(); 
             const msg = new SpeechSynthesisUtterance(text);
             msg.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
-            msg.rate = rate; // Tempo setzen
+            msg.rate = rate;
             window.speechSynthesis.speak(msg);
         }
     }
@@ -655,6 +654,7 @@
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
     function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
+    // NEU: callGemini Funktion mit "Exponential Backoff" gegen API-Limits
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
         if(!geminiApiKey) { alert("⚠️ Bitte hinterlege deinen API-Key in den Einstellungen."); return null; }
         
@@ -687,12 +687,27 @@
         }
         payload.contents.push({ role: "user", parts: userParts });
 
-        try {
-            const resp = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-            const d = await resp.json();
-            if (d.error) throw new Error(d.error.message);
-            return d.candidates[0].content.parts[0].text.trim();
-        } catch(e) { cachedGeminiModel = null; return null; }
+        // Wiederholungs-Schleife bei Rate Limits / Fehlern
+        const retries = [1000, 2000, 4000, 8000, 16000];
+        
+        for (let i = 0; i <= retries.length; i++) {
+            try {
+                const resp = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+                const d = await resp.json();
+                if (d.error) {
+                    throw new Error(d.error.message);
+                }
+                return d.candidates[0].content.parts[0].text.trim();
+            } catch(e) {
+                if (i < retries.length) {
+                    await new Promise(resolve => setTimeout(resolve, retries[i]));
+                } else {
+                    cachedGeminiModel = null; 
+                    alert("⚠️ Die KI ist gerade überlastet (Rate Limit). Bitte warte kurz und versuche es gleich nochmal.");
+                    return null;
+                }
+            }
+        }
     }
 
     // ----------------------------------------------------
@@ -725,7 +740,6 @@
         const topic = document.getElementById('rpTopicDisplay').innerText;
         const tgtLangName = ALL_LANGS[conf.l3].name;
         
-        // Schwierigkeitsgrad auslesen
         const diffSelect = document.getElementById('selRpDifficulty');
         const diffText = diffSelect.options[diffSelect.selectedIndex].text;
         
@@ -747,13 +761,12 @@
             
             speakRpSentence();
         } else {
-            document.getElementById('rpTargetSentence').innerText = "⚠️ Satz konnte nicht geladen werden.";
+            document.getElementById('rpTargetSentence').innerText = "⚠️ KI überlastet. Bitte kurz warten.";
         }
     }
 
     function speakRpSentence() {
         if(currentRpSentenceL3) {
-            // Tempo auslesen
             const speed = parseFloat(document.getElementById('selRpSpeed').value);
             speak(currentRpSentenceL3, conf.l3, speed);
         }
@@ -822,7 +835,7 @@
     function speakLiveResult() {
         const text = document.getElementById('liveResultText').value;
         const lang = document.getElementById('liveTgtLang').value;
-        if(text) speak(text, lang); // Normale Geschwindigkeit
+        if(text) speak(text, lang); 
     }
     
     function saveLiveTranslation() {
@@ -909,7 +922,7 @@
         card.classList.toggle('flipped');
         
         if(card.classList.contains('flipped')){
-            speak(fcPool[fcIndex][conf.l3], conf.l3); // Normale Geschwindigkeit
+            speak(fcPool[fcIndex][conf.l3], conf.l3); 
         }
     }
 
