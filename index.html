@@ -231,6 +231,9 @@
             <button class="icon-btn" onclick="speakRpSentence()" style="flex:1; font-size:1rem;">🔊 Hören</button>
             <button class="icon-btn" id="btnRpMic" onclick="recordRpSpeech()" style="flex:2; border-color:var(--primary); color:var(--primary); font-weight:800; font-size:1rem;">🎤 Nachsprechen</button>
         </div>
+        
+        <!-- NEUER BUTTON: Nächsten Satz auswählen -->
+        <button class="action-btn btn-secondary" onclick="generateRpSentence()" style="margin-top: 15px; font-size: 0.9rem; border-style: dashed;">🔄 Anderen Satz generieren</button>
 
         <div id="rpLoader" class="loader" style="margin-top:20px;">KI analysiert Aussprache...</div>
         
@@ -415,7 +418,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 24.3 (Google API Fehler Analyse) &bull; 2026
+    SprachTutor AI &bull; Version 24.4 (Szenarien Vielfalt) &bull; 2026
 </div>
 
 <script>
@@ -657,7 +660,6 @@
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
     function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
-    // VERBESSERT: Zeigt jetzt den ECHTEN Fehler von Google an!
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
         const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
         
@@ -671,7 +673,6 @@
 
         if (!cachedGeminiModel) {
             try {
-                // BUG WAR HIER: geminiApiKey enthielt Kommas, fetch schlug fehl.
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keys[0]}`);
                 const data = await res.json();
                 if (data.models) {
@@ -680,7 +681,6 @@
                     if (m) cachedGeminiModel = m.name.replace('models/', '');
                 }
             } catch(e) {}
-            // Fallback auf ein sehr sicheres Modell, falls fetch trotzdem fehlschlägt
             if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest";
         }
 
@@ -722,7 +722,7 @@
                     return d.candidates[0].content.parts[0].text.trim();
                     
                 } catch(e) {
-                    lastErrorMsg = e.message; // Speichere die echte Fehlermeldung
+                    lastErrorMsg = e.message; 
                     console.warn(`Schlüssel ${currentApiKeyIndex % keys.length + 1} fehlgeschlagen:`, e.message);
                     currentApiKeyIndex++;
                 }
@@ -731,7 +731,6 @@
 
         if (activeLoader) activeLoader.innerText = originalLoaderText;
         
-        // HIER STEHT JETZT DER ECHTE FEHLER VON GOOGLE
         alert("⚠️ Fehler bei der API-Abfrage!\nGoogle meldet: " + lastErrorMsg);
         return null;
     }
@@ -769,8 +768,14 @@
         const diffSelect = document.getElementById('selRpDifficulty');
         const diffText = diffSelect.options[diffSelect.selectedIndex].text;
         
+        // ZUFALLSFAKTOR FÜR MEHR VARIATION:
+        const randomAspects = ["eine unerwartete Situation", "eine Frage an eine andere Person", "eine Bitte um Hilfe", "eine kurze Feststellung", "ein kleines Problem", "eine positive Nachricht"];
+        const randomAspect = randomAspects[Math.floor(Math.random()*randomAspects.length)];
+        const randomSeed = Math.floor(Math.random() * 10000);
+        
         const prompt = `Erstelle einen einzigen Satz für das Szenario "${topic}". Zielsprache: ${tgtLangName}. 
         WICHTIG: Das Sprachniveau MUSS exakt "${diffText}" sein (A1 = extrem kurze, leichte Basis-Sätze mit 3-5 Wörtern, B2 = komplex und fortgeschritten). 
+        SEHR WICHTIG: Sei extrem kreativ! Behandle einen zufälligen Aspekt (z.B. ${randomAspect}) aus diesem Bereich (Zufalls-ID: ${randomSeed}). Vermeide Standard-Phrasen (z.B. nicht immer Kaffeepause beim Arbeitsleben), sondern erfinde immer eine völlig NEUE, ANDERE Situation!
         Antworte STRENG in folgendem Format ohne weiteren Text:
         Satz auf ${tgtLangName} ||| Übersetzung auf Deutsch`;
         
