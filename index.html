@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -183,7 +183,7 @@
     <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Lass dir Sätze zu Wunschthemen vorgeben und trainiere die korrekte Aussprache.</p>
     
     <label>Wähle dein Thema</label>
-    <select id="selRpTopic" onchange="checkCustomTopic()" style="margin-bottom: 10px;">
+    <select id="selRpTopic" onchange="checkCustomTopic()" style="margin-bottom: 15px;">
         <option value="Im Arbeitsalltag und mit Kollegen sprechen">💼 Arbeitsleben & Kollegen</option>
         <option value="Besuch im Krankenhaus oder beim Arzt">🏥 Besuch im Krankenhaus / Arzt</option>
         <option value="Ein Bahnticket am Schalter buchen">🚆 Bahnticket buchen</option>
@@ -194,6 +194,27 @@
     
     <div id="customTopicRow" class="input-row" style="display:none; margin-bottom: 15px;">
         <input type="text" id="inpCustomTopic" placeholder="Z.B. Auto in der Werkstatt abgeben...">
+    </div>
+
+    <!-- NEU: NIVEAU UND TEMPO EINSTELLUNGEN -->
+    <div class="input-row" style="gap:15px; margin-bottom: 20px;">
+        <div style="flex:1">
+            <label style="margin-top:0;">Niveau</label>
+            <select id="selRpDifficulty">
+                <option value="A1">🟢 A1 (Sehr leicht, 3-5 Wörter)</option>
+                <option value="A2" selected>🟡 A2 (Leicht, Alltagssätze)</option>
+                <option value="B1">🟠 B1 (Mittel, Normal)</option>
+                <option value="B2">🔴 B2 (Schwer, Komplex)</option>
+            </select>
+        </div>
+        <div style="flex:1">
+            <label style="margin-top:0;">Tempo</label>
+            <select id="selRpSpeed">
+                <option value="1.0">▶️ Normal</option>
+                <option value="0.75">🐢 Langsam</option>
+                <option value="0.5">🐌 Sehr langsam</option>
+            </select>
+        </div>
     </div>
     
     <button class="action-btn btn-magic" onclick="startRoleplay()">🚀 Training starten</button>
@@ -394,7 +415,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 21.0 (Situations-Training) &bull; 2026
+    SprachTutor AI &bull; Version 22.0 (Roleplay Niveau & Tempo) &bull; 2026
 </div>
 
 <script>
@@ -589,11 +610,13 @@
         playSound('success');
     }
     
-    function speak(text, langKey) {
+    // ANGEPASST: Funktion nimmt nun auch die Geschwindigkeit (rate) als Parameter auf
+    function speak(text, langKey, rate = 1.0) {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel(); 
             const msg = new SpeechSynthesisUtterance(text);
             msg.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
+            msg.rate = rate; // Tempo setzen
             window.speechSynthesis.speak(msg);
         }
     }
@@ -702,7 +725,12 @@
         const topic = document.getElementById('rpTopicDisplay').innerText;
         const tgtLangName = ALL_LANGS[conf.l3].name;
         
-        const prompt = `Erstelle einen einzelnen, typischen und extrem praktischen Satz für das Szenario/Thema "${topic}". Die Zielsprache ist ${tgtLangName}. 
+        // Schwierigkeitsgrad auslesen
+        const diffSelect = document.getElementById('selRpDifficulty');
+        const diffText = diffSelect.options[diffSelect.selectedIndex].text;
+        
+        const prompt = `Erstelle einen einzigen Satz für das Szenario "${topic}". Zielsprache: ${tgtLangName}. 
+        WICHTIG: Das Sprachniveau MUSS exakt "${diffText}" sein (A1 = extrem kurze, leichte Basis-Sätze mit 3-5 Wörtern, B2 = komplex und fortgeschritten). 
         Antworte STRENG in folgendem Format ohne weiteren Text:
         Satz auf ${tgtLangName} ||| Übersetzung auf Deutsch`;
         
@@ -724,7 +752,11 @@
     }
 
     function speakRpSentence() {
-        if(currentRpSentenceL3) speak(currentRpSentenceL3, conf.l3);
+        if(currentRpSentenceL3) {
+            // Tempo auslesen
+            const speed = parseFloat(document.getElementById('selRpSpeed').value);
+            speak(currentRpSentenceL3, conf.l3, speed);
+        }
     }
 
     function recordRpSpeech() {
@@ -790,7 +822,7 @@
     function speakLiveResult() {
         const text = document.getElementById('liveResultText').value;
         const lang = document.getElementById('liveTgtLang').value;
-        if(text) speak(text, lang);
+        if(text) speak(text, lang); // Normale Geschwindigkeit
     }
     
     function saveLiveTranslation() {
@@ -877,7 +909,7 @@
         card.classList.toggle('flipped');
         
         if(card.classList.contains('flipped')){
-            speak(fcPool[fcIndex][conf.l3], conf.l3);
+            speak(fcPool[fcIndex][conf.l3], conf.l3); // Normale Geschwindigkeit
         }
     }
 
