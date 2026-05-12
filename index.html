@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -131,8 +131,8 @@
 <div id="settingsOverlay">
     <div class="settings-box">
         <h2>⚙️ Einstellungen</h2>
-        <label>🔑 Gemini API-Schlüssel</label>
-        <div class="input-row"><input type="password" id="inpGeminiKey" placeholder="AIzaSy..." oninput="saveApiKey()"></div>
+        <label>🔑 Gemini API-Schlüssel (Mehrere mit Komma trennen)</label>
+        <div class="input-row"><input type="text" id="inpGeminiKey" placeholder="AIzaSy..., AIzaSy..." oninput="saveApiKey()"></div>
         <label style="margin-top: 20px;">👤 Aktiver Benutzer</label>
         <select id="selUser" onchange="switchUser()" style="margin-bottom:15px;"></select>
         <label>🌍 Lern-Sprachen</label>
@@ -415,7 +415,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 23.0 (Anti-Spam Warteschleife) &bull; 2026
+    SprachTutor AI &bull; Version 24.0 (Multi-Key Rotation) &bull; 2026
 </div>
 
 <script>
@@ -457,7 +457,10 @@
     // Roleplay / Szenarien Vars
     let currentRpSentenceL3 = "";
 
+    // NEU: Für die Schlüssel-Rotation
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
+    let currentApiKeyIndex = 0;
+    
     let cachedGeminiModel = null;
     let isLiveRecording = false;
     let liveRecObj = null;
@@ -654,28 +657,22 @@
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
     function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
-    // ANGEPASST: Verbesserte Rate-Limit Handhabung mit UI Feedback
+    // NEU: callGemini rotierend über mehrere API-Schlüssel
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
-        if(!geminiApiKey) { alert("⚠️ Bitte hinterlege deinen API-Key in den Einstellungen."); return null; }
+        // Schlüssel am Komma trennen, leere Einträge filtern und Leerzeichen entfernen
+        const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
         
-        // Finde den aktuell sichtbaren Lader, um den Text anzupassen
+        if(keys.length === 0) { 
+            alert("⚠️ Bitte hinterlege mindestens einen API-Key in den Einstellungen."); 
+            return null; 
+        }
+
         const activeLoader = Array.from(document.querySelectorAll('.loader')).find(el => el.offsetWidth > 0);
         const originalLoaderText = activeLoader ? activeLoader.innerText : "";
 
-        if (!cachedGeminiModel) {
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
-                const data = await res.json();
-                if (data.models) {
-                    let m = data.models.find(mod => mod.name.includes("flash") && !mod.name.includes("latest") && mod.supportedGenerationMethods.includes("generateContent"));
-                    if(!m) m = data.models.find(mod => mod.name.includes("gemini") && mod.supportedGenerationMethods.includes("generateContent"));
-                    if (m) cachedGeminiModel = m.name.replace('models/', '');
-                }
-            } catch(e) {}
-            if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash"; 
-        }
+        // Standard-Modell verwenden, um initiale Setup-Anfragen zu sparen
+        if (!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash";
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${cachedGeminiModel}:generateContent?key=${geminiApiKey}`;
         let payload = { contents: [] };
         
         if (systemPrompt) { 
@@ -691,30 +688,41 @@
         }
         payload.contents.push({ role: "user", parts: userParts });
 
-        // Längere Pausen, falls das 1-Minuten Limit erreicht wurde (insg. ca. 54 Sekunden Puffer)
-        const retries = [3000, 6000, 10000, 15000, 20000]; 
+        // Wir probieren bis zu 3 Runden durch ALLE vorhandenen Schlüssel
+        const waitTimes = [0, 3000, 8000]; 
         
-        for (let i = 0; i <= retries.length; i++) {
-            try {
-                const resp = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-                const d = await resp.json();
-                if (d.error) {
-                    throw new Error(d.error.message);
-                }
-                if (activeLoader) activeLoader.innerText = originalLoaderText;
-                return d.candidates[0].content.parts[0].text.trim();
-            } catch(e) {
-                if (i < retries.length) {
-                    if (activeLoader) activeLoader.innerText = `KI beschäftigt. Warte ${retries[i]/1000}s (Versuch ${i+2})...`;
-                    await new Promise(resolve => setTimeout(resolve, retries[i]));
-                } else {
-                    cachedGeminiModel = null; 
+        for (let round = 0; round < waitTimes.length; round++) {
+            if (round > 0 && activeLoader) activeLoader.innerText = `Alle Schlüssel blockiert. Warte ${waitTimes[round]/1000}s...`;
+            if (round > 0) await new Promise(resolve => setTimeout(resolve, waitTimes[round]));
+
+            for (let i = 0; i < keys.length; i++) {
+                const currentKey = keys[currentApiKeyIndex % keys.length];
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${cachedGeminiModel}:generateContent?key=${currentKey}`;
+
+                try {
+                    const resp = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+                    const d = await resp.json();
+                    
+                    if (d.error) {
+                        throw new Error(d.error.message);
+                    }
+                    
+                    // Bei Erfolg Loader zurücksetzen und Text ausgeben
                     if (activeLoader) activeLoader.innerText = originalLoaderText;
-                    alert("⚠️ Das Google-Limit wurde erreicht (15 Anfragen/Min). Bitte kurz durchatmen und gleich nochmal versuchen.");
-                    return null;
+                    return d.candidates[0].content.parts[0].text.trim();
+                    
+                } catch(e) {
+                    console.warn(`API-Schlüssel fehlgeschlagen, wechsle zum nächsten...`);
+                    // Schlüssel hat nicht funktioniert (Rate Limit), sofort den nächsten Schlüssel probieren
+                    currentApiKeyIndex++;
                 }
             }
         }
+
+        // Wenn wir hier ankommen, haben alle Schlüssel in allen Runden versagt.
+        if (activeLoader) activeLoader.innerText = originalLoaderText;
+        alert("⚠️ Alle Google-Schlüssel sind derzeit überlastet. Bitte warte eine Minute und versuche es erneut.");
+        return null;
     }
 
     // ----------------------------------------------------
