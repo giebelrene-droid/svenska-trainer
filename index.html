@@ -415,7 +415,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 24.1 (Verlängerter Limit-Schutz) &bull; 2026
+    SprachTutor AI &bull; Version 24.2 (Fehlersuche & Key-Rotation) &bull; 2026
 </div>
 
 <script>
@@ -657,7 +657,7 @@
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
     function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
-    // VERBESSERT: Langzeit-Warteschleife bei Google Rate-Limits
+    // VERBESSERT: Zeigt jetzt den ECHTEN Fehler von Google an!
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
         const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
         
@@ -686,8 +686,8 @@
         }
         payload.contents.push({ role: "user", parts: userParts });
 
-        // Wir strecken die Wartezeit auf über 60 Sekunden aus (Google setzt das Limit nach 1 Min zurück)
-        const waitTimes = [0, 2000, 5000, 10000, 15000, 20000, 15000]; 
+        const waitTimes = [0, 2000, 5000]; 
+        let lastErrorMsg = "";
         
         for (let round = 0; round < waitTimes.length; round++) {
             if (round > 0 && activeLoader) activeLoader.innerText = `Lade... Warte ${waitTimes[round]/1000}s (Runde ${round+1})...`;
@@ -709,6 +709,7 @@
                     return d.candidates[0].content.parts[0].text.trim();
                     
                 } catch(e) {
+                    lastErrorMsg = e.message; // Speichere die echte Fehlermeldung
                     console.warn(`Schlüssel ${currentApiKeyIndex % keys.length + 1} fehlgeschlagen:`, e.message);
                     currentApiKeyIndex++;
                 }
@@ -716,7 +717,9 @@
         }
 
         if (activeLoader) activeLoader.innerText = originalLoaderText;
-        alert("⚠️ Google blockiert die Anfragen wegen zu vieler Zugriffe. Bitte mach kurz eine Minute Pause!");
+        
+        // HIER STEHT JETZT DER ECHTE FEHLER VON GOOGLE
+        alert("⚠️ Fehler bei der API-Abfrage!\nGoogle meldet: " + lastErrorMsg);
         return null;
     }
 
