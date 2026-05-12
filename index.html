@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -415,7 +415,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 22.1 (Erweitertes Limit-Handling) &bull; 2026
+    SprachTutor AI &bull; Version 23.0 (Anti-Spam Warteschleife) &bull; 2026
 </div>
 
 <script>
@@ -654,10 +654,14 @@
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
     function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
-    // NEU: callGemini Funktion mit "Exponential Backoff" gegen API-Limits
+    // ANGEPASST: Verbesserte Rate-Limit Handhabung mit UI Feedback
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
         if(!geminiApiKey) { alert("⚠️ Bitte hinterlege deinen API-Key in den Einstellungen."); return null; }
         
+        // Finde den aktuell sichtbaren Lader, um den Text anzupassen
+        const activeLoader = Array.from(document.querySelectorAll('.loader')).find(el => el.offsetWidth > 0);
+        const originalLoaderText = activeLoader ? activeLoader.innerText : "";
+
         if (!cachedGeminiModel) {
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
@@ -687,8 +691,8 @@
         }
         payload.contents.push({ role: "user", parts: userParts });
 
-        // Wiederholungs-Schleife bei Rate Limits / Fehlern
-        const retries = [1000, 2000, 4000, 8000, 16000];
+        // Längere Pausen, falls das 1-Minuten Limit erreicht wurde (insg. ca. 54 Sekunden Puffer)
+        const retries = [3000, 6000, 10000, 15000, 20000]; 
         
         for (let i = 0; i <= retries.length; i++) {
             try {
@@ -697,13 +701,16 @@
                 if (d.error) {
                     throw new Error(d.error.message);
                 }
+                if (activeLoader) activeLoader.innerText = originalLoaderText;
                 return d.candidates[0].content.parts[0].text.trim();
             } catch(e) {
                 if (i < retries.length) {
+                    if (activeLoader) activeLoader.innerText = `KI beschäftigt. Warte ${retries[i]/1000}s (Versuch ${i+2})...`;
                     await new Promise(resolve => setTimeout(resolve, retries[i]));
                 } else {
                     cachedGeminiModel = null; 
-                    alert("⚠️ Die KI ist gerade überlastet (Rate Limit). Bitte warte kurz und versuche es gleich nochmal.");
+                    if (activeLoader) activeLoader.innerText = originalLoaderText;
+                    alert("⚠️ Das Google-Limit wurde erreicht (15 Anfragen/Min). Bitte kurz durchatmen und gleich nochmal versuchen.");
                     return null;
                 }
             }
@@ -761,7 +768,7 @@
             
             speakRpSentence();
         } else {
-            document.getElementById('rpTargetSentence').innerText = "⚠️ KI überlastet. Bitte kurz warten.";
+            document.getElementById('rpTargetSentence').innerText = "⚠️ Konnte Satz nicht laden.";
         }
     }
 
