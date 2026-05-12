@@ -415,7 +415,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 24.0 (Multi-Key Rotation) &bull; 2026
+    SprachTutor AI &bull; Version 24.1 (Verlängerter Limit-Schutz) &bull; 2026
 </div>
 
 <script>
@@ -457,7 +457,7 @@
     // Roleplay / Szenarien Vars
     let currentRpSentenceL3 = "";
 
-    // NEU: Für die Schlüssel-Rotation
+    // Für die Schlüssel-Rotation
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
     let currentApiKeyIndex = 0;
     
@@ -657,9 +657,8 @@
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
     function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
-    // NEU: callGemini rotierend über mehrere API-Schlüssel
+    // VERBESSERT: Langzeit-Warteschleife bei Google Rate-Limits
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
-        // Schlüssel am Komma trennen, leere Einträge filtern und Leerzeichen entfernen
         const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
         
         if(keys.length === 0) { 
@@ -670,7 +669,6 @@
         const activeLoader = Array.from(document.querySelectorAll('.loader')).find(el => el.offsetWidth > 0);
         const originalLoaderText = activeLoader ? activeLoader.innerText : "";
 
-        // Standard-Modell verwenden, um initiale Setup-Anfragen zu sparen
         if (!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash";
 
         let payload = { contents: [] };
@@ -688,11 +686,11 @@
         }
         payload.contents.push({ role: "user", parts: userParts });
 
-        // Wir probieren bis zu 3 Runden durch ALLE vorhandenen Schlüssel
-        const waitTimes = [0, 3000, 8000]; 
+        // Wir strecken die Wartezeit auf über 60 Sekunden aus (Google setzt das Limit nach 1 Min zurück)
+        const waitTimes = [0, 2000, 5000, 10000, 15000, 20000, 15000]; 
         
         for (let round = 0; round < waitTimes.length; round++) {
-            if (round > 0 && activeLoader) activeLoader.innerText = `Alle Schlüssel blockiert. Warte ${waitTimes[round]/1000}s...`;
+            if (round > 0 && activeLoader) activeLoader.innerText = `Lade... Warte ${waitTimes[round]/1000}s (Runde ${round+1})...`;
             if (round > 0) await new Promise(resolve => setTimeout(resolve, waitTimes[round]));
 
             for (let i = 0; i < keys.length; i++) {
@@ -707,21 +705,18 @@
                         throw new Error(d.error.message);
                     }
                     
-                    // Bei Erfolg Loader zurücksetzen und Text ausgeben
                     if (activeLoader) activeLoader.innerText = originalLoaderText;
                     return d.candidates[0].content.parts[0].text.trim();
                     
                 } catch(e) {
-                    console.warn(`API-Schlüssel fehlgeschlagen, wechsle zum nächsten...`);
-                    // Schlüssel hat nicht funktioniert (Rate Limit), sofort den nächsten Schlüssel probieren
+                    console.warn(`Schlüssel ${currentApiKeyIndex % keys.length + 1} fehlgeschlagen:`, e.message);
                     currentApiKeyIndex++;
                 }
             }
         }
 
-        // Wenn wir hier ankommen, haben alle Schlüssel in allen Runden versagt.
         if (activeLoader) activeLoader.innerText = originalLoaderText;
-        alert("⚠️ Alle Google-Schlüssel sind derzeit überlastet. Bitte warte eine Minute und versuche es erneut.");
+        alert("⚠️ Google blockiert die Anfragen wegen zu vieler Zugriffe. Bitte mach kurz eine Minute Pause!");
         return null;
     }
 
