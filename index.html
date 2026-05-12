@@ -167,6 +167,7 @@
     <button id="btn1" class="active" onclick="showTab('add')">➕ Wort</button>
     <button id="btnFlash" onclick="showTab('flashcards')">📇 Karteikarten</button>
     <button id="btn5" onclick="showTab('study')">👀 Lernen</button>
+    <button id="btnRoleplay" onclick="showTab('roleplay')">🗣️ Szenarien</button>
     <button id="btn8" onclick="showTab('chat')">💬 Sprachtutor</button>
     <button id="btn7" onclick="showTab('live')">🎙️ Live</button>
     <button id="btnArcade" onclick="showTab('arcade')">🎮 Arcade</button>
@@ -174,6 +175,55 @@
     <button id="btn3" onclick="showTab('list')">📚 Liste</button>
 </div>
 
+<!-- TABS -->
+
+<!-- 🗣️ SZENARIEN (ROLEPLAY) TAB -->
+<div id="tabRoleplay" class="card" style="display:none">
+    <h2>🗣️ Situations-Training</h2>
+    <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Lass dir Sätze zu Wunschthemen vorgeben und trainiere die korrekte Aussprache.</p>
+    
+    <label>Wähle dein Thema</label>
+    <select id="selRpTopic" onchange="checkCustomTopic()" style="margin-bottom: 10px;">
+        <option value="Im Arbeitsalltag und mit Kollegen sprechen">💼 Arbeitsleben & Kollegen</option>
+        <option value="Besuch im Krankenhaus oder beim Arzt">🏥 Besuch im Krankenhaus / Arzt</option>
+        <option value="Ein Bahnticket am Schalter buchen">🚆 Bahnticket buchen</option>
+        <option value="Im Supermarkt oder auf dem Markt einkaufen">🛒 Im Supermarkt einkaufen</option>
+        <option value="Im Restaurant Essen bestellen">🍽️ Im Restaurant bestellen</option>
+        <option value="custom">✏️ Eigener Themenwunsch...</option>
+    </select>
+    
+    <div id="customTopicRow" class="input-row" style="display:none; margin-bottom: 15px;">
+        <input type="text" id="inpCustomTopic" placeholder="Z.B. Auto in der Werkstatt abgeben...">
+    </div>
+    
+    <button class="action-btn btn-magic" onclick="startRoleplay()">🚀 Training starten</button>
+
+    <div id="rpArea" style="display:none; margin-top:25px; border-top:2px dashed var(--border-soft); padding-top:20px;">
+        <div style="text-align:center; margin-bottom:15px;">
+            <span style="font-size:0.75rem; background:#E5E7EB; padding:4px 10px; border-radius:10px; font-weight:800; color:var(--text-light);" id="rpTopicDisplay">THEMA</span>
+        </div>
+        
+        <div class="chat-bubble bubble-ai" style="max-width:100%; font-size:1.25rem; font-weight:800; color:var(--primary); text-align:center; margin: 0 auto;" id="rpTargetSentence">...</div>
+        <div style="font-size:0.9rem; color:var(--text-light); text-align:center; margin-top:12px; font-weight:600;" id="rpTranslation">...</div>
+        
+        <div style="display:flex; justify-content:center; gap:10px; margin-top:25px;">
+            <button class="icon-btn" onclick="speakRpSentence()" style="flex:1; font-size:1rem;">🔊 Hören</button>
+            <button class="icon-btn" id="btnRpMic" onclick="recordRpSpeech()" style="flex:2; border-color:var(--primary); color:var(--primary); font-weight:800; font-size:1rem;">🎤 Nachsprechen</button>
+        </div>
+
+        <div id="rpLoader" class="loader" style="margin-top:20px;">KI analysiert Aussprache...</div>
+        
+        <div id="rpFeedbackBox" style="display:none; background:#F9FAFB; padding:18px; border-radius:20px; border:1px solid var(--border-soft); margin-top:20px;">
+            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">DU HAST GESAGT:</div>
+            <div id="rpUserSaid" style="font-style:italic; color:var(--text); font-weight:600; margin-bottom:15px;">...</div>
+            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">FEEDBACK DER KI:</div>
+            <div id="rpFeedbackText" style="color:var(--primary); font-weight:600; font-size:0.95rem;">...</div>
+            <button class="action-btn btn-secondary" onclick="generateRpSentence()" style="margin-top:20px;">➡️ Nächster Satz zum Thema</button>
+        </div>
+    </div>
+</div>
+
+<!-- 📇 KARTEIKARTEN TAB -->
 <div id="tabFlashcards" class="card" style="display:none">
     <div style="text-align:center;">
         <h2>📇 Karteikarten</h2>
@@ -207,6 +257,7 @@
         <button class="action-btn btn-secondary" onclick="initFlashcards()">Stapel neu mischen</button>
     </div>
 
+    <!-- ORDNER UND UNDO FUNKTION -->
     <div style="margin-top: 30px; border-top: 2px dashed var(--border-soft); padding-top: 15px;">
         <p style="text-align:center; font-size:0.75rem; font-weight:800; color:var(--text-light); margin-top:0;">📂 ABLAGE (AKTUELLE SITZUNG)</p>
         <div style="display:flex; gap:10px; justify-content:center;">
@@ -343,7 +394,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 20.0 (Undo System & Live-Save) &bull; 2026
+    SprachTutor AI &bull; Version 21.0 (Situations-Training) &bull; 2026
 </div>
 
 <script>
@@ -382,6 +433,9 @@
     let fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] };
     let currentFcListType = '';
 
+    // Roleplay / Szenarien Vars
+    let currentRpSentenceL3 = "";
+
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
     let cachedGeminiModel = null;
     let isLiveRecording = false;
@@ -393,7 +447,6 @@
     let huntTarget = "";
     let listDebounceTimer;
     
-    // NEU: Status-Variable für das Speicherverhalten (Standard: true = Schnelleingabe)
     let isFastInputMode = localStorage.getItem('trainerFastInput') !== 'false';
     
     let userXP = parseInt(localStorage.getItem('trainerXP') || '0');
@@ -440,7 +493,7 @@
         populateLangSelects(); 
         checkStreak(); 
         updateQuests();
-        updateSaveModeUI(); // Button-Text initial korrekt laden
+        updateSaveModeUI(); 
         
         showTab('add'); 
         
@@ -452,7 +505,6 @@
         }
     }
 
-    // NEU: Umschalt-Funktion & UI-Update für den Speicher-Modus
     function updateSaveModeUI() {
         const btn = document.getElementById('btnSaveMode');
         if(!btn) return;
@@ -484,10 +536,10 @@
             
             document.querySelectorAll('.nav-scroll button').forEach(b=>b.classList.remove('active')); 
             
-            const btnMap = { 'add':'btn1', 'flashcards':'btnFlash', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'arcade':'btnArcade', 'story':'btnStory' };
+            const btnMap = { 'add':'btn1', 'flashcards':'btnFlash', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'arcade':'btnArcade', 'story':'btnStory', 'roleplay':'btnRoleplay' };
             if(btnMap[n] && document.getElementById(btnMap[n])) document.getElementById(btnMap[n]).classList.add('active');
             
-            const tabs = ['tabAdd', 'tabFlashcards', 'tabChat','tabLive','tabStudy','tabList','tabArcade','tabStory'];
+            const tabs = ['tabAdd', 'tabFlashcards', 'tabChat','tabLive','tabStudy','tabList','tabArcade','tabStory','tabRoleplay'];
             tabs.forEach(id => { 
                 const el = document.getElementById(id); 
                 if(el) el.style.display = 'none'; 
@@ -618,6 +670,118 @@
             if (d.error) throw new Error(d.error.message);
             return d.candidates[0].content.parts[0].text.trim();
         } catch(e) { cachedGeminiModel = null; return null; }
+    }
+
+    // ----------------------------------------------------
+    // SZENARIEN / ROLEPLAY LOGIK
+    // ----------------------------------------------------
+    function checkCustomTopic() {
+        const sel = document.getElementById('selRpTopic').value;
+        document.getElementById('customTopicRow').style.display = sel === 'custom' ? 'flex' : 'none';
+    }
+
+    async function startRoleplay() {
+        document.getElementById('rpArea').style.display = 'block';
+        document.getElementById('rpFeedbackBox').style.display = 'none';
+        
+        let topic = document.getElementById('selRpTopic').value;
+        if(topic === 'custom') {
+            topic = document.getElementById('inpCustomTopic').value.trim() || "Allgemeines Gespräch";
+        }
+        
+        document.getElementById('rpTopicDisplay').innerText = topic.toUpperCase();
+        await generateRpSentence();
+    }
+
+    async function generateRpSentence() {
+        document.getElementById('rpFeedbackBox').style.display = 'none';
+        document.getElementById('rpTargetSentence').innerText = "KI überlegt sich einen Satz...";
+        document.getElementById('rpTranslation').innerText = "";
+        document.getElementById('rpLoader').style.display = 'block';
+
+        const topic = document.getElementById('rpTopicDisplay').innerText;
+        const tgtLangName = ALL_LANGS[conf.l3].name;
+        
+        const prompt = `Erstelle einen einzelnen, typischen und extrem praktischen Satz für das Szenario/Thema "${topic}". Die Zielsprache ist ${tgtLangName}. 
+        Antworte STRENG in folgendem Format ohne weiteren Text:
+        Satz auf ${tgtLangName} ||| Übersetzung auf Deutsch`;
+        
+        const res = await callGemini(prompt);
+        document.getElementById('rpLoader').style.display = 'none';
+
+        if(res) {
+            const parts = res.split('|||');
+            currentRpSentenceL3 = parts[0] ? parts[0].replace(/`{3}/g, '').trim() : "Fehler beim Verarbeiten";
+            const transL1 = parts[1] ? parts[1].replace(/`{3}/g, '').trim() : "";
+            
+            document.getElementById('rpTargetSentence').innerText = currentRpSentenceL3;
+            document.getElementById('rpTranslation').innerText = transL1;
+            
+            speakRpSentence();
+        } else {
+            document.getElementById('rpTargetSentence').innerText = "⚠️ Satz konnte nicht geladen werden.";
+        }
+    }
+
+    function speakRpSentence() {
+        if(currentRpSentenceL3) speak(currentRpSentenceL3, conf.l3);
+    }
+
+    function recordRpSpeech() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
+        if (!SpeechRecognition) {
+            alert("⚠️ Dein Browser unterstützt das Mikrofon für diese Funktion leider nicht.");
+            return;
+        }
+        
+        try {
+            const rec = new SpeechRecognition();
+            rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE';
+            
+            const btn = document.getElementById('btnRpMic');
+            btn.classList.add('mic-active');
+
+            rec.onresult = async (e) => {
+                const spokenText = e.results[0][0].transcript;
+                document.getElementById('rpUserSaid').innerText = spokenText;
+                btn.classList.remove('mic-active');
+                await evaluateRpSpeech(spokenText);
+            };
+
+            rec.onerror = (e) => {
+                btn.classList.remove('mic-active');
+                if (e.error === 'not-allowed') alert("⚠️ Mikrofon-Zugriff blockiert.");
+            };
+            
+            rec.onend = () => btn.classList.remove('mic-active');
+            rec.start();
+        } catch(err) {
+            document.getElementById('btnRpMic').classList.remove('mic-active');
+        }
+    }
+
+    async function evaluateRpSpeech(spokenText) {
+        document.getElementById('rpLoader').style.display = 'block';
+        document.getElementById('rpFeedbackBox').style.display = 'none';
+
+        const tgtLangName = ALL_LANGS[conf.l3].name;
+        const prompt = `Du bist ein strenger aber extrem ermutigender Sprachtrainer für ${tgtLangName}. 
+        Der Originalsatz, den der Schüler sagen sollte, lautet: "${currentRpSentenceL3}".
+        Das Mikrofon hat beim Schüler folgenden Text verstanden: "${spokenText}".
+        
+        Vergleiche die beiden Sätze. Antworte KURZ auf Deutsch (max. 2 Sätze). 
+        Sag ihm, ob die Aussprache/Worte richtig verstanden wurden, oder zeige ihm freundlich, wo der Fehler lag.`;
+        
+        const feedback = await callGemini(prompt);
+        document.getElementById('rpLoader').style.display = 'none';
+
+        if(feedback) {
+            document.getElementById('rpFeedbackText').innerText = feedback;
+            document.getElementById('rpFeedbackBox').style.display = 'block';
+            
+            addXP(5);
+            playSound('success');
+        }
     }
 
     // ----------------------------------------------------
@@ -814,7 +978,7 @@
     }
 
     // ----------------------------------------------------
-    // RESTLICHE FUNKTIONEN
+    // ARCADE UND MINI GAMES
     // ----------------------------------------------------
     function openMiniGame(game) {
         document.getElementById('arcadeMenu').style.display = game === 'Menu' ? 'grid' : 'none';
@@ -941,7 +1105,7 @@
                 try { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 800; if(w > h && w > max) { h = Math.round(h * max / w); w = max; } else if(h > max) { w = Math.round(w * max / h); h = max; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); finalImageBase64 = canvas.toDataURL('image/jpeg', 0.7); } catch(err) {}
                 const prompt = `Look at this image. Identify the single main everyday object in it. Translate its name into these exact language codes: ${conf.l1}, ${conf.l2}, ${conf.l3}. Respond ONLY with a valid JSON object. Example format: {"${conf.l1}":"Apfel", "${conf.l2}":"Apple", "${conf.l3}":"Äpple"}`;
                 const res = await callGemini(prompt, finalImageBase64); document.getElementById('loader').style.display = 'none';
-                if(res) { try { let cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim(); const sIdx = cleanStr.indexOf('{'); const eIdx = cleanStr.lastIndexOf('}'); if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1); const obj = JSON.parse(cleanStr); document.getElementById('inDe').value = obj[conf.l1] || ""; document.getElementById('inEn').value = obj[conf.l2] || ""; document.getElementById('inSv').value = obj[conf.l3] || ""; } catch(err) { alert("⚠️ JSON Parsing Fehler."); } }
+                if(res) { try { let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const sIdx = cleanStr.indexOf('{'); const eIdx = cleanStr.lastIndexOf('}'); if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1); const obj = JSON.parse(cleanStr); document.getElementById('inDe').value = obj[conf.l1] || ""; document.getElementById('inEn').value = obj[conf.l2] || ""; document.getElementById('inSv').value = obj[conf.l3] || ""; } catch(err) { alert("⚠️ JSON Parsing Fehler."); } }
                 input.value = ""; 
             }; img.src = e.target.result;
         }; reader.readAsDataURL(file);
@@ -954,7 +1118,7 @@
         
         try { 
             const res = await callGemini(`Übersetze das Wort "${txt}". Antworte NUR mit einem validen JSON Objekt: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`); 
-            let cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim(); 
+            let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); 
             const sIdx = cleanStr.indexOf('{'); 
             const eIdx = cleanStr.lastIndexOf('}'); 
             if(sIdx !== -1 && eIdx !== -1) {
@@ -976,7 +1140,7 @@
     async function fetchVerbForms() { 
         const b = document.getElementById('inDe').value || document.getElementById('inEn').value; if(!b) return; document.getElementById('loader').style.display = "block"; 
         const prompt = `Verb "${b}". JSON: {"l1P":"...", "l1F":"...", "l2P":"...", "l2F":"...", "l3P":"...", "l3F":"..."} for ${conf.l1}, ${conf.l2}, ${conf.l3}`; const res = await callGemini(prompt); document.getElementById('loader').style.display = "none"; 
-        if(res) { try { const cleanStr = res.replace(/```json/gi, '').replace(/```/g, '').trim(); const o = JSON.parse(cleanStr); document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||""; } catch(e) {} } 
+        if(res) { try { const cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const o = JSON.parse(cleanStr); document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||""; } catch(e) {} } 
     }
 
     function listen(slot, targetId, btn) { 
@@ -1018,7 +1182,6 @@
     
     function getNextReviewTimestamp(level) { const daysToWait = [0, 1, 3, 7, 14, 30]; const nextDate = new Date(); nextDate.setDate(nextDate.getDate() + (daysToWait[level] || 0)); return nextDate.getTime(); }
 
-    // ANGEPASST: Speicher-Funktion wertet isFastInputMode aus
     function manualSave() {
         if(!currentUser || !db) return alert("Warte auf Datenbank-Verbindung...");
         const eid = document.getElementById('editId').value;
@@ -1041,7 +1204,6 @@
             resetAddForm(); 
             refreshData(); 
             
-            // NEU: Wenn Schnelleingabe NICHT aktiv ist, erst dann zur Liste springen
             if(!isFastInputMode) {
                 showTab('list'); 
             }
