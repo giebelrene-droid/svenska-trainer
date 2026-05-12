@@ -232,7 +232,7 @@
             <button class="icon-btn" id="btnRpMic" onclick="recordRpSpeech()" style="flex:2; border-color:var(--primary); color:var(--primary); font-weight:800; font-size:1rem;">🎤 Nachsprechen</button>
         </div>
         
-        <!-- NEUER BUTTON: Nächsten Satz auswählen -->
+        <!-- BUTTON: Nächsten Satz auswählen -->
         <button class="action-btn btn-secondary" onclick="generateRpSentence()" style="margin-top: 15px; font-size: 0.9rem; border-style: dashed;">🔄 Anderen Satz generieren</button>
 
         <div id="rpLoader" class="loader" style="margin-top:20px;">KI analysiert Aussprache...</div>
@@ -418,7 +418,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 24.4 (Szenarien Vielfalt) &bull; 2026
+    SprachTutor AI &bull; Version 24.5 (Google Limit Fix) &bull; 2026
 </div>
 
 <script>
@@ -699,7 +699,8 @@
         }
         payload.contents.push({ role: "user", parts: userParts });
 
-        const waitTimes = [0, 2000, 5000]; 
+        // VERBESSERT: Erweiterte Warteschleife auf 15 Sekunden
+        const waitTimes = [0, 2000, 4000, 8000, 15000]; 
         let lastErrorMsg = "";
         
         for (let round = 0; round < waitTimes.length; round++) {
@@ -731,7 +732,12 @@
 
         if (activeLoader) activeLoader.innerText = originalLoaderText;
         
-        alert("⚠️ Fehler bei der API-Abfrage!\nGoogle meldet: " + lastErrorMsg);
+        // VERBESSERT: Deutsche "High Demand" Anzeige
+        if (lastErrorMsg.toLowerCase().includes("high demand") || lastErrorMsg.toLowerCase().includes("overloaded")) {
+            alert("⚠️ Die Google KI-Server sind im Moment weltweit überlastet.\n\nDas passiert bei der kostenlosen Version gelegentlich. Bitte warte ein paar Minuten und versuche es dann erneut!");
+        } else {
+            alert("⚠️ Fehler bei der API-Abfrage!\nGoogle meldet: " + lastErrorMsg);
+        }
         return null;
     }
 
