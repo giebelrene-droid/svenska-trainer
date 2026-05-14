@@ -117,7 +117,7 @@
         .verb-section { display: none; background: #F9FAFB; padding: 20px; border-radius: 16px; margin-top: 15px; border: 1px solid var(--border-soft); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         .verb-lang-title { font-weight: 800; font-size: 0.85rem; color: var(--text-light); margin-bottom: 10px; margin-top: 15px; letter-spacing: 0.5px;}
         .loader { color:var(--primary); text-align:center; display:none; font-weight:800; margin: 15px 0; font-size: 0.9rem; }
-        #settingsOverlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.7); display: none; z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(5px); padding: 20px;}
+        #settingsOverlay, #errorLogOverlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.7); display: none; z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(5px); padding: 20px;}
         .settings-box { background: var(--bg); padding: 30px; border-radius: 30px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
         .footer { text-align: center; margin-top: 40px; padding: 20px; color: var(--text-light); font-size: 0.75rem; border-top: 1px solid var(--border-soft); }
         .confetti { position: fixed; width: 10px; height: 10px; z-index: 9999; animation: fall linear forwards; border-radius: 2px;}
@@ -155,7 +155,26 @@
         <button class="action-btn btn-secondary" onclick="document.getElementById('importFile').click()">📂 Backup laden</button>
         <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Profil-Vokabeln löschen</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+        
+        <!-- NEU: Fehlerprotokoll Button -->
+        <button class="action-btn btn-secondary" onclick="openErrorLog()" style="margin-top: 15px; border-style: dashed;">🐛 Fehlerprotokoll anzeigen</button>
+        
         <button class="action-btn" onclick="closeSettings()" style="margin-top: 30px;">Fertig</button>
+    </div>
+</div>
+
+<!-- NEU: Fehlerprotokoll Overlay -->
+<div id="errorLogOverlay">
+    <div class="settings-box" style="max-width: 500px;">
+        <h2>🐛 Fehlerprotokoll</h2>
+        <p style="font-size:0.8rem; color:var(--text-light); margin-top:-15px;">Hier werden alle unsichtbaren Hintergrund-Fehler der App gespeichert, um bei der Fehlersuche zu helfen.</p>
+        <div id="errorLogList" style="background:#111827; color:#10B981; font-family:monospace; font-size:0.8rem; padding:15px; border-radius:12px; height:300px; overflow-y:auto; margin-bottom:15px; word-break: break-all;">
+            Keine Fehler aufgezeichnet.
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="action-btn btn-danger" onclick="clearErrorLog()" style="flex:1;">🗑️ Leeren</button>
+            <button class="action-btn" onclick="closeErrorLog()" style="flex:1;">Schließen</button>
+        </div>
     </div>
 </div>
 
@@ -431,20 +450,73 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 26.2 (Limit Check) &bull; 2026
+    SprachTutor AI &bull; Version 27.0 (Mit Fehlerprotokoll) &bull; 2026
 </div>
 
 <script>
     let db = null;
     let currentUser = null;
+
+    // NEU: Globale Fehler-Protokollierung
+    let errorLog = JSON.parse(localStorage.getItem('trainerErrorLog') || '[]');
+
+    function logCustomError(context, error) {
+        const time = new Date().toLocaleTimeString();
+        const msg = error instanceof Error ? error.message : String(error);
+        const entry = `[${time}] ${context}: ${msg}`;
+        
+        errorLog.unshift(entry);
+        if (errorLog.length > 50) errorLog.pop(); // Max 50 Einträge behalten
+        localStorage.setItem('trainerErrorLog', JSON.stringify(errorLog));
+        
+        console.error("Custom Log:", entry);
+        if(document.getElementById('errorLogOverlay').style.display === 'flex') {
+            renderErrorLog();
+        }
+    }
+
+    // Fängt unerwartete globale Fehler ab
+    window.onerror = function(message, source, lineno, colno, error) {
+        logCustomError("Global Error", `${message} (Zeile ${lineno})`);
+    };
+
+    window.addEventListener('unhandledrejection', function(event) {
+        logCustomError("Unhandled Promise", event.reason);
+    });
+
+    function openErrorLog() {
+        document.getElementById('settingsOverlay').style.display = 'none';
+        document.getElementById('errorLogOverlay').style.display = 'flex';
+        renderErrorLog();
+    }
+
+    function closeErrorLog() {
+        document.getElementById('errorLogOverlay').style.display = 'none';
+    }
+
+    function clearErrorLog() {
+        errorLog = [];
+        localStorage.setItem('trainerErrorLog', JSON.stringify(errorLog));
+        renderErrorLog();
+    }
+
+    function renderErrorLog() {
+        const el = document.getElementById('errorLogList');
+        if (errorLog.length === 0) {
+            el.innerHTML = "Alles läuft reibungslos. Keine Fehler aufgezeichnet!";
+        } else {
+            el.innerHTML = errorLog.map(e => `<div>${escapeHTML(e)}</div>`).join('<hr style="border-color:#374151; margin:5px 0;">');
+        }
+    }
     
     try {
         const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" };
         firebase.initializeApp(firebaseConfig); 
         db = firebase.firestore();
-        db.enablePersistence().catch(()=>{});
+        db.enablePersistence().catch((e)=>{ logCustomError("Firebase Offline Cache", e); });
     } catch(err) {
         console.error("Firebase konnte nicht geladen werden:", err);
+        logCustomError("Firebase Init", err);
         document.getElementById('offlineBanner').style.display = 'block';
     }
 
@@ -475,7 +547,7 @@
     let rpOptionsBuffer = null;
     let rpFetchPromise = null;
     
-    // NEU: Mikrofon Denkpause Timer
+    // Mikrofon Denkpause Timer
     let rpMicTimer = null;
     let rpCurrentTranscript = "";
 
@@ -544,7 +616,7 @@
         showTab('add'); 
         
         if(typeof firebase !== 'undefined') {
-            firebase.auth().signInAnonymously().catch(()=>{});
+            firebase.auth().signInAnonymously().catch((e)=>{ logCustomError("Firebase Auth", e); });
             firebase.auth().onAuthStateChanged((user) => { 
                 if (user) { currentUser = user; refreshData(); } 
             });
@@ -599,7 +671,7 @@
             if(n === 'flashcards') initFlashcards();
             if(n === 'arcade') openMiniGame('Menu');
         } catch(err) {
-            console.error("Tab Navigation Fehler", err);
+            logCustomError("Tab Navigation", err);
         }
     }
 
@@ -686,7 +758,6 @@
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
     function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
-    // VERBESSERT: Zeigt jetzt spezifischere Fehlermeldungen bei Quota-Limits an
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
         const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
         
@@ -707,7 +778,9 @@
                     if(!m) m = data.models.find(mod => mod.name.includes("gemini") && mod.supportedGenerationMethods.includes("generateContent"));
                     if (m) cachedGeminiModel = m.name.replace('models/', '');
                 }
-            } catch(e) {}
+            } catch(e) {
+                logCustomError("Model Fetch", e);
+            }
             if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest";
         }
 
@@ -750,7 +823,7 @@
                     
                 } catch(e) {
                     lastErrorMsg = e.message; 
-                    console.warn(`Schlüssel ${currentApiKeyIndex % keys.length + 1} fehlgeschlagen:`, e.message);
+                    logCustomError(`API Key ${currentApiKeyIndex % keys.length + 1} Failed`, e.message);
                     currentApiKeyIndex++;
                 }
             }
@@ -819,7 +892,7 @@
                 }
                 return JSON.parse(cleanStr);
             } catch(e) {
-                console.error("JSON Parsing Fehler in Szenarien:", e);
+                logCustomError("JSON Parsing in Szenarien", e);
                 return null;
             }
         }
@@ -858,17 +931,14 @@
 
         let options = null;
 
-        // Prüfe, ob wir die nächsten Sätze bereits im Hintergrund geladen haben!
         if (rpOptionsBuffer) {
             options = rpOptionsBuffer;
-            rpOptionsBuffer = null; // Buffer leeren, da er jetzt verbraucht ist
+            rpOptionsBuffer = null; 
         } else if (rpFetchPromise) {
-            // Ein Hintergrund-Ladevorgang läuft gerade, wir warten kurz darauf
             await rpFetchPromise;
             options = rpOptionsBuffer;
             rpOptionsBuffer = null;
         } else {
-            // Buffer ist komplett leer (z.B. erster Start), lade frisch herunter
             options = await fetchRpSentencesFromGemini();
         }
 
@@ -877,7 +947,6 @@
 
         if(options) {
             renderRpOptions(options);
-            // KICK-OFF FÜR DEN NÄCHSTEN BACKGROUND FETCH (Keine Wartezeit beim nächsten Klick!)
             prefetchRpSentences();
         } else {
             document.getElementById('rpOptionsContainer').innerHTML = `<div style="text-align:center; color:#EF4444; font-weight:bold;">⚠️ Konnte Sätze nicht laden. Bitte versuche es erneut.</div>`;
@@ -907,7 +976,6 @@
         speak(text, conf.l3, speed);
     }
 
-    // ANGEPASST: Manuelle Timer-Dauer für das Mikrofon beim Üben
     function recordRpSpeech(targetSentence, btnId) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
         if (!SpeechRecognition) {
@@ -919,7 +987,6 @@
             const rec = new SpeechRecognition();
             rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE';
             
-            // NEU: Hält das Mikrofon dauerhaft offen, bis wir es manuell beenden
             rec.continuous = true;
             rec.interimResults = true; 
             
@@ -930,19 +997,18 @@
             rpCurrentTranscript = "";
             document.getElementById('rpUserSaid').innerText = "...";
             
-            // Auslesen der gewünschten Denkpause (in Millisekunden)
             const patienceSecs = parseInt(document.getElementById('selRpMicPatience').value);
             const waitTimeMs = patienceSecs * 1000;
             
             const resetTimer = () => {
                 clearTimeout(rpMicTimer);
                 rpMicTimer = setTimeout(() => {
-                    rec.stop(); // Stoppt die Aufnahme automatisch nach X Sekunden Stille
+                    rec.stop(); 
                 }, waitTimeMs);
             };
 
             rec.onstart = () => {
-                resetTimer(); // Starte den Timer, falls du nicht direkt sprichst
+                resetTimer(); 
             };
 
             rec.onresult = (e) => {
@@ -952,23 +1018,23 @@
                 }
                 rpCurrentTranscript = text;
                 document.getElementById('rpUserSaid').innerText = rpCurrentTranscript;
-                resetTimer(); // Timer jedes Mal zurücksetzen, wenn du ein neues Wort sagst!
+                resetTimer(); 
             };
 
             rec.onerror = (e) => {
                 clearTimeout(rpMicTimer);
                 if(btn) btn.classList.remove('mic-active');
                 if (e.error === 'not-allowed') alert("⚠️ Mikrofon-Zugriff blockiert.");
+                logCustomError("Szenarien Mikrofon", e.error);
             };
             
             rec.onend = async () => {
                 clearTimeout(rpMicTimer);
                 if(btn) btn.classList.remove('mic-active');
                 
-                // Nur evaluieren, wenn auch wirklich etwas gesagt wurde
                 if (rpCurrentTranscript.trim().length > 0) {
                     const textToEval = rpCurrentTranscript;
-                    rpCurrentTranscript = ""; // Verhindert doppelte Ausführung
+                    rpCurrentTranscript = ""; 
                     await evaluateRpSpeech(textToEval);
                 } else {
                     document.getElementById('rpUserSaid').innerText = "Nichts gehört.";
@@ -979,6 +1045,7 @@
         } catch(err) {
             const btn = document.getElementById(btnId);
             if(btn) btn.classList.remove('mic-active');
+            logCustomError("Start recordRpSpeech", err);
         }
     }
 
@@ -1052,7 +1119,7 @@
             
             statsToday.added++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests();
             if(statsToday.added === 2) { addXP(15); fireConfetti(); }
-        });
+        }).catch(e => logCustomError("Speichern Live-Translation", e));
     }
 
     // ----------------------------------------------------
@@ -1118,7 +1185,7 @@
             lvl = Math.min(5, lvl + 1);
             playSound('success'); addXP(2);
             w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl);
-            db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview});
+            db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}).catch(e => logCustomError("FC Update geuebt", e));
             
             fcSessionHistory.geuebt.unshift({ word: w, oldLvl: oldLvl, oldNextReview: oldNextReview });
             fcIndex++;
@@ -1127,7 +1194,7 @@
             lvl = Math.max(0, lvl - 1);
             playSound('error');
             w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl);
-            db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview});
+            db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}).catch(e => logCustomError("FC Update nochmals", e));
             
             fcSessionHistory.nochmals.unshift({ word: w, oldLvl: oldLvl, oldNextReview: oldNextReview });
             fcIndex++;
@@ -1187,7 +1254,7 @@
         if (type === 'geuebt' || type === 'nochmals') {
             w.level = item.oldLvl;
             w.nextReview = item.oldNextReview;
-            db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: item.oldLvl, nextReview: item.oldNextReview});
+            db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: item.oldLvl, nextReview: item.oldNextReview}).catch(e => logCustomError("Undo FC Update", e));
         } else if (type === 'spaeter') {
             const poolIdx = fcPool.findIndex(x => x.id === w.id);
             if(poolIdx > -1) {
@@ -1225,6 +1292,7 @@
             if(res && res.toUpperCase().includes("JA")) { playSound('success'); addXP(15); alert(`Richtig! "${word}" ist ein Tier. +15 XP`); } else { playSound('error'); alert(`Falsch. KI hat "${word}" nicht als Tier erkannt.`); }
         };
         rec.onend = () => document.getElementById('btnRallyeMic').classList.remove('mic-active');
+        rec.onerror = (e) => logCustomError("Rallye Mikrofon", e.error);
         rec.start();
     }
     
@@ -1243,7 +1311,7 @@
                     if(w > h && w > max) { h = Math.round(h * max / w); w = max; } else if(h > max) { w = Math.round(w * max / h); h = max; }
                     canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                     finalImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                } catch(canvasErr) {}
+                } catch(canvasErr) { logCustomError("Canvas Image Resize", canvasErr); }
                 const c = await callGemini(`Look at this image. Is this an image of a "${huntTarget}"? Answer STRICTLY with the word YES or NO and nothing else.`, finalImageBase64); 
                 document.getElementById('huntLoader').style.display = 'none'; 
                 if(c && c.toUpperCase().includes("YES")) { document.getElementById('huntResult').innerText = "✅ Richtig!"; playSound('success'); addXP(20); } else if (c) { document.getElementById('huntResult').innerText = "❌ Falsch. KI sagte: " + c; playSound('error'); }
@@ -1265,7 +1333,9 @@
         rec.onresult = (e) => { 
             const s = e.results[0][0].transcript.toLowerCase(); 
             if(s.includes(duelWordObj[conf.l3].toLowerCase())) { document.getElementById('duelResult').innerText = `Punkt für ${p}!`; playSound('success'); } else { document.getElementById('duelResult').innerText = "Falsch"; playSound('error'); } 
-        }; rec.start(); 
+        }; 
+        rec.onerror = (e) => logCustomError("Duel Mikrofon", e.error);
+        rec.start(); 
     }
 
     function startAdventure() {
@@ -1281,7 +1351,10 @@
             const res = await callGemini(`Wir spielen ein Text-Adventure. Die Sprache ist ${ALL_LANGS[conf.l3].name}. Ich habe gesagt: "${txt}". Antworte kurz in max 2 Sätzen was passiert und frage, was ich als nächstes tue.`);
             document.getElementById('advLoader').style.display = 'none';
             if(res) { document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-ai">${res}</div>`; speak(res, conf.l3); document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight; addXP(5); }
-        }; rec.onend = () => document.getElementById('btnAdvMic').classList.remove('mic-active'); rec.start();
+        }; 
+        rec.onend = () => document.getElementById('btnAdvMic').classList.remove('mic-active'); 
+        rec.onerror = (e) => logCustomError("Adventure Mikrofon", e.error);
+        rec.start();
     }
     
     function startTutorMic() { 
@@ -1293,7 +1366,10 @@
             const prompt = `Du bist Sprachtutor für ${ALL_LANGS[tgtLang].name}. Antworte extrem kurz und natürlich. Max 2 Sätze auf ${ALL_LANGS[tgtLang].name}. Max 1 Satz kurzes Feedback auf Deutsch. Das Format muss sein: Antwort ||| Feedback`;
             const r = await callGemini(t, null, prompt); document.getElementById('loaderChat').style.display='none'; 
             if(r) { const p = r.split('|||'); document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(p[0])}</div><div class="bubble-feedback">${escapeHTML(p[1]||'')}</div>`; document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight; speak(p[0], tgtLang); } 
-        }; chatRec.onend = () => { if(isChatSessionActive) { setTimeout(() => { try { chatRec.start(); } catch(err){} }, 500); } }; chatRec.start(); 
+        }; 
+        chatRec.onerror = (e) => logCustomError("Chat Tutor Mikrofon", e.error);
+        chatRec.onend = () => { if(isChatSessionActive) { setTimeout(() => { try { chatRec.start(); } catch(err){ logCustomError("Chat Restart", err); } }, 500); } }; 
+        chatRec.start(); 
     }
     
     function toggleChatRecord() { 
@@ -1320,7 +1396,10 @@
         liveRecObj.onresult = async (e) => {
             let text = ""; for(let i = e.resultIndex; i < e.results.length; i++) text += e.results[i][0].transcript; document.getElementById('liveSourceText').value = text;
             if(e.results[e.results.length - 1].isFinal) { document.getElementById('loaderLive').style.display = 'block'; const res = await callGemini(`Übersetze den Text streng in die Sprache ${ALL_LANGS[document.getElementById('liveTgtLang').value].name}. Gib NUR die Übersetzung zurück: "${text}"`); document.getElementById('loaderLive').style.display = 'none'; if(res) document.getElementById('liveResultText').value = res; }
-        }; liveRecObj.onend = () => { if(isLiveRecording) liveRecObj.start(); }; liveRecObj.start();
+        }; 
+        liveRecObj.onerror = (e) => logCustomError("Live Übersetzung Mikrofon", e.error);
+        liveRecObj.onend = () => { if(isLiveRecording) liveRecObj.start(); }; 
+        liveRecObj.start();
     }
 
     function handleImageScan(input) {
@@ -1328,10 +1407,10 @@
         reader.onload = (e) => {
             const img = new Image(); img.onload = async () => {
                 let finalImageBase64 = e.target.result;
-                try { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 800; if(w > h && w > max) { h = Math.round(h * max / w); w = max; } else if(h > max) { w = Math.round(w * max / h); h = max; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); finalImageBase64 = canvas.toDataURL('image/jpeg', 0.7); } catch(err) {}
+                try { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 800; if(w > h && w > max) { h = Math.round(h * max / w); w = max; } else if(h > max) { w = Math.round(w * max / h); h = max; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); finalImageBase64 = canvas.toDataURL('image/jpeg', 0.7); } catch(err) { logCustomError("Image Resize", err); }
                 const prompt = `Look at this image. Identify the single main everyday object in it. Translate its name into these exact language codes: ${conf.l1}, ${conf.l2}, ${conf.l3}. Respond ONLY with a valid JSON object. Example format: {"${conf.l1}":"Apfel", "${conf.l2}":"Apple", "${conf.l3}":"Äpple"}`;
                 const res = await callGemini(prompt, finalImageBase64); document.getElementById('loader').style.display = 'none';
-                if(res) { try { let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const sIdx = cleanStr.indexOf('{'); const eIdx = cleanStr.lastIndexOf('}'); if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1); const obj = JSON.parse(cleanStr); document.getElementById('inDe').value = obj[conf.l1] || ""; document.getElementById('inEn').value = obj[conf.l2] || ""; document.getElementById('inSv').value = obj[conf.l3] || ""; } catch(err) { alert("⚠️ JSON Parsing Fehler."); } }
+                if(res) { try { let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const sIdx = cleanStr.indexOf('{'); const eIdx = cleanStr.lastIndexOf('}'); if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1); const obj = JSON.parse(cleanStr); document.getElementById('inDe').value = obj[conf.l1] || ""; document.getElementById('inEn').value = obj[conf.l2] || ""; document.getElementById('inSv').value = obj[conf.l3] || ""; } catch(err) { alert("⚠️ JSON Parsing Fehler."); logCustomError("Scanner JSON", err); } }
                 input.value = ""; 
             }; img.src = e.target.result;
         }; reader.readAsDataURL(file);
@@ -1356,7 +1435,7 @@
             document.getElementById('inSv').value = obj[conf.l3] || ""; 
         } catch(e) { 
             alert("Übersetzung fehlgeschlagen. Antwort der KI konnte nicht gelesen werden."); 
-            console.error("JSON Error:", e);
+            logCustomError("Auto-Fill JSON", e);
         } 
         document.getElementById('loader').style.display = "none"; 
     }
@@ -1366,7 +1445,7 @@
     async function fetchVerbForms() { 
         const b = document.getElementById('inDe').value || document.getElementById('inEn').value; if(!b) return; document.getElementById('loader').style.display = "block"; 
         const prompt = `Verb "${b}". JSON: {"l1P":"...", "l1F":"...", "l2P":"...", "l2F":"...", "l3P":"...", "l3F":"..."} for ${conf.l1}, ${conf.l2}, ${conf.l3}`; const res = await callGemini(prompt); document.getElementById('loader').style.display = "none"; 
-        if(res) { try { const cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const o = JSON.parse(cleanStr); document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||""; } catch(e) {} } 
+        if(res) { try { const cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const o = JSON.parse(cleanStr); document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||""; } catch(e) { logCustomError("Verbs JSON", e); } } 
     }
 
     function listen(slot, targetId, btn) { 
@@ -1385,7 +1464,7 @@
             }; 
             rec.onerror = (e) => {
                 btn.classList.remove('mic-active');
-                console.warn("Mikrofon-Fehler:", e.error);
+                logCustomError("Eingabe Mikrofon", e.error);
                 if (e.error === 'not-allowed') {
                     alert("⚠️ Mikrofon-Zugriff verweigert. Bitte prüfe die Browser-Berechtigungen.");
                 }
@@ -1394,7 +1473,7 @@
             rec.start(); 
         } catch(err) {
             btn.classList.remove('mic-active');
-            console.error("Spracherkennung Fehler:", err);
+            logCustomError("Start Eingabe Mikrofon", err);
         } 
     }
 
@@ -1404,7 +1483,7 @@
     function debouncedFilterListWords() { clearTimeout(listDebounceTimer); listDebounceTimer = setTimeout(renderList, 300); }
     function renderList() { const q = document.getElementById('listSearch') ? document.getElementById('listSearch').value.toLowerCase().trim() : ""; const filtered = q ? allWords.filter(w => (w[conf.l1] && w[conf.l1].toLowerCase().includes(q)) || (w[conf.l3] && w[conf.l3].toLowerCase().includes(q))) : allWords; document.getElementById('listCont').innerHTML = filtered.map(w => `<div class="card" style="padding:15px; margin-bottom:10px;"><div class="word-item-actions"><button class="icon-btn" onclick="editWord('${w.id}')" style="padding:8px; font-size:1rem;">✎</button><button class="icon-btn danger" onclick="delWord('${w.id}')" style="padding:8px; font-size:1rem;">X</button></div><div style="font-weight:800; color:var(--primary); font-size:1.1rem; padding-right:80px;"><span class="level-dot lvl-${w.level||0}"></span>${escapeHTML(w[conf.l1])}</div><div style="color:var(--text-light); font-size:0.9rem; margin-top:5px; padding-left: 20px;">${escapeHTML(w[conf.l3])} | ${escapeHTML(w[conf.l2])}</div></div>`).join(''); }
     
-    async function delWord(id) { if(!db) return; if(confirm("Löschen?")) { await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(id).delete(); refreshData(); } }
+    async function delWord(id) { if(!db) return; if(confirm("Löschen?")) { await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(id).delete().catch(e=>logCustomError("Wort löschen", e)); refreshData(); } }
     
     function getNextReviewTimestamp(level) { const daysToWait = [0, 1, 3, 7, 14, 30]; const nextDate = new Date(); nextDate.setDate(nextDate.getDate() + (daysToWait[level] || 0)); return nextDate.getTime(); }
 
@@ -1433,10 +1512,10 @@
             if(!isFastInputMode) {
                 showTab('list'); 
             }
-        });
+        }).catch(e => logCustomError("Wort speichern", e));
     }
 
-    async function refreshData() { if(!currentUser || !db) return; const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).orderBy("ts", "desc").get(); allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderList(); }
+    async function refreshData() { if(!currentUser || !db) return; const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).orderBy("ts", "desc").get().catch(e=>logCustomError("Wörter laden", e)); if(s) { allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderList(); } }
     
     function generateStudyList() { 
         if(!allWords.length) { document.getElementById('studyContainer').innerHTML = "<p style='text-align:center;'>Füge zuerst Wörter hinzu!</p>"; document.getElementById('studyActions').style.display = 'none'; return; } 
@@ -1453,7 +1532,7 @@
     async function markWord(correct) { 
         if(!studyWords.length || !currentUser || !db) return; const w = studyWords[studyIndex]; let lvl = w.level || 0; 
         if(correct) { lvl = Math.min(5, lvl + 1); playSound('success'); addXP(5); statsToday.learned++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); if(statsToday.learned === 5) { addXP(20); fireConfetti(); } } else { lvl = Math.max(0, lvl - 1); playSound('error'); } 
-        w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl); db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}); 
+        w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl); db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}).catch(e=>logCustomError("Study Update", e)); 
         setTimeout(nextStudyWord, 300); 
     }
 
