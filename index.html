@@ -122,6 +122,12 @@
         .footer { text-align: center; margin-top: 40px; padding: 20px; color: var(--text-light); font-size: 0.75rem; border-top: 1px solid var(--border-soft); }
         .confetti { position: fixed; width: 10px; height: 10px; z-index: 9999; animation: fall linear forwards; border-radius: 2px;}
         @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+
+        /* NEU: SZEANRIEN OPTIONEN */
+        .rp-option { background: white; border: 2px solid var(--border-soft); border-radius: 16px; padding: 15px; margin-bottom: 15px; text-align: center; box-shadow: var(--shadow-soft); }
+        .rp-option-text { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }
+        .rp-option-trans { font-size: 0.85rem; color: var(--text-light); margin-bottom: 15px; }
+        .rp-option-actions { display: flex; gap: 8px; justify-content: center; }
     </style>
 </head>
 <body>
@@ -180,12 +186,13 @@
 <!-- 🗣️ SZENARIEN (ROLEPLAY) TAB -->
 <div id="tabRoleplay" class="card" style="display:none">
     <h2>🗣️ Situations-Training</h2>
-    <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Lass dir Sätze zu Wunschthemen vorgeben und trainiere die korrekte Aussprache.</p>
+    <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Wähle ein Thema und übe verschiedene Antwortmöglichkeiten.</p>
     
     <label>Wähle dein Thema</label>
     <select id="selRpTopic" onchange="checkCustomTopic()" style="margin-bottom: 15px;">
+        <option value="Begrüßung und Smalltalk">👋 Begrüßung & Smalltalk</option>
         <option value="Im Arbeitsalltag und mit Kollegen sprechen">💼 Arbeitsleben & Kollegen</option>
-        <option value="Besuch im Krankenhaus oder beim Arzt">🏥 Besuch im Krankenhaus / Arzt</option>
+        <option value="Besuch im Krankenhaus oder beim Arzt">🏥 Krankenhaus / Arzt</option>
         <option value="Ein Bahnticket am Schalter buchen">🚆 Bahnticket buchen</option>
         <option value="Im Supermarkt oder auf dem Markt einkaufen">🛒 Im Supermarkt einkaufen</option>
         <option value="Im Restaurant Essen bestellen">🍽️ Im Restaurant bestellen</option>
@@ -217,32 +224,27 @@
         </div>
     </div>
     
-    <button class="action-btn btn-magic" onclick="startRoleplay()">🚀 Training starten</button>
+    <button class="action-btn btn-magic" onclick="startRoleplay()">🚀 3 Sätze generieren</button>
 
     <div id="rpArea" style="display:none; margin-top:25px; border-top:2px dashed var(--border-soft); padding-top:20px;">
         <div style="text-align:center; margin-bottom:15px;">
             <span style="font-size:0.75rem; background:#E5E7EB; padding:4px 10px; border-radius:10px; font-weight:800; color:var(--text-light);" id="rpTopicDisplay">THEMA</span>
         </div>
         
-        <div class="chat-bubble bubble-ai" style="max-width:100%; font-size:1.25rem; font-weight:800; color:var(--primary); text-align:center; margin: 0 auto;" id="rpTargetSentence">...</div>
-        <div style="font-size:0.9rem; color:var(--text-light); text-align:center; margin-top:12px; font-weight:600;" id="rpTranslation">...</div>
+        <div id="rpLoader" class="loader" style="margin-bottom:20px;">KI generiert Sätze...</div>
         
-        <div style="display:flex; justify-content:center; gap:10px; margin-top:25px;">
-            <button class="icon-btn" onclick="speakRpSentence()" style="flex:1; font-size:1rem;">🔊 Hören</button>
-            <button class="icon-btn" id="btnRpMic" onclick="recordRpSpeech()" style="flex:2; border-color:var(--primary); color:var(--primary); font-weight:800; font-size:1rem;">🎤 Nachsprechen</button>
-        </div>
+        <!-- HIER WERDEN DIE 3 OPTIONEN ANGEZEIGT -->
+        <div id="rpOptionsContainer"></div>
         
-        <!-- BUTTON: Nächsten Satz auswählen -->
-        <button class="action-btn btn-secondary" onclick="generateRpSentence()" style="margin-top: 15px; font-size: 0.9rem; border-style: dashed;">🔄 Anderen Satz generieren</button>
+        <button class="action-btn btn-secondary" onclick="generateRpSentence()" style="margin-top: 15px; font-size: 0.9rem; border-style: dashed;" id="btnRpRefresh">🔄 3 neue Sätze generieren</button>
 
-        <div id="rpLoader" class="loader" style="margin-top:20px;">KI analysiert Aussprache...</div>
+        <div id="rpEvalLoader" class="loader" style="margin-top:20px;">KI analysiert Aussprache...</div>
         
         <div id="rpFeedbackBox" style="display:none; background:#F9FAFB; padding:18px; border-radius:20px; border:1px solid var(--border-soft); margin-top:20px;">
             <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">DU HAST GESAGT:</div>
             <div id="rpUserSaid" style="font-style:italic; color:var(--text); font-weight:600; margin-bottom:15px;">...</div>
             <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">FEEDBACK DER KI:</div>
             <div id="rpFeedbackText" style="color:var(--primary); font-weight:600; font-size:0.95rem;">...</div>
-            <button class="action-btn btn-secondary" onclick="generateRpSentence()" style="margin-top:20px;">➡️ Nächster Satz zum Thema</button>
         </div>
     </div>
 </div>
@@ -418,7 +420,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 24.6 (Szenarien Logik & Audio-Buttons) &bull; 2026
+    SprachTutor AI &bull; Version 25.0 (3x Szenarien Auswahl) &bull; 2026
 </div>
 
 <script>
@@ -458,7 +460,7 @@
     let currentFcListType = '';
 
     // Roleplay / Szenarien Vars
-    let currentRpSentenceL3 = "";
+    let activeRpSentenceForFeedback = "";
 
     // Für die Schlüssel-Rotation
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
@@ -706,7 +708,6 @@
         }
         payload.contents.push({ role: "user", parts: userParts });
 
-        // VERBESSERT: Erweiterte Warteschleife auf 15 Sekunden
         const waitTimes = [0, 2000, 4000, 8000, 15000]; 
         let lastErrorMsg = "";
         
@@ -739,7 +740,6 @@
 
         if (activeLoader) activeLoader.innerText = originalLoaderText;
         
-        // VERBESSERT: Deutsche "High Demand" Anzeige
         if (lastErrorMsg.toLowerCase().includes("high demand") || lastErrorMsg.toLowerCase().includes("overloaded")) {
             alert("⚠️ Die Google KI-Server sind im Moment weltweit überlastet.\n\nDas passiert bei der kostenlosen Version gelegentlich. Bitte warte ein paar Minuten und versuche es dann erneut!");
         } else {
@@ -749,7 +749,7 @@
     }
 
     // ----------------------------------------------------
-    // SZENARIEN / ROLEPLAY LOGIK
+    // SZENARIEN / ROLEPLAY LOGIK (NEU: BATCH-GENERIERUNG 3 SÄTZE)
     // ----------------------------------------------------
     function checkCustomTopic() {
         const sel = document.getElementById('selRpTopic').value;
@@ -771,8 +771,8 @@
 
     async function generateRpSentence() {
         document.getElementById('rpFeedbackBox').style.display = 'none';
-        document.getElementById('rpTargetSentence').innerText = "KI überlegt sich einen Satz...";
-        document.getElementById('rpTranslation').innerText = "";
+        document.getElementById('rpOptionsContainer').innerHTML = "";
+        document.getElementById('btnRpRefresh').style.display = 'none';
         document.getElementById('rpLoader').style.display = 'block';
 
         const topic = document.getElementById('rpTopicDisplay').innerText;
@@ -781,43 +781,65 @@
         const diffSelect = document.getElementById('selRpDifficulty');
         const diffText = diffSelect.options[diffSelect.selectedIndex].text;
         
-        // ZUFALLSFAKTOR FÜR MEHR VARIATION ABER LOGISCH:
-        const intentions = ["eine höfliche Formulierung", "eine zielgerichtete Frage", "eine typische Antwort", "eine Bitte", "eine kurze Feststellung", "eine alltägliche Interaktion"];
-        const intention = intentions[Math.floor(Math.random()*intentions.length)];
-        const randomSeed = Math.floor(Math.random() * 10000);
-        
-        const prompt = `Du bist ein professioneller Sprachtrainer. Erstelle einen einzigen, absolut realistischen, logischen und im Alltag sehr nützlichen Satz für das Thema "${topic}". Zielsprache: ${tgtLangName}. 
-        WICHTIG: Das Sprachniveau MUSS exakt "${diffText}" sein (A1 = extrem kurze, leichte Basis-Sätze mit 3-5 Wörtern, B2 = komplex und fortgeschritten). 
-        SEHR WICHTIG: Der Satz soll folgende Funktion im Gespräch haben: ${intention} (Zufalls-ID: ${randomSeed}, um Vielfalt zu garantieren).
-        Erfinde KEINE absurden oder unlogischen Sätze. Der Satz MUSS in der realen Welt für einen Sprachschüler logisch und direkt anwendbar sein!
-        Antworte STRENG in folgendem Format ohne weiteren Text:
-        Satz auf ${tgtLangName} ||| Übersetzung auf Deutsch`;
+        const prompt = `Du bist ein professioneller Sprachtrainer. Erstelle für das Szenario/Thema "${topic}" exakt DREI völlig unterschiedliche, aber absolut realistische und im Alltag nützliche Antwortmöglichkeiten oder Sätze in ${tgtLangName}.
+        Niveau: ${diffText} (Wenn A1, dann extrem einfache, kurze Sätze. Wenn B2, dann flüssig und komplex).
+        Satz 1: Sehr höflich oder formell.
+        Satz 2: Kurz, direkt und informell.
+        Satz 3: Eine Frage oder unerwartete, aber logische Wendung.
+        Erfinde KEINE absurden Sätze (wie z.B. über Katzen reden, wenn es um Begrüßung geht). Alles MUSS logisch und anwendbar sein.
+        Antworte AUSSCHLIESSLICH im folgenden JSON-Format, ohne zusätzlichen Text:
+        [
+          {"l3": "Satz 1", "l1": "Übersetzung 1"},
+          {"l3": "Satz 2", "l1": "Übersetzung 2"},
+          {"l3": "Satz 3", "l1": "Übersetzung 3"}
+        ]`;
         
         const res = await callGemini(prompt);
         document.getElementById('rpLoader').style.display = 'none';
+        document.getElementById('btnRpRefresh').style.display = 'inline-block';
 
         if(res) {
-            const parts = res.split('|||');
-            currentRpSentenceL3 = parts[0] ? parts[0].replace(/`{3}/g, '').trim() : "Fehler beim Verarbeiten";
-            const transL1 = parts[1] ? parts[1].replace(/`{3}/g, '').trim() : "";
-            
-            document.getElementById('rpTargetSentence').innerText = currentRpSentenceL3;
-            document.getElementById('rpTranslation').innerText = transL1;
-            
-            speakRpSentence();
+            try {
+                let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); 
+                const sIdx = cleanStr.indexOf('['); 
+                const eIdx = cleanStr.lastIndexOf(']'); 
+                if(sIdx !== -1 && eIdx !== -1) {
+                    cleanStr = cleanStr.substring(sIdx, eIdx + 1); 
+                }
+                const options = JSON.parse(cleanStr);
+                
+                let html = '';
+                options.forEach((opt, idx) => {
+                    const l3Text = escapeHTML(opt.l3);
+                    const jsSafeL3 = safeJS(opt.l3);
+                    html += `
+                    <div class="rp-option">
+                        <div class="rp-option-text">${l3Text}</div>
+                        <div class="rp-option-trans">${escapeHTML(opt.l1)}</div>
+                        <div class="rp-option-actions">
+                            <button class="icon-btn" onclick="speakRpSentence('${jsSafeL3}')" style="font-size: 1rem;">🔊 Hören</button>
+                            <button class="icon-btn" id="rpMicBtn_${idx}" onclick="recordRpSpeech('${jsSafeL3}', 'rpMicBtn_${idx}')" style="border-color:var(--primary); color:var(--primary); font-weight:800; font-size:1rem;">🎤 Üben</button>
+                        </div>
+                    </div>`;
+                });
+                
+                document.getElementById('rpOptionsContainer').innerHTML = html;
+                
+            } catch(e) {
+                console.error("JSON Parsing Fehler in Szenarien:", e);
+                document.getElementById('rpOptionsContainer').innerHTML = `<div style="text-align:center; color:#EF4444; font-weight:bold;">⚠️ Fehler beim Laden der Sätze. Bitte versuche es erneut.</div>`;
+            }
         } else {
-            document.getElementById('rpTargetSentence').innerText = "⚠️ Konnte Satz nicht laden.";
+            document.getElementById('rpOptionsContainer').innerHTML = `<div style="text-align:center; color:#EF4444; font-weight:bold;">⚠️ Konnte Sätze nicht laden.</div>`;
         }
     }
 
-    function speakRpSentence() {
-        if(currentRpSentenceL3) {
-            const speed = parseFloat(document.getElementById('selRpSpeed').value);
-            speak(currentRpSentenceL3, conf.l3, speed);
-        }
+    function speakRpSentence(text) {
+        const speed = parseFloat(document.getElementById('selRpSpeed').value);
+        speak(text, conf.l3, speed);
     }
 
-    function recordRpSpeech() {
+    function recordRpSpeech(targetSentence, btnId) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
         if (!SpeechRecognition) {
             alert("⚠️ Dein Browser unterstützt das Mikrofon für diese Funktion leider nicht.");
@@ -828,42 +850,48 @@
             const rec = new SpeechRecognition();
             rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE';
             
-            const btn = document.getElementById('btnRpMic');
-            btn.classList.add('mic-active');
+            const btn = document.getElementById(btnId);
+            if(btn) btn.classList.add('mic-active');
+            
+            // Setze den Satz, der aktuell geübt wird, global für das Feedback
+            activeRpSentenceForFeedback = targetSentence;
 
             rec.onresult = async (e) => {
                 const spokenText = e.results[0][0].transcript;
                 document.getElementById('rpUserSaid').innerText = spokenText;
-                btn.classList.remove('mic-active');
+                if(btn) btn.classList.remove('mic-active');
                 await evaluateRpSpeech(spokenText);
             };
 
             rec.onerror = (e) => {
-                btn.classList.remove('mic-active');
+                if(btn) btn.classList.remove('mic-active');
                 if (e.error === 'not-allowed') alert("⚠️ Mikrofon-Zugriff blockiert.");
             };
             
-            rec.onend = () => btn.classList.remove('mic-active');
+            rec.onend = () => {
+                if(btn) btn.classList.remove('mic-active');
+            };
             rec.start();
         } catch(err) {
-            document.getElementById('btnRpMic').classList.remove('mic-active');
+            const btn = document.getElementById(btnId);
+            if(btn) btn.classList.remove('mic-active');
         }
     }
 
     async function evaluateRpSpeech(spokenText) {
-        document.getElementById('rpLoader').style.display = 'block';
+        document.getElementById('rpEvalLoader').style.display = 'block';
         document.getElementById('rpFeedbackBox').style.display = 'none';
 
         const tgtLangName = ALL_LANGS[conf.l3].name;
         const prompt = `Du bist ein strenger aber extrem ermutigender Sprachtrainer für ${tgtLangName}. 
-        Der Originalsatz, den der Schüler sagen sollte, lautet: "${currentRpSentenceL3}".
+        Der Originalsatz, den der Schüler sagen sollte, lautet: "${activeRpSentenceForFeedback}".
         Das Mikrofon hat beim Schüler folgenden Text verstanden: "${spokenText}".
         
         Vergleiche die beiden Sätze. Antworte KURZ auf Deutsch (max. 2 Sätze). 
         Sag ihm, ob die Aussprache/Worte richtig verstanden wurden, oder zeige ihm freundlich, wo der Fehler lag.`;
         
         const feedback = await callGemini(prompt);
-        document.getElementById('rpLoader').style.display = 'none';
+        document.getElementById('rpEvalLoader').style.display = 'none';
 
         if(feedback) {
             document.getElementById('rpFeedbackText').innerText = feedback;
@@ -871,6 +899,11 @@
             
             addXP(5);
             playSound('success');
+            
+            // Scrolle smooth zum Feedback
+            setTimeout(() => {
+                document.getElementById('rpFeedbackBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
         }
     }
 
