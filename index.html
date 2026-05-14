@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -203,15 +203,15 @@
         <input type="text" id="inpCustomTopic" placeholder="Z.B. Auto in der Werkstatt abgeben..." oninput="invalidateRpBuffer()">
     </div>
 
-    <!-- NIVEAU UND TEMPO EINSTELLUNGEN -->
-    <div class="input-row" style="gap:15px; margin-bottom: 20px;">
+    <!-- NIVEAU, TEMPO UND DENKPAUSE EINSTELLUNGEN -->
+    <div class="input-row" style="gap:15px; margin-bottom: 20px; align-items: flex-end;">
         <div style="flex:1">
             <label style="margin-top:0;">Niveau</label>
             <select id="selRpDifficulty" onchange="invalidateRpBuffer()">
-                <option value="A1">🟢 A1 (Sehr leicht, 3-5 Wörter)</option>
-                <option value="A2" selected>🟡 A2 (Leicht, Alltagssätze)</option>
-                <option value="B1">🟠 B1 (Mittel, Normal)</option>
-                <option value="B2">🔴 B2 (Schwer, Komplex)</option>
+                <option value="A1">🟢 A1 (Leicht)</option>
+                <option value="A2" selected>🟡 A2 (Alltag)</option>
+                <option value="B1">🟠 B1 (Mittel)</option>
+                <option value="B2">🔴 B2 (Schwer)</option>
             </select>
         </div>
         <div style="flex:1">
@@ -220,6 +220,17 @@
                 <option value="1.0">▶️ Normal</option>
                 <option value="0.75">🐢 Langsam</option>
                 <option value="0.5">🐌 Sehr langsam</option>
+            </select>
+        </div>
+        <!-- NEU: DENKPAUSE -->
+        <div style="flex:1">
+            <label style="margin-top:0;">Denkpause</label>
+            <select id="selRpMicPatience">
+                <option value="1">1 Sek.</option>
+                <option value="2">2 Sek.</option>
+                <option value="3" selected>3 Sek.</option>
+                <option value="4">4 Sek.</option>
+                <option value="5">5 Sek.</option>
             </select>
         </div>
     </div>
@@ -420,7 +431,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 26.0 (Szenarien Pre-fetching) &bull; 2026
+    SprachTutor AI &bull; Version 26.1 (Mikrofon-Denkpause) &bull; 2026
 </div>
 
 <script>
@@ -461,9 +472,12 @@
 
     // Roleplay / Szenarien Vars
     let activeRpSentenceForFeedback = "";
-    // NEU: Pre-fetching Buffer
     let rpOptionsBuffer = null;
     let rpFetchPromise = null;
+    
+    // NEU: Mikrofon Denkpause Timer
+    let rpMicTimer = null;
+    let rpCurrentTranscript = "";
 
     // Für die Schlüssel-Rotation
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
@@ -890,6 +904,7 @@
         speak(text, conf.l3, speed);
     }
 
+    // ANGEPASST: Manuelle Timer-Dauer für das Mikrofon beim Üben
     function recordRpSpeech(targetSentence, btnId) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
         if (!SpeechRecognition) {
@@ -901,27 +916,62 @@
             const rec = new SpeechRecognition();
             rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE';
             
+            // NEU: Hält das Mikrofon dauerhaft offen, bis wir es manuell beenden
+            rec.continuous = true;
+            rec.interimResults = true; 
+            
             const btn = document.getElementById(btnId);
             if(btn) btn.classList.add('mic-active');
             
-            // Setze den Satz, der aktuell geübt wird, global für das Feedback
             activeRpSentenceForFeedback = targetSentence;
+            rpCurrentTranscript = "";
+            document.getElementById('rpUserSaid').innerText = "...";
+            
+            // Auslesen der gewünschten Denkpause (in Millisekunden)
+            const patienceSecs = parseInt(document.getElementById('selRpMicPatience').value);
+            const waitTimeMs = patienceSecs * 1000;
+            
+            const resetTimer = () => {
+                clearTimeout(rpMicTimer);
+                rpMicTimer = setTimeout(() => {
+                    rec.stop(); // Stoppt die Aufnahme automatisch nach X Sekunden Stille
+                }, waitTimeMs);
+            };
 
-            rec.onresult = async (e) => {
-                const spokenText = e.results[0][0].transcript;
-                document.getElementById('rpUserSaid').innerText = spokenText;
-                if(btn) btn.classList.remove('mic-active');
-                await evaluateRpSpeech(spokenText);
+            rec.onstart = () => {
+                resetTimer(); // Starte den Timer, falls du nicht direkt sprichst
+            };
+
+            rec.onresult = (e) => {
+                let text = "";
+                for(let i = 0; i < e.results.length; i++) {
+                    text += e.results[i][0].transcript;
+                }
+                rpCurrentTranscript = text;
+                document.getElementById('rpUserSaid').innerText = rpCurrentTranscript;
+                resetTimer(); // Timer jedes Mal zurücksetzen, wenn du ein neues Wort sagst!
             };
 
             rec.onerror = (e) => {
+                clearTimeout(rpMicTimer);
                 if(btn) btn.classList.remove('mic-active');
                 if (e.error === 'not-allowed') alert("⚠️ Mikrofon-Zugriff blockiert.");
             };
             
-            rec.onend = () => {
+            rec.onend = async () => {
+                clearTimeout(rpMicTimer);
                 if(btn) btn.classList.remove('mic-active');
+                
+                // Nur evaluieren, wenn auch wirklich etwas gesagt wurde
+                if (rpCurrentTranscript.trim().length > 0) {
+                    const textToEval = rpCurrentTranscript;
+                    rpCurrentTranscript = ""; // Verhindert doppelte Ausführung
+                    await evaluateRpSpeech(textToEval);
+                } else {
+                    document.getElementById('rpUserSaid').innerText = "Nichts gehört.";
+                }
             };
+            
             rec.start();
         } catch(err) {
             const btn = document.getElementById(btnId);
@@ -951,7 +1001,6 @@
             addXP(5);
             playSound('success');
             
-            // Scrolle smooth zum Feedback
             setTimeout(() => {
                 document.getElementById('rpFeedbackBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 100);
