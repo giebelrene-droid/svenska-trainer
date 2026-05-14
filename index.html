@@ -156,14 +156,14 @@
         <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Profil-Vokabeln löschen</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
         
-        <!-- NEU: Fehlerprotokoll Button -->
+        <!-- Fehlerprotokoll Button -->
         <button class="action-btn btn-secondary" onclick="openErrorLog()" style="margin-top: 15px; border-style: dashed;">🐛 Fehlerprotokoll anzeigen</button>
         
         <button class="action-btn" onclick="closeSettings()" style="margin-top: 30px;">Fertig</button>
     </div>
 </div>
 
-<!-- NEU: Fehlerprotokoll Overlay -->
+<!-- Fehlerprotokoll Overlay -->
 <div id="errorLogOverlay">
     <div class="settings-box" style="max-width: 500px;">
         <h2>🐛 Fehlerprotokoll</h2>
@@ -286,6 +286,17 @@
         <p id="fcCount" style="font-weight:800; color:var(--primary); margin-top: -15px;">0/0</p>
     </div>
     
+    <!-- NEU: KI-Themenfilter -->
+    <div style="background: #F9FAFB; padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 1px solid var(--border-soft);">
+        <label style="margin-top: 0;">🎯 Thematisch üben (KI-Filter)</label>
+        <div class="input-row" style="margin-bottom:0;">
+            <input type="text" id="fcTopicInput" placeholder="z.B. Arbeit, Medizin, Autos...">
+            <button class="action-btn btn-magic" style="margin-top: 0; width: auto; padding: 16px 20px;" onclick="initFlashcards(true)">Filtern</button>
+        </div>
+    </div>
+
+    <div id="fcLoader" class="loader" style="margin-bottom:20px;">KI durchsucht Wörterbuch...</div>
+    
     <div id="fcCardArea">
         <div class="flip-card" id="fcCard" onclick="flipFc()">
             <div class="flip-card-inner" id="fcInner">
@@ -310,7 +321,7 @@
     
     <div id="fcDoneMessage" style="display:none; text-align:center; padding: 30px 0;">
         <h3 style="color: var(--primary);">🎉 Alle Karten durch!</h3>
-        <button class="action-btn btn-secondary" onclick="initFlashcards()">Stapel neu mischen</button>
+        <button class="action-btn btn-secondary" onclick="document.getElementById('fcTopicInput').value=''; initFlashcards(false)">Stapel neu mischen (Alle)</button>
     </div>
 
     <!-- ORDNER UND UNDO FUNKTION -->
@@ -450,14 +461,14 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 27.0 (Mit Fehlerprotokoll) &bull; 2026
+    SprachTutor AI &bull; Version 28.0 (KI-Karteikarten Filter) &bull; 2026
 </div>
 
 <script>
     let db = null;
     let currentUser = null;
 
-    // NEU: Globale Fehler-Protokollierung
+    // Globale Fehler-Protokollierung
     let errorLog = JSON.parse(localStorage.getItem('trainerErrorLog') || '[]');
 
     function logCustomError(context, error) {
@@ -466,7 +477,7 @@
         const entry = `[${time}] ${context}: ${msg}`;
         
         errorLog.unshift(entry);
-        if (errorLog.length > 50) errorLog.pop(); // Max 50 Einträge behalten
+        if (errorLog.length > 50) errorLog.pop(); 
         localStorage.setItem('trainerErrorLog', JSON.stringify(errorLog));
         
         console.error("Custom Log:", entry);
@@ -475,7 +486,6 @@
         }
     }
 
-    // Fängt unerwartete globale Fehler ab
     window.onerror = function(message, source, lineno, colno, error) {
         logCustomError("Global Error", `${message} (Zeile ${lineno})`);
     };
@@ -668,7 +678,11 @@
             
             if(n === 'list') { document.getElementById('listSearch').value = ''; renderList(); }
             if(n === 'study') generateStudyList();
-            if(n === 'flashcards') initFlashcards();
+            
+            // Verhindere das Überschreiben eines aktiven Filters beim normalen Tab-Wechsel
+            if(n === 'flashcards' && fcPool.length === 0) { 
+                initFlashcards(false); 
+            }
             if(n === 'arcade') openMiniGame('Menu');
         } catch(err) {
             logCustomError("Tab Navigation", err);
@@ -823,7 +837,7 @@
                     
                 } catch(e) {
                     lastErrorMsg = e.message; 
-                    logCustomError(`API Key ${currentApiKeyIndex % keys.length + 1} Failed`, e.message);
+                    console.warn(`Schlüssel ${currentApiKeyIndex % keys.length + 1} fehlgeschlagen:`, e.message);
                     currentApiKeyIndex++;
                 }
             }
@@ -1125,15 +1139,64 @@
     // ----------------------------------------------------
     // KARTEIKARTEN (FLASHCARDS)
     // ----------------------------------------------------
-    function initFlashcards() {
+    
+    // NEU: Parameter useFilter hinzugefügt
+    async function initFlashcards(useFilter = false) {
         if(allWords.length === 0) {
             document.getElementById('fcCardArea').style.display = 'none';
             document.getElementById('fcDoneMessage').style.display = 'block';
             document.getElementById('fcDoneMessage').innerHTML = "<p>Füge erst Wörter hinzu!</p>";
             return;
         }
+
+        let filteredWords = [...allWords];
+        const topicInput = document.getElementById('fcTopicInput');
+        const topic = useFilter && topicInput ? topicInput.value.trim() : "";
+
+        // KI-Filter Prozess
+        if (topic) {
+            document.getElementById('fcCardArea').style.display = 'none';
+            document.getElementById('fcDoneMessage').style.display = 'none';
+            document.getElementById('fcLoader').style.display = 'block';
+
+            const wordListL1 = allWords.map(w => w[conf.l1]).join(', ');
+            const prompt = `Du bist ein intelligenter Filter. Hier ist eine Liste von Wörtern: [${wordListL1}].
+            Finde ALLE Wörter in dieser Liste, die thematisch in die Kategorie "${topic}" passen.
+            Antworte AUSSCHLIESSLICH mit einem validen JSON-Array, das diese Wörter als exakte Strings enthält.
+            Beispiel-Antwort: ["Wort1", "Wort2"]
+            Wenn kein Wort zum Thema passt, antworte: []
+            Kein Markdown, keine Erklärungen.`;
+
+            const res = await callGemini(prompt);
+            document.getElementById('fcLoader').style.display = 'none';
+
+            if (res) {
+                try {
+                    let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim();
+                    const sIdx = cleanStr.indexOf('[');
+                    const eIdx = cleanStr.lastIndexOf(']');
+                    if (sIdx !== -1 && eIdx !== -1) {
+                        cleanStr = cleanStr.substring(sIdx, eIdx + 1);
+                    }
+                    const matchedWords = JSON.parse(cleanStr);
+                    filteredWords = allWords.filter(w => matchedWords.includes(w[conf.l1]));
+                    
+                    if (filteredWords.length === 0) {
+                        alert("Keine passenden Wörter zum Thema '" + topic + "' gefunden. Zeige alle Wörter.");
+                        filteredWords = [...allWords];
+                        topicInput.value = "";
+                    }
+                } catch(e) {
+                    logCustomError("FC KI Filter JSON", e);
+                    alert("⚠️ Fehler beim KI-Filtern. Zeige alle Wörter an.");
+                    filteredWords = [...allWords];
+                }
+            } else {
+                filteredWords = [...allWords];
+            }
+        }
         
-        fcPool = [...allWords].sort(() => 0.5 - Math.random());
+        fcPool = filteredWords.sort(() => 0.5 - Math.random());
         fcIndex = 0;
         fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] };
         
@@ -1445,7 +1508,7 @@
     async function fetchVerbForms() { 
         const b = document.getElementById('inDe').value || document.getElementById('inEn').value; if(!b) return; document.getElementById('loader').style.display = "block"; 
         const prompt = `Verb "${b}". JSON: {"l1P":"...", "l1F":"...", "l2P":"...", "l2F":"...", "l3P":"...", "l3F":"..."} for ${conf.l1}, ${conf.l2}, ${conf.l3}`; const res = await callGemini(prompt); document.getElementById('loader').style.display = "none"; 
-        if(res) { try { const cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const o = JSON.parse(cleanStr); document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||""; } catch(e) { logCustomError("Verbs JSON", e); } } 
+        if(res) { try { const cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const o = JSON.parse(cleanStr); document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||"lor"} catch(e) { logCustomError("Verbs JSON", e); } } 
     }
 
     function listen(slot, targetId, btn) { 
