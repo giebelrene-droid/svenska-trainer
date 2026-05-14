@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -123,7 +123,7 @@
         .confetti { position: fixed; width: 10px; height: 10px; z-index: 9999; animation: fall linear forwards; border-radius: 2px;}
         @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
 
-        /* NEU: SZEANRIEN OPTIONEN */
+        /* SZEANRIEN OPTIONEN */
         .rp-option { background: white; border: 2px solid var(--border-soft); border-radius: 16px; padding: 15px; margin-bottom: 15px; text-align: center; box-shadow: var(--shadow-soft); }
         .rp-option-text { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }
         .rp-option-trans { font-size: 0.85rem; color: var(--text-light); margin-bottom: 15px; }
@@ -200,14 +200,14 @@
     </select>
     
     <div id="customTopicRow" class="input-row" style="display:none; margin-bottom: 15px;">
-        <input type="text" id="inpCustomTopic" placeholder="Z.B. Auto in der Werkstatt abgeben...">
+        <input type="text" id="inpCustomTopic" placeholder="Z.B. Auto in der Werkstatt abgeben..." oninput="invalidateRpBuffer()">
     </div>
 
     <!-- NIVEAU UND TEMPO EINSTELLUNGEN -->
     <div class="input-row" style="gap:15px; margin-bottom: 20px;">
         <div style="flex:1">
             <label style="margin-top:0;">Niveau</label>
-            <select id="selRpDifficulty">
+            <select id="selRpDifficulty" onchange="invalidateRpBuffer()">
                 <option value="A1">🟢 A1 (Sehr leicht, 3-5 Wörter)</option>
                 <option value="A2" selected>🟡 A2 (Leicht, Alltagssätze)</option>
                 <option value="B1">🟠 B1 (Mittel, Normal)</option>
@@ -420,7 +420,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 25.0 (3x Szenarien Auswahl) &bull; 2026
+    SprachTutor AI &bull; Version 26.0 (Szenarien Pre-fetching) &bull; 2026
 </div>
 
 <script>
@@ -461,6 +461,9 @@
 
     // Roleplay / Szenarien Vars
     let activeRpSentenceForFeedback = "";
+    // NEU: Pre-fetching Buffer
+    let rpOptionsBuffer = null;
+    let rpFetchPromise = null;
 
     // Für die Schlüssel-Rotation
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
@@ -749,11 +752,72 @@
     }
 
     // ----------------------------------------------------
-    // SZENARIEN / ROLEPLAY LOGIK (NEU: BATCH-GENERIERUNG 3 SÄTZE)
+    // SZENARIEN / ROLEPLAY LOGIK (MIT PRE-FETCHING BUFFER)
     // ----------------------------------------------------
+    
+    function invalidateRpBuffer() {
+        rpOptionsBuffer = null;
+    }
+
     function checkCustomTopic() {
         const sel = document.getElementById('selRpTopic').value;
         document.getElementById('customTopicRow').style.display = sel === 'custom' ? 'flex' : 'none';
+        invalidateRpBuffer();
+    }
+
+    async function fetchRpSentencesFromGemini() {
+        const selTopic = document.getElementById('selRpTopic').value;
+        let topic = selTopic === 'custom' ? document.getElementById('inpCustomTopic').value.trim() || "Allgemeines Gespräch" : selTopic;
+        
+        const tgtLangName = ALL_LANGS[conf.l3].name;
+        
+        const diffSelect = document.getElementById('selRpDifficulty');
+        const diffText = diffSelect.options[diffSelect.selectedIndex].text;
+        
+        const intentions = ["eine höfliche Formulierung", "eine zielgerichtete Frage", "eine typische Antwort", "eine Bitte", "eine kurze Feststellung", "eine alltägliche Interaktion"];
+        const intention = intentions[Math.floor(Math.random()*intentions.length)];
+        const randomSeed = Math.floor(Math.random() * 10000);
+        
+        const prompt = `Du bist ein professioneller Sprachtrainer. Erstelle für das Szenario/Thema "${topic}" exakt DREI völlig unterschiedliche, aber absolut realistische und im Alltag nützliche Antwortmöglichkeiten oder Sätze in ${tgtLangName}.
+        Niveau: ${diffText}.
+        Satz 1: Sehr höflich oder formell.
+        Satz 2: Kurz, direkt und informell.
+        Satz 3: Eine Frage oder unerwartete, aber logische Wendung.
+        Erfinde KEINE absurden Sätze. Alles MUSS logisch und anwendbar sein. Aspekt: ${intention} (ID: ${randomSeed}).
+        Antworte AUSSCHLIESSLICH im folgenden JSON-Format, ohne zusätzlichen Text:
+        [
+          {"l3": "Satz 1", "l1": "Übersetzung 1"},
+          {"l3": "Satz 2", "l1": "Übersetzung 2"},
+          {"l3": "Satz 3", "l1": "Übersetzung 3"}
+        ]`;
+        
+        const res = await callGemini(prompt);
+        if(res) {
+            try {
+                let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); 
+                const sIdx = cleanStr.indexOf('['); 
+                const eIdx = cleanStr.lastIndexOf(']'); 
+                if(sIdx !== -1 && eIdx !== -1) {
+                    cleanStr = cleanStr.substring(sIdx, eIdx + 1); 
+                }
+                return JSON.parse(cleanStr);
+            } catch(e) {
+                console.error("JSON Parsing Fehler in Szenarien:", e);
+                return null;
+            }
+        }
+        return null;
+    }
+
+    function prefetchRpSentences() {
+        if (!rpFetchPromise) {
+            rpFetchPromise = fetchRpSentencesFromGemini().then(options => {
+                if (options) {
+                    rpOptionsBuffer = options;
+                }
+                rpFetchPromise = null;
+            });
+        }
     }
 
     async function startRoleplay() {
@@ -775,63 +839,50 @@
         document.getElementById('btnRpRefresh').style.display = 'none';
         document.getElementById('rpLoader').style.display = 'block';
 
-        const topic = document.getElementById('rpTopicDisplay').innerText;
-        const tgtLangName = ALL_LANGS[conf.l3].name;
-        
-        const diffSelect = document.getElementById('selRpDifficulty');
-        const diffText = diffSelect.options[diffSelect.selectedIndex].text;
-        
-        const prompt = `Du bist ein professioneller Sprachtrainer. Erstelle für das Szenario/Thema "${topic}" exakt DREI völlig unterschiedliche, aber absolut realistische und im Alltag nützliche Antwortmöglichkeiten oder Sätze in ${tgtLangName}.
-        Niveau: ${diffText} (Wenn A1, dann extrem einfache, kurze Sätze. Wenn B2, dann flüssig und komplex).
-        Satz 1: Sehr höflich oder formell.
-        Satz 2: Kurz, direkt und informell.
-        Satz 3: Eine Frage oder unerwartete, aber logische Wendung.
-        Erfinde KEINE absurden Sätze (wie z.B. über Katzen reden, wenn es um Begrüßung geht). Alles MUSS logisch und anwendbar sein.
-        Antworte AUSSCHLIESSLICH im folgenden JSON-Format, ohne zusätzlichen Text:
-        [
-          {"l3": "Satz 1", "l1": "Übersetzung 1"},
-          {"l3": "Satz 2", "l1": "Übersetzung 2"},
-          {"l3": "Satz 3", "l1": "Übersetzung 3"}
-        ]`;
-        
-        const res = await callGemini(prompt);
+        let options = null;
+
+        // Prüfe, ob wir die nächsten Sätze bereits im Hintergrund geladen haben!
+        if (rpOptionsBuffer) {
+            options = rpOptionsBuffer;
+            rpOptionsBuffer = null; // Buffer leeren, da er jetzt verbraucht ist
+        } else if (rpFetchPromise) {
+            // Ein Hintergrund-Ladevorgang läuft gerade, wir warten kurz darauf
+            await rpFetchPromise;
+            options = rpOptionsBuffer;
+            rpOptionsBuffer = null;
+        } else {
+            // Buffer ist komplett leer (z.B. erster Start), lade frisch herunter
+            options = await fetchRpSentencesFromGemini();
+        }
+
         document.getElementById('rpLoader').style.display = 'none';
         document.getElementById('btnRpRefresh').style.display = 'inline-block';
 
-        if(res) {
-            try {
-                let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); 
-                const sIdx = cleanStr.indexOf('['); 
-                const eIdx = cleanStr.lastIndexOf(']'); 
-                if(sIdx !== -1 && eIdx !== -1) {
-                    cleanStr = cleanStr.substring(sIdx, eIdx + 1); 
-                }
-                const options = JSON.parse(cleanStr);
-                
-                let html = '';
-                options.forEach((opt, idx) => {
-                    const l3Text = escapeHTML(opt.l3);
-                    const jsSafeL3 = safeJS(opt.l3);
-                    html += `
-                    <div class="rp-option">
-                        <div class="rp-option-text">${l3Text}</div>
-                        <div class="rp-option-trans">${escapeHTML(opt.l1)}</div>
-                        <div class="rp-option-actions">
-                            <button class="icon-btn" onclick="speakRpSentence('${jsSafeL3}')" style="font-size: 1rem;">🔊 Hören</button>
-                            <button class="icon-btn" id="rpMicBtn_${idx}" onclick="recordRpSpeech('${jsSafeL3}', 'rpMicBtn_${idx}')" style="border-color:var(--primary); color:var(--primary); font-weight:800; font-size:1rem;">🎤 Üben</button>
-                        </div>
-                    </div>`;
-                });
-                
-                document.getElementById('rpOptionsContainer').innerHTML = html;
-                
-            } catch(e) {
-                console.error("JSON Parsing Fehler in Szenarien:", e);
-                document.getElementById('rpOptionsContainer').innerHTML = `<div style="text-align:center; color:#EF4444; font-weight:bold;">⚠️ Fehler beim Laden der Sätze. Bitte versuche es erneut.</div>`;
-            }
+        if(options) {
+            renderRpOptions(options);
+            // KICK-OFF FÜR DEN NÄCHSTEN BACKGROUND FETCH (Keine Wartezeit beim nächsten Klick!)
+            prefetchRpSentences();
         } else {
-            document.getElementById('rpOptionsContainer').innerHTML = `<div style="text-align:center; color:#EF4444; font-weight:bold;">⚠️ Konnte Sätze nicht laden.</div>`;
+            document.getElementById('rpOptionsContainer').innerHTML = `<div style="text-align:center; color:#EF4444; font-weight:bold;">⚠️ Konnte Sätze nicht laden. Bitte versuche es erneut.</div>`;
         }
+    }
+
+    function renderRpOptions(options) {
+        let html = '';
+        options.forEach((opt, idx) => {
+            const l3Text = escapeHTML(opt.l3);
+            const jsSafeL3 = safeJS(opt.l3);
+            html += `
+            <div class="rp-option">
+                <div class="rp-option-text">${l3Text}</div>
+                <div class="rp-option-trans">${escapeHTML(opt.l1)}</div>
+                <div class="rp-option-actions">
+                    <button class="icon-btn" onclick="speakRpSentence('${jsSafeL3}')" style="font-size: 1rem;">🔊 Hören</button>
+                    <button class="icon-btn" id="rpMicBtn_${idx}" onclick="recordRpSpeech('${jsSafeL3}', 'rpMicBtn_${idx}')" style="border-color:var(--primary); color:var(--primary); font-weight:800; font-size:1rem;">🎤 Üben</button>
+                </div>
+            </div>`;
+        });
+        document.getElementById('rpOptionsContainer').innerHTML = html;
     }
 
     function speakRpSentence(text) {
