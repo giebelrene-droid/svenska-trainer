@@ -222,7 +222,7 @@
                 <option value="0.5">🐌 Sehr langsam</option>
             </select>
         </div>
-        <!-- NEU: DENKPAUSE -->
+        <!-- DENKPAUSE -->
         <div style="flex:1">
             <label style="margin-top:0;">Denkpause</label>
             <select id="selRpMicPatience">
@@ -431,7 +431,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 26.1 (Mikrofon-Denkpause) &bull; 2026
+    SprachTutor AI &bull; Version 26.2 (Limit Check) &bull; 2026
 </div>
 
 <script>
@@ -686,6 +686,7 @@
     function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
     function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
+    // VERBESSERT: Zeigt jetzt spezifischere Fehlermeldungen bei Quota-Limits an
     async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
         const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
         
@@ -759,6 +760,8 @@
         
         if (lastErrorMsg.toLowerCase().includes("high demand") || lastErrorMsg.toLowerCase().includes("overloaded")) {
             alert("⚠️ Die Google KI-Server sind im Moment weltweit überlastet.\n\nDas passiert bei der kostenlosen Version gelegentlich. Bitte warte ein paar Minuten und versuche es dann erneut!");
+        } else if (lastErrorMsg.toLowerCase().includes("quota") || lastErrorMsg.toLowerCase().includes("rate limit")) {
+            alert("⚠️ API-Limit erreicht!\n\nDu hast zu viele Anfragen in kurzer Zeit gestellt. Google verlangt eine kurze Pause von ca. 1 Minute.\n\nTipp: Füge in den Einstellungen weitere, unabhängige Schlüssel hinzu, um dies zu umgehen.");
         } else {
             alert("⚠️ Fehler bei der API-Abfrage!\nGoogle meldet: " + lastErrorMsg);
         }
