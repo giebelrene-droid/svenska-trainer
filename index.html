@@ -74,14 +74,16 @@
 
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* KARTEIKARTEN CSS */
-        .flip-card { background-color: transparent; width: 100%; height: 280px; perspective: 1000px; margin: 20px 0; cursor: pointer; }
+        .flip-card { background-color: transparent; width: 100%; height: 380px; perspective: 1000px; margin: 20px 0; cursor: pointer; }
         .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
         .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
-        .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 800; border-radius: 24px; box-shadow: var(--shadow-soft); padding: 20px; box-sizing: border-box; flex-direction: column;}
+        .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; align-items: center; justify-content: flex-start; font-size: 2.2rem; font-weight: 800; border-radius: 24px; box-shadow: var(--shadow-soft); box-sizing: border-box; flex-direction: column;}
+        
         .flip-card-front { background: white; color: var(--primary); border: 2px solid var(--border-soft); }
         .flip-card-back { background: var(--primary-gradient); color: white; transform: rotateY(180deg); }
-        .fc-lang-label { font-size: 0.9rem; font-weight: 600; opacity: 0.8; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .fc-lang-label { font-size: 0.9rem; font-weight: 600; opacity: 0.8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        
         .fc-btn-row { display: flex; gap: 10px; justify-content: space-between; margin-top: 15px;}
         .fc-btn { flex: 1; padding: 14px 5px; border-radius: 16px; border: none; font-weight: 800; color: white; cursor: pointer; font-size: 0.85rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;}
         .fc-btn:active { transform: scale(0.95); }
@@ -89,7 +91,6 @@
         .fc-btn-orange { background: #F59E0B; }
         .fc-btn-green { background: #10B981; }
 
-        /* ARCADE CSS */
         .arcade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .arcade-card { background: white; border: 2px solid var(--border-soft); border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; transition: transform 0.2s, border-color 0.2s; box-shadow: var(--shadow-soft); }
         .arcade-card:hover { transform: translateY(-5px); border-color: var(--primary); }
@@ -104,7 +105,6 @@
         .bomb-icon { font-size: 5rem; animation: shake 0.5s infinite; }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px) rotate(-5deg); } 50% { transform: translateX(5px) rotate(5deg); } 75% { transform: translateX(-5px) rotate(-5deg); } 100% { transform: translateX(0); } }
 
-        /* CHAT CSS */
         .chat-box { background: #F9FAFB; border: 1px solid var(--border-soft); border-radius: 20px; padding: 20px; height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; scroll-behavior: smooth; }
         .chat-bubble { padding: 14px 18px; border-radius: 20px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; }
         .bubble-user { background: var(--primary-gradient); color: white; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: var(--shadow-float); }
@@ -123,7 +123,6 @@
         .confetti { position: fixed; width: 10px; height: 10px; z-index: 9999; animation: fall linear forwards; border-radius: 2px;}
         @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
 
-        /* SZEANRIEN OPTIONEN */
         .rp-option { background: white; border: 2px solid var(--border-soft); border-radius: 16px; padding: 15px; margin-bottom: 15px; text-align: center; box-shadow: var(--shadow-soft); }
         .rp-option-text { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }
         .rp-option-trans { font-size: 0.85rem; color: var(--text-light); margin-bottom: 15px; }
@@ -156,14 +155,12 @@
         <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Profil-Vokabeln löschen</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
         
-        <!-- Fehlerprotokoll Button -->
         <button class="action-btn btn-secondary" onclick="openErrorLog()" style="margin-top: 15px; border-style: dashed;">🐛 Fehlerprotokoll anzeigen</button>
         
         <button class="action-btn" onclick="closeSettings()" style="margin-top: 30px;">Fertig</button>
     </div>
 </div>
 
-<!-- Fehlerprotokoll Overlay -->
 <div id="errorLogOverlay">
     <div class="settings-box" style="max-width: 500px;">
         <h2>🐛 Fehlerprotokoll</h2>
@@ -200,9 +197,7 @@
     <button id="btn3" onclick="showTab('list')">📚 Liste</button>
 </div>
 
-<!-- TABS -->
 
-<!-- 🗣️ SZENARIEN (ROLEPLAY) TAB -->
 <div id="tabRoleplay" class="card" style="display:none">
     <h2>🗣️ Situations-Training</h2>
     <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Wähle ein Thema und übe verschiedene Antwortmöglichkeiten.</p>
@@ -222,7 +217,6 @@
         <input type="text" id="inpCustomTopic" placeholder="Z.B. Auto in der Werkstatt abgeben..." oninput="invalidateRpBuffer()">
     </div>
 
-    <!-- NIVEAU, TEMPO UND DENKPAUSE EINSTELLUNGEN -->
     <div class="input-row" style="gap:15px; margin-bottom: 20px; align-items: flex-end;">
         <div style="flex:1">
             <label style="margin-top:0;">Niveau</label>
@@ -241,7 +235,6 @@
                 <option value="0.5">🐌 Sehr langsam</option>
             </select>
         </div>
-        <!-- DENKPAUSE -->
         <div style="flex:1">
             <label style="margin-top:0;">Denkpause</label>
             <select id="selRpMicPatience">
@@ -262,12 +255,8 @@
         </div>
         
         <div id="rpLoader" class="loader" style="margin-bottom:20px;">KI generiert Sätze...</div>
-        
-        <!-- HIER WERDEN DIE 3 OPTIONEN ANGEZEIGT -->
         <div id="rpOptionsContainer"></div>
-        
         <button class="action-btn btn-secondary" onclick="generateRpSentence()" style="margin-top: 15px; font-size: 0.9rem; border-style: dashed;" id="btnRpRefresh">🔄 3 neue Sätze generieren</button>
-
         <div id="rpEvalLoader" class="loader" style="margin-top:20px;">KI analysiert Aussprache...</div>
         
         <div id="rpFeedbackBox" style="display:none; background:#F9FAFB; padding:18px; border-radius:20px; border:1px solid var(--border-soft); margin-top:20px;">
@@ -279,14 +268,12 @@
     </div>
 </div>
 
-<!-- 📇 KARTEIKARTEN TAB -->
 <div id="tabFlashcards" class="card" style="display:none">
     <div style="text-align:center;">
         <h2>📇 Karteikarten</h2>
         <p id="fcCount" style="font-weight:800; color:var(--primary); margin-top: -15px;">0/0</p>
     </div>
     
-    <!-- NEU: KI-Themenfilter -->
     <div style="background: #F9FAFB; padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 1px solid var(--border-soft);">
         <label style="margin-top: 0;">🎯 Thematisch üben (KI-Filter)</label>
         <div class="input-row" style="margin-bottom:0;">
@@ -300,16 +287,37 @@
     <div id="fcCardArea">
         <div class="flip-card" id="fcCard" onclick="flipFc()">
             <div class="flip-card-inner" id="fcInner">
-                <div class="flip-card-front">
-                    <div class="fc-lang-label" id="fcLabelL1">Deutsch</div>
-                    <div id="fcFrontText">...</div>
+                <!-- VORDERSEITE: Bild + Muttersprache -->
+                <div class="flip-card-front" style="padding:0;">
+                    <div id="fcImgFront" style="width:100%; height:180px; background-color:#E5E7EB; background-size:cover; background-position:center; border-radius:22px 22px 0 0;"></div>
+                    <div style="padding: 20px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1;">
+                        <div class="fc-lang-label" id="fcLabelL1">Deutsch</div>
+                        <div id="fcFrontText">...</div>
+                    </div>
                 </div>
-                <div class="flip-card-back">
-                    <div class="fc-lang-label" id="fcLabelL3" style="color: rgba(255,255,255,0.8);">Schwedisch</div>
-                    <div id="fcBackText">...</div>
-                    <div style="font-size: 1rem; margin-top:15px;">🔊</div>
+                <!-- RÜCKSEITE: Hintergrundbild + Zielsprache + Audio/Mic -->
+                <div class="flip-card-back" style="padding:0;">
+                    <div id="fcImgBack" style="width:100%; height:100%; position:absolute; top:0; left:0; border-radius:22px; z-index:0;"></div>
+                    <div style="position:relative; z-index:1; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%;">
+                        <div class="fc-lang-label" id="fcLabelL3" style="color: rgba(255,255,255,0.8);">Schwedisch</div>
+                        <div id="fcBackText">...</div>
+                        
+                        <div style="display:flex; gap: 15px; margin-top:25px;">
+                            <button class="icon-btn" onclick="speakFc(event)" style="border:none; background:rgba(255,255,255,0.25); color:white; width:55px; height:55px; border-radius:50%; font-size:1.5rem; box-shadow:0 4px 10px rgba(0,0,0,0.1);">🔊</button>
+                            <button class="icon-btn" id="fcMicBtn" onclick="recordFcSpeech(event)" style="border:none; background:rgba(255,255,255,0.25); color:white; width:55px; height:55px; border-radius:50%; font-size:1.5rem; box-shadow:0 4px 10px rgba(0,0,0,0.1);">🎤</button>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
+        
+        <div id="fcEvalLoader" class="loader" style="margin-top:10px;">KI analysiert Aussprache...</div>
+        
+        <div id="fcFeedbackBox" style="display:none; background:#F9FAFB; padding:15px; border-radius:16px; border:1px solid var(--border-soft); margin-top:10px; margin-bottom:15px; text-align: left;">
+            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">DU HAST GESAGT:</div>
+            <div id="fcUserSaid" style="font-style:italic; color:var(--text); font-weight:600; margin-bottom:10px;">...</div>
+            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">FEEDBACK DER KI:</div>
+            <div id="fcFeedbackText" style="color:var(--primary); font-weight:600; font-size:0.95rem;">...</div>
         </div>
         
         <div class="fc-btn-row" id="fcActions">
@@ -324,7 +332,6 @@
         <button class="action-btn btn-secondary" onclick="document.getElementById('fcTopicInput').value=''; initFlashcards(false)">Stapel neu mischen (Alle)</button>
     </div>
 
-    <!-- ORDNER UND UNDO FUNKTION -->
     <div style="margin-top: 30px; border-top: 2px dashed var(--border-soft); padding-top: 15px;">
         <p style="text-align:center; font-size:0.75rem; font-weight:800; color:var(--text-light); margin-top:0;">📂 ABLAGE (AKTUELLE SITZUNG)</p>
         <div style="display:flex; gap:10px; justify-content:center;">
@@ -387,9 +394,26 @@
     <button class="action-btn btn-magic" id="scanBtn" onclick="document.getElementById('camInput').click()">📸 Foto-Scanner & Auto-Fill</button>
     <div id="loader" class="loader">🤖 KI arbeitet...</div>
     
-    <label id="lblL1">L1</label><div class="input-row"><input type="text" id="inDe"><button class="icon-btn" onclick="speakInput('inDe', 1)">🔊</button><button class="icon-btn" onclick="listen(1, 'inDe', this)">🎤</button></div>
-    <label id="lblL2">L2</label><div class="input-row"><input type="text" id="inEn"><button class="icon-btn" onclick="speakInput('inEn', 2)">🔊</button><button class="icon-btn" onclick="listen(2, 'inEn', this)">🎤</button></div>
-    <label id="lblL3">L3</label><div class="input-row"><input type="text" id="inSv"><button class="icon-btn" onclick="speakInput('inSv', 3)">🔊</button><button class="icon-btn" onclick="listen(3, 'inSv', this)">🎤</button></div>
+    <label id="lblL1">L1</label>
+    <div class="input-row">
+        <input type="text" id="inDe">
+        <button class="icon-btn" onclick="speakInput('inDe', 1)">🔊</button>
+        <button class="icon-btn" onclick="listen(1, 'inDe', this)">🎤</button>
+    </div>
+    
+    <label id="lblL2">L2</label>
+    <div class="input-row">
+        <input type="text" id="inEn">
+        <button class="icon-btn" onclick="speakInput('inEn', 2)">🔊</button>
+        <button class="icon-btn" onclick="listen(2, 'inEn', this)">🎤</button>
+    </div>
+    
+    <label id="lblL3">L3</label>
+    <div class="input-row">
+        <input type="text" id="inSv">
+        <button class="icon-btn" onclick="speakInput('inSv', 3)">🔊</button>
+        <button class="icon-btn" onclick="listen(3, 'inSv', this)">🎤</button>
+    </div>
     
     <button class="action-btn btn-secondary" onclick="toggleVerbSection()" style="margin-top: 15px; font-size: 0.9rem; background: transparent;">📝 Verb-Details (Optional) ▾</button>
     
@@ -461,14 +485,13 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 28.0 (KI-Karteikarten Filter) &bull; 2026
+    SprachTutor AI &bull; Version 29.0 (Visuelle Karteikarten) &bull; 2026
 </div>
 
 <script>
     let db = null;
     let currentUser = null;
 
-    // Globale Fehler-Protokollierung
     let errorLog = JSON.parse(localStorage.getItem('trainerErrorLog') || '[]');
 
     function logCustomError(context, error) {
@@ -542,26 +565,21 @@
     let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
     let allWords = [];
     
-    // Study Vars
     let studyWords = [];
     let studyIndex = 0;
     
-    // Flashcard Vars
     let fcPool = [];
     let fcIndex = 0;
     let fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] };
     let currentFcListType = '';
 
-    // Roleplay / Szenarien Vars
     let activeRpSentenceForFeedback = "";
     let rpOptionsBuffer = null;
     let rpFetchPromise = null;
     
-    // Mikrofon Denkpause Timer
     let rpMicTimer = null;
     let rpCurrentTranscript = "";
 
-    // Für die Schlüssel-Rotation
     let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
     let currentApiKeyIndex = 0;
     
@@ -679,7 +697,6 @@
             if(n === 'list') { document.getElementById('listSearch').value = ''; renderList(); }
             if(n === 'study') generateStudyList();
             
-            // Verhindere das Überschreiben eines aktiven Filters beim normalen Tab-Wechsel
             if(n === 'flashcards' && fcPool.length === 0) { 
                 initFlashcards(false); 
             }
@@ -837,7 +854,7 @@
                     
                 } catch(e) {
                     lastErrorMsg = e.message; 
-                    console.warn(`Schlüssel ${currentApiKeyIndex % keys.length + 1} fehlgeschlagen:`, e.message);
+                    logCustomError(`API Key ${currentApiKeyIndex % keys.length + 1} Failed`, e.message);
                     currentApiKeyIndex++;
                 }
             }
@@ -855,10 +872,6 @@
         return null;
     }
 
-    // ----------------------------------------------------
-    // SZENARIEN / ROLEPLAY LOGIK (MIT PRE-FETCHING BUFFER)
-    // ----------------------------------------------------
-    
     function invalidateRpBuffer() {
         rpOptionsBuffer = null;
     }
@@ -1091,9 +1104,6 @@
         }
     }
 
-    // ----------------------------------------------------
-    // LIVE ÜBERSETZER
-    // ----------------------------------------------------
     function speakLiveResult() {
         const text = document.getElementById('liveResultText').value;
         const lang = document.getElementById('liveTgtLang').value;
@@ -1136,11 +1146,6 @@
         }).catch(e => logCustomError("Speichern Live-Translation", e));
     }
 
-    // ----------------------------------------------------
-    // KARTEIKARTEN (FLASHCARDS)
-    // ----------------------------------------------------
-    
-    // NEU: Parameter useFilter hinzugefügt
     async function initFlashcards(useFilter = false) {
         if(allWords.length === 0) {
             document.getElementById('fcCardArea').style.display = 'none';
@@ -1153,7 +1158,6 @@
         const topicInput = document.getElementById('fcTopicInput');
         const topic = useFilter && topicInput ? topicInput.value.trim() : "";
 
-        // KI-Filter Prozess
         if (topic) {
             document.getElementById('fcCardArea').style.display = 'none';
             document.getElementById('fcDoneMessage').style.display = 'none';
@@ -1207,6 +1211,8 @@
     }
 
     function renderFc() {
+        document.getElementById('fcFeedbackBox').style.display = 'none';
+        
         if(fcIndex >= fcPool.length) {
             fireConfetti();
             document.getElementById('fcCardArea').style.display = 'none';
@@ -1221,6 +1227,13 @@
         const w = fcPool[fcIndex];
         document.getElementById('fcCard').classList.remove('flipped'); 
         
+        // KI-Bild für Karteikarten laden
+        const engWord = w[conf.l2] || w[conf.l1] || "object";
+        const imgUrl = `https://image.pollinations.ai/prompt/Realistic%20photography%20of%20${encodeURIComponent(engWord)}?width=600&height=300&nologo=true`;
+        
+        document.getElementById('fcImgFront').style.backgroundImage = `url('${imgUrl}')`;
+        document.getElementById('fcImgBack').style.backgroundImage = `linear-gradient(to bottom, rgba(79, 70, 229, 0.7), rgba(79, 70, 229, 0.9)), url('${imgUrl}')`;
+        
         setTimeout(() => { 
             document.getElementById('fcFrontText').innerText = w[conf.l1] || "???";
             document.getElementById('fcBackText').innerText = w[conf.l3] || "???";
@@ -1231,9 +1244,69 @@
     function flipFc() {
         const card = document.getElementById('fcCard');
         card.classList.toggle('flipped');
+    }
+    
+    function speakFc(e) {
+        e.stopPropagation(); // Verhindert, dass die Karte sich beim Klicken auf den Button wieder umdreht
+        speak(fcPool[fcIndex][conf.l3], conf.l3);
+    }
+
+    function recordFcSpeech(e) {
+        e.stopPropagation(); // Karte nicht umdrehen!
         
-        if(card.classList.contains('flipped')){
-            speak(fcPool[fcIndex][conf.l3], conf.l3); 
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
+        if (!SpeechRecognition) {
+            alert("⚠️ Dein Browser unterstützt das Mikrofon leider nicht.");
+            return;
+        }
+        
+        try {
+            const rec = new SpeechRecognition();
+            rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE';
+            
+            const btn = document.getElementById('fcMicBtn');
+            btn.classList.add('mic-active');
+            
+            const targetWord = fcPool[fcIndex][conf.l3];
+            document.getElementById('fcFeedbackBox').style.display = 'none';
+
+            rec.onresult = async (e) => {
+                const spokenText = e.results[0][0].transcript;
+                btn.classList.remove('mic-active');
+                await evaluateFcSpeech(spokenText, targetWord);
+            };
+
+            rec.onerror = (e) => {
+                btn.classList.remove('mic-active');
+                if (e.error === 'not-allowed') alert("⚠️ Mikrofon-Zugriff blockiert.");
+            };
+            
+            rec.onend = () => btn.classList.remove('mic-active');
+            rec.start();
+        } catch(err) {
+            document.getElementById('fcMicBtn').classList.remove('mic-active');
+        }
+    }
+
+    async function evaluateFcSpeech(spokenText, targetWord) {
+        document.getElementById('fcEvalLoader').style.display = 'block';
+        
+        const tgtLangName = ALL_LANGS[conf.l3].name;
+        const prompt = `Du bist ein strenger Sprachtrainer für ${tgtLangName}. 
+        Das Ziel-Wort war: "${targetWord}".
+        Der Schüler hat ins Mikrofon gesagt: "${spokenText}".
+        
+        Bewerte die Aussage kurz auf Deutsch (max. 2 Sätze). War es richtig? Wo lag der Fehler?`;
+        
+        const feedback = await callGemini(prompt);
+        document.getElementById('fcEvalLoader').style.display = 'none';
+
+        if(feedback) {
+            document.getElementById('fcUserSaid').innerText = spokenText;
+            document.getElementById('fcFeedbackText').innerText = feedback;
+            document.getElementById('fcFeedbackBox').style.display = 'block';
+            addXP(2);
+            playSound('success');
         }
     }
 
@@ -1333,9 +1406,6 @@
         renderFc(); 
     }
 
-    // ----------------------------------------------------
-    // ARCADE UND MINI GAMES
-    // ----------------------------------------------------
     function openMiniGame(game) {
         document.getElementById('arcadeMenu').style.display = game === 'Menu' ? 'grid' : 'none';
         ['gameRallye', 'gameHunt', 'gameDuel', 'gameAdventure'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
