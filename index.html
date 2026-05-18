@@ -197,7 +197,6 @@
     <button id="btn3" onclick="showTab('list')">📚 Liste</button>
 </div>
 
-
 <div id="tabRoleplay" class="card" style="display:none">
     <h2>🗣️ Situations-Training</h2>
     <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Wähle ein Thema und übe verschiedene Antwortmöglichkeiten.</p>
@@ -257,12 +256,12 @@
         <div id="rpLoader" class="loader" style="margin-bottom:20px;">KI generiert Sätze...</div>
         <div id="rpOptionsContainer"></div>
         <button class="action-btn btn-secondary" onclick="generateRpSentence()" style="margin-top: 15px; font-size: 0.9rem; border-style: dashed;" id="btnRpRefresh">🔄 3 neue Sätze generieren</button>
-        <div id="rpEvalLoader" class="loader" style="margin-top:20px;">KI analysiert Aussprache...</div>
+        <div id="rpEvalLoader" class="loader" style="margin-top:20px;">Analysiere Aussprache...</div>
         
         <div id="rpFeedbackBox" style="display:none; background:#F9FAFB; padding:18px; border-radius:20px; border:1px solid var(--border-soft); margin-top:20px;">
             <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">DU HAST GESAGT:</div>
             <div id="rpUserSaid" style="font-style:italic; color:var(--text); font-weight:600; margin-bottom:15px;">...</div>
-            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">FEEDBACK DER KI:</div>
+            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">ERGEBNIS:</div>
             <div id="rpFeedbackText" style="color:var(--primary); font-weight:600; font-size:0.95rem;">...</div>
         </div>
     </div>
@@ -311,12 +310,12 @@
             </div>
         </div>
         
-        <div id="fcEvalLoader" class="loader" style="margin-top:10px;">KI analysiert Aussprache...</div>
+        <div id="fcEvalLoader" class="loader" style="margin-top:10px;">Analysiere Aussprache...</div>
         
         <div id="fcFeedbackBox" style="display:none; background:#F9FAFB; padding:15px; border-radius:16px; border:1px solid var(--border-soft); margin-top:10px; margin-bottom:15px; text-align: left;">
             <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">DU HAST GESAGT:</div>
             <div id="fcUserSaid" style="font-style:italic; color:var(--text); font-weight:600; margin-bottom:10px;">...</div>
-            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">FEEDBACK DER KI:</div>
+            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">ERGEBNIS:</div>
             <div id="fcFeedbackText" style="color:var(--primary); font-weight:600; font-size:0.95rem;">...</div>
         </div>
         
@@ -485,7 +484,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 29.0 (Visuelle Karteikarten) &bull; 2026
+    SprachTutor AI &bull; Version 29.1 (Leistungsoptimierte Überprüfung) &bull; 2026
 </div>
 
 <script>
@@ -1003,6 +1002,7 @@
         speak(text, conf.l3, speed);
     }
 
+    // ANGEPASST: Die KI-Überprüfung beim Sprechen wurde durch einen einfachen Text-Vergleich ersetzt, um die Wartezeit auf Null zu reduzieren.
     function recordRpSpeech(targetSentence, btnId) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
         if (!SpeechRecognition) {
@@ -1062,7 +1062,7 @@
                 if (rpCurrentTranscript.trim().length > 0) {
                     const textToEval = rpCurrentTranscript;
                     rpCurrentTranscript = ""; 
-                    await evaluateRpSpeech(textToEval);
+                    fastEvaluateSpeech(textToEval, activeRpSentenceForFeedback, 'rpFeedbackBox', 'rpFeedbackText');
                 } else {
                     document.getElementById('rpUserSaid').innerText = "Nichts gehört.";
                 }
@@ -1076,32 +1076,53 @@
         }
     }
 
-    async function evaluateRpSpeech(spokenText) {
-        document.getElementById('rpEvalLoader').style.display = 'block';
-        document.getElementById('rpFeedbackBox').style.display = 'none';
+    // NEU: Extrem schnelle, lokale Überprüfung der gesprochenen Wörter (ohne KI)
+    function fastEvaluateSpeech(spokenText, targetText, boxId, textId) {
+        document.getElementById(boxId).style.display = 'none';
 
-        const tgtLangName = ALL_LANGS[conf.l3].name;
-        const prompt = `Du bist ein strenger aber extrem ermutigender Sprachtrainer für ${tgtLangName}. 
-        Der Originalsatz, den der Schüler sagen sollte, lautet: "${activeRpSentenceForFeedback}".
-        Das Mikrofon hat beim Schüler folgenden Text verstanden: "${spokenText}".
-        
-        Vergleiche die beiden Sätze. Antworte KURZ auf Deutsch (max. 2 Sätze). 
-        Sag ihm, ob die Aussprache/Worte richtig verstanden wurden, oder zeige ihm freundlich, wo der Fehler lag.`;
-        
-        const feedback = await callGemini(prompt);
-        document.getElementById('rpEvalLoader').style.display = 'none';
+        // Texte bereinigen (Satzzeichen entfernen, klein schreiben)
+        const cleanSpoken = spokenText.toLowerCase().replace(/[.,!?;:]/g, '').trim();
+        const cleanTarget = targetText.toLowerCase().replace(/[.,!?;:]/g, '').trim();
 
-        if(feedback) {
-            document.getElementById('rpFeedbackText').innerText = feedback;
-            document.getElementById('rpFeedbackBox').style.display = 'block';
-            
+        // Einfacher Vergleich
+        let feedback = "";
+        
+        // Direkter Treffer oder sehr nah dran
+        if(cleanSpoken === cleanTarget || cleanTarget.includes(cleanSpoken) || cleanSpoken.includes(cleanTarget)) {
+            feedback = "Perfekt! Sehr gut ausgesprochen. 🌟";
             addXP(5);
             playSound('success');
+        } else {
+            // Wörter zählen und Übereinstimmungen finden
+            const targetWords = cleanTarget.split(' ');
+            const spokenWords = cleanSpoken.split(' ');
+            let matches = 0;
             
-            setTimeout(() => {
-                document.getElementById('rpFeedbackBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 100);
+            targetWords.forEach(w => {
+                if(spokenWords.includes(w)) matches++;
+            });
+            
+            const matchPercentage = matches / targetWords.length;
+            
+            if(matchPercentage > 0.6) {
+                feedback = "Gute Arbeit! Die meisten Wörter waren richtig. Achte beim nächsten Mal noch auf die Details.";
+                addXP(3);
+                playSound('success');
+            } else if (matchPercentage > 0.3) {
+                feedback = "Ich habe einige Wörter erkannt, aber der Satz war noch nicht ganz richtig. Übe ihn am besten nochmal.";
+                playSound('error');
+            } else {
+                feedback = "Das habe ich leider nicht richtig verstanden. Bitte sprich etwas lauter und deutlicher und versuche es erneut.";
+                playSound('error');
+            }
         }
+
+        document.getElementById(textId).innerText = feedback;
+        document.getElementById(boxId).style.display = 'block';
+        
+        setTimeout(() => {
+            document.getElementById(boxId).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
     }
 
     function speakLiveResult() {
@@ -1227,7 +1248,6 @@
         const w = fcPool[fcIndex];
         document.getElementById('fcCard').classList.remove('flipped'); 
         
-        // KI-Bild für Karteikarten laden
         const engWord = w[conf.l2] || w[conf.l1] || "object";
         const imgUrl = `https://image.pollinations.ai/prompt/Realistic%20photography%20of%20${encodeURIComponent(engWord)}?width=600&height=300&nologo=true`;
         
@@ -1247,12 +1267,13 @@
     }
     
     function speakFc(e) {
-        e.stopPropagation(); // Verhindert, dass die Karte sich beim Klicken auf den Button wieder umdreht
+        e.stopPropagation(); 
         speak(fcPool[fcIndex][conf.l3], conf.l3);
     }
 
+    // ANGEPASST: Schnelle, lokale Überprüfung auch für Karteikarten
     function recordFcSpeech(e) {
-        e.stopPropagation(); // Karte nicht umdrehen!
+        e.stopPropagation(); 
         
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
         if (!SpeechRecognition) {
@@ -1270,10 +1291,13 @@
             const targetWord = fcPool[fcIndex][conf.l3];
             document.getElementById('fcFeedbackBox').style.display = 'none';
 
-            rec.onresult = async (e) => {
+            rec.onresult = (e) => {
                 const spokenText = e.results[0][0].transcript;
                 btn.classList.remove('mic-active');
-                await evaluateFcSpeech(spokenText, targetWord);
+                
+                document.getElementById('fcUserSaid').innerText = spokenText;
+                // Sofortiges Feedback aufrufen
+                fastEvaluateSpeech(spokenText, targetWord, 'fcFeedbackBox', 'fcFeedbackText');
             };
 
             rec.onerror = (e) => {
@@ -1285,28 +1309,6 @@
             rec.start();
         } catch(err) {
             document.getElementById('fcMicBtn').classList.remove('mic-active');
-        }
-    }
-
-    async function evaluateFcSpeech(spokenText, targetWord) {
-        document.getElementById('fcEvalLoader').style.display = 'block';
-        
-        const tgtLangName = ALL_LANGS[conf.l3].name;
-        const prompt = `Du bist ein strenger Sprachtrainer für ${tgtLangName}. 
-        Das Ziel-Wort war: "${targetWord}".
-        Der Schüler hat ins Mikrofon gesagt: "${spokenText}".
-        
-        Bewerte die Aussage kurz auf Deutsch (max. 2 Sätze). War es richtig? Wo lag der Fehler?`;
-        
-        const feedback = await callGemini(prompt);
-        document.getElementById('fcEvalLoader').style.display = 'none';
-
-        if(feedback) {
-            document.getElementById('fcUserSaid').innerText = spokenText;
-            document.getElementById('fcFeedbackText').innerText = feedback;
-            document.getElementById('fcFeedbackBox').style.display = 'block';
-            addXP(2);
-            playSound('success');
         }
     }
 
