@@ -583,22 +583,34 @@ function saveAudioSentence() {
     }).catch(e => logCustomError("Speichern Audio-Satz", e));
 }
 
+// Globale Variable hinzufügen (ganz wichtig gegen das Verschlucken von Sätzen auf Handys!)
+let currentUtterance = null; 
+
 function speakAsync(text, langKey, rate = 1.0) {
     return new Promise((resolve) => {
         if (!('speechSynthesis' in window) || cancelAudio) return resolve();
-        window.speechSynthesis.cancel();
         
-        const msg = new SpeechSynthesisUtterance(text);
-        msg.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
-        msg.rate = rate;
+        // HINWEIS: window.speechSynthesis.cancel() wurde hier absichtlich entfernt!
+        
+        currentUtterance = new SpeechSynthesisUtterance(text);
+        currentUtterance.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
+        currentUtterance.rate = rate;
         
         if (langKey === conf.l3) {
             const voiceSelect = document.getElementById('selAudioVoice');
             if (voiceSelect && voiceSelect.value) {
                 const selectedVoice = availableVoices.find(v => v.name === voiceSelect.value);
-                if (selectedVoice) msg.voice = selectedVoice;
+                if (selectedVoice) currentUtterance.voice = selectedVoice;
             }
         }
+        
+        // Erst wenn der Satz wirklich fertig ist, wird die Schleife fortgesetzt
+        currentUtterance.onend = () => { currentUtterance = null; resolve(); };
+        currentUtterance.onerror = () => { currentUtterance = null; resolve(); };
+        
+        window.speechSynthesis.speak(currentUtterance);
+    });
+}
         
         msg.onend = () => resolve();
         msg.onerror = () => resolve();
