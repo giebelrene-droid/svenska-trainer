@@ -1,15 +1,14 @@
-// --- NEU: Das Toast-Benachrichtigungssystem ---
+// --- Das Toast-Benachrichtigungssystem ---
 function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
-    if (!container) return; // Falls der Container fehlt, brechen wir ab
+    if (!container) return;
 
     const toast = document.createElement('div');
     
-    // Farben je nach Typ
     const bgColors = {
-        'success': 'var(--secondary)', // Grün
-        'error': '#EF4444',            // Rot
-        'info': 'var(--primary)'       // Blau
+        'success': 'var(--secondary)',
+        'error': '#EF4444',            
+        'info': 'var(--primary)'       
     };
 
     toast.style.backgroundColor = bgColors[type] || bgColors['info'];
@@ -26,20 +25,17 @@ function showToast(message, type = 'info') {
 
     container.appendChild(toast);
 
-    // Einblenden
     setTimeout(() => {
         toast.style.opacity = '1';
         toast.style.transform = 'translateY(0)';
     }, 10);
 
-    // Nach 3 Sekunden ausblenden und aus dem DOM entfernen
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(20px)';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
-// ----------------------------------------------
 
 let db = null;
 let currentUser = null;
@@ -56,7 +52,7 @@ function logCustomError(context, error) {
     localStorage.setItem('trainerErrorLog', JSON.stringify(errorLog));
     
     console.error("Custom Log:", entry);
-    if(document.getElementById('errorLogOverlay').style.display === 'flex') {
+    if(document.getElementById('errorLogOverlay') && document.getElementById('errorLogOverlay').style.display === 'flex') {
         renderErrorLog();
     }
 }
@@ -87,6 +83,7 @@ function clearErrorLog() {
 
 function renderErrorLog() {
     const el = document.getElementById('errorLogList');
+    if (!el) return;
     if (errorLog.length === 0) {
         el.innerHTML = "Alles läuft reibungslos. Keine Fehler aufgezeichnet!";
     } else {
@@ -102,7 +99,7 @@ try {
 } catch(err) {
     console.error("Firebase konnte nicht geladen werden:", err);
     logCustomError("Firebase Init", err);
-    document.getElementById('offlineBanner').style.display = 'block';
+    if(document.getElementById('offlineBanner')) document.getElementById('offlineBanner').style.display = 'block';
 }
 
 const ALL_LANGS = { 
@@ -128,14 +125,13 @@ let currentFcListType = '';
 let activeRpSentenceForFeedback = "";
 let rpOptionsBuffer = null;
 let rpFetchPromise = null;
-
 let rpMicTimer = null;
 let rpCurrentTranscript = "";
 
 let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
 let currentApiKeyIndex = 0;
-
 let cachedGeminiModel = null;
+
 let isLiveRecording = false;
 let liveRecObj = null;
 let isChatSessionActive = false;
@@ -146,7 +142,6 @@ let huntTarget = "";
 let listDebounceTimer;
 
 let isFastInputMode = localStorage.getItem('trainerFastInput') !== 'false';
-
 let userXP = parseInt(localStorage.getItem('trainerXP') || '0');
 let userStreak = parseInt(localStorage.getItem('trainerStreak') || '0');
 let lastActiveDate = localStorage.getItem('trainerLastDate') || '';
@@ -156,6 +151,10 @@ try {
     const rawStats = localStorage.getItem('trainerStatsToday');
     if(rawStats && rawStats !== "undefined") statsToday = JSON.parse(rawStats); 
 } catch(e) {}
+
+// Audio-Trainer Status Variablen
+let isAudioRunning = false;
+let cancelAudio = false;
 
 function escapeHTML(str) { return !str ? "" : String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[m]); }
 function safeJS(str) { return !str ? "" : String(str).replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
@@ -170,7 +169,7 @@ function removeBrokenServiceWorkers() {
 
 function init() { 
     removeBrokenServiceWorkers(); 
-    document.getElementById('inpGeminiKey').value = geminiApiKey; 
+    if(document.getElementById('inpGeminiKey')) document.getElementById('inpGeminiKey').value = geminiApiKey; 
     
     try {
         const storedNames = localStorage.getItem('trainerUserNames'); 
@@ -232,12 +231,16 @@ function showTab(n) {
         if(isLiveRecording) toggleLiveRecord(); 
         if(isChatSessionActive) toggleChatRecord();
         
+        if(isAudioRunning && n !== 'audio') {
+            toggleAudioTrainer();
+        }
+        
         document.querySelectorAll('.nav-scroll button').forEach(b=>b.classList.remove('active')); 
         
-        const btnMap = { 'add':'btn1', 'flashcards':'btnFlash', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'arcade':'btnArcade', 'story':'btnStory', 'roleplay':'btnRoleplay' };
+        const btnMap = { 'add':'btn1', 'flashcards':'btnFlash', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'arcade':'btnArcade', 'story':'btnStory', 'roleplay':'btnRoleplay', 'audio':'btnAudio' };
         if(btnMap[n] && document.getElementById(btnMap[n])) document.getElementById(btnMap[n]).classList.add('active');
         
-        const tabs = ['tabAdd', 'tabFlashcards', 'tabChat','tabLive','tabStudy','tabList','tabArcade','tabStory','tabRoleplay'];
+        const tabs = ['tabAdd', 'tabFlashcards', 'tabChat','tabLive','tabStudy','tabList','tabArcade','tabStory','tabRoleplay', 'tabAudio'];
         tabs.forEach(id => { 
             const el = document.getElementById(id); 
             if(el) el.style.display = 'none'; 
@@ -310,7 +313,7 @@ function speakInput(inputId, slot) {
 function checkStreak() { const today = new Date().toDateString(); if(lastActiveDate !== today) { const yesterday = new Date(Date.now() - 86400000).toDateString(); if(lastActiveDate === yesterday) { userStreak++; } else { userStreak = 1; } lastActiveDate = today; localStorage.setItem('trainerLastDate', today); localStorage.setItem('trainerStreak', userStreak); } updateStatsUI(); }
 function addXP(amount) { userXP += amount; localStorage.setItem('trainerXP', userXP); updateStatsUI(); }
 function getUserLevel() { return Math.floor(userXP / 100) + 1; }
-function updateStatsUI() { document.getElementById('uiStreak').innerText = userStreak; document.getElementById('uiXP').innerText = userXP; document.getElementById('uiLevel').innerText = getUserLevel(); }
+function updateStatsUI() { if(document.getElementById('uiStreak')) document.getElementById('uiStreak').innerText = userStreak; if(document.getElementById('uiXP')) document.getElementById('uiXP').innerText = userXP; if(document.getElementById('uiLevel')) document.getElementById('uiLevel').innerText = getUserLevel(); }
 
 function updateQuests() {
     try {
@@ -329,15 +332,16 @@ function populateLangSelects() {
 }
 function langChanged() { conf.l1 = document.getElementById('selL1').value; conf.l2 = document.getElementById('selL2').value; conf.l3 = document.getElementById('selL3').value; localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf)); updateUIForLangs(); populateLangSelects(); refreshData(); }
 function updateUIForLangs() { 
-    document.getElementById('lblL1').innerText = ALL_LANGS[conf.l1].name; document.getElementById('lblL2').innerText = ALL_LANGS[conf.l2].name; document.getElementById('lblL3').innerText = ALL_LANGS[conf.l3].name; 
+    if(document.getElementById('lblL1')) document.getElementById('lblL1').innerText = ALL_LANGS[conf.l1].name; 
+    if(document.getElementById('lblL2')) document.getElementById('lblL2').innerText = ALL_LANGS[conf.l2].name; 
+    if(document.getElementById('lblL3')) document.getElementById('lblL3').innerText = ALL_LANGS[conf.l3].name; 
     ['vTitle1','vTitle2','vTitle3'].forEach((id, i) => { const el = document.getElementById(id); if(el) el.innerText = ALL_LANGS[conf['l'+(i+1)]].name; }); 
-    
     const fcL1 = document.getElementById('fcLabelL1'); if(fcL1) fcL1.innerText = ALL_LANGS[conf.l1].name;
     const fcL3 = document.getElementById('fcLabelL3'); if(fcL3) fcL3.innerText = ALL_LANGS[conf.l3].name;
 }
 
-function renderRenameInputs() { document.getElementById('renameContainer').innerHTML = userNames.map((n, i) => `<div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;"><span style="font-weight:bold; color:var(--primary); width:20px;">${i+1}.</span><input type="text" id="name${i}" value="${escapeHTML(n)}" onchange="saveName(${i})" style="padding: 10px;"></div>`).join(''); }
-function updateUserDropdown() { document.getElementById('selUser').innerHTML = userNames.map((n, i) => `<option value="${i}" ${i===currentCollIndex?'selected':''}>👤 ${escapeHTML(n)}</option>`).join(''); }
+function renderRenameInputs() { if(!document.getElementById('renameContainer')) return; document.getElementById('renameContainer').innerHTML = userNames.map((n, i) => `<div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;"><span style="font-weight:bold; color:var(--primary); width:20px;">${i+1}.</span><input type="text" id="name${i}" value="${escapeHTML(n)}" onchange="saveName(${i})" style="padding: 10px;"></div>`).join(''); }
+function updateUserDropdown() { if(!document.getElementById('selUser')) return; document.getElementById('selUser').innerHTML = userNames.map((n, i) => `<option value="${i}" ${i===currentCollIndex?'selected':''}>👤 ${escapeHTML(n)}</option>`).join(''); }
 function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
 function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
@@ -437,9 +441,7 @@ function checkCustomTopic() {
 async function fetchRpSentencesFromGemini() {
     const selTopic = document.getElementById('selRpTopic').value;
     let topic = selTopic === 'custom' ? document.getElementById('inpCustomTopic').value.trim() || "Allgemeines Gespräch" : selTopic;
-    
     const tgtLangName = ALL_LANGS[conf.l3].name;
-    
     const diffSelect = document.getElementById('selRpDifficulty');
     const diffText = diffSelect.options[diffSelect.selectedIndex].text;
     
@@ -565,7 +567,6 @@ function recordRpSpeech(targetSentence, btnId) {
     try {
         const rec = new SpeechRecognition();
         rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE';
-        
         rec.continuous = true;
         rec.interimResults = true; 
         
@@ -581,20 +582,13 @@ function recordRpSpeech(targetSentence, btnId) {
         
         const resetTimer = () => {
             clearTimeout(rpMicTimer);
-            rpMicTimer = setTimeout(() => {
-                rec.stop(); 
-            }, waitTimeMs);
+            rpMicTimer = setTimeout(() => { rec.stop(); }, waitTimeMs);
         };
 
-        rec.onstart = () => {
-            resetTimer(); 
-        };
-
+        rec.onstart = () => { resetTimer(); };
         rec.onresult = (e) => {
             let text = "";
-            for(let i = 0; i < e.results.length; i++) {
-                text += e.results[i][0].transcript;
-            }
+            for(let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
             rpCurrentTranscript = text;
             document.getElementById('rpUserSaid').innerText = rpCurrentTranscript;
             resetTimer(); 
@@ -610,7 +604,6 @@ function recordRpSpeech(targetSentence, btnId) {
         rec.onend = async () => {
             clearTimeout(rpMicTimer);
             if(btn) btn.classList.remove('mic-active');
-            
             if (rpCurrentTranscript.trim().length > 0) {
                 const textToEval = rpCurrentTranscript;
                 rpCurrentTranscript = ""; 
@@ -635,7 +628,6 @@ function fastEvaluateSpeech(spokenText, targetText, boxId, textId) {
     const cleanTarget = targetText.toLowerCase().replace(/[.,!?;:]/g, '').trim();
 
     let feedback = "";
-    
     if(cleanSpoken === cleanTarget || cleanTarget.includes(cleanSpoken) || cleanSpoken.includes(cleanTarget)) {
         feedback = "Perfekt! Sehr gut ausgesprochen. 🌟";
         addXP(5);
@@ -644,17 +636,12 @@ function fastEvaluateSpeech(spokenText, targetText, boxId, textId) {
         const targetWords = cleanTarget.split(' ');
         const spokenWords = cleanSpoken.split(' ');
         let matches = 0;
-        
-        targetWords.forEach(w => {
-            if(spokenWords.includes(w)) matches++;
-        });
+        targetWords.forEach(w => { if(spokenWords.includes(w)) matches++; });
         
         const matchPercentage = matches / targetWords.length;
-        
         if(matchPercentage > 0.6) {
             feedback = "Gute Arbeit! Die meisten Wörter waren richtig. Achte beim nächsten Mal noch auf die Details.";
-            addXP(3);
-            playSound('success');
+            addXP(3); playSound('success');
         } else if (matchPercentage > 0.3) {
             feedback = "Ich habe einige Wörter erkannt, aber der Satz war noch nicht ganz richtig. Übe ihn am besten nochmal.";
             playSound('error');
@@ -666,10 +653,7 @@ function fastEvaluateSpeech(spokenText, targetText, boxId, textId) {
 
     document.getElementById(textId).innerText = feedback;
     document.getElementById(boxId).style.display = 'block';
-    
-    setTimeout(() => {
-        document.getElementById(boxId).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 100);
+    setTimeout(() => { document.getElementById(boxId).scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
 }
 
 function speakLiveResult() {
@@ -708,7 +692,6 @@ function saveLiveTranslation() {
         playSound('success');
         showToast("✅ Vokabel gespeichert!", "success");
         refreshData(); 
-        
         statsToday.added++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests();
         if(statsToday.added === 2) { addXP(15); fireConfetti(); }
     }).catch(e => logCustomError("Speichern Live-Translation", e));
@@ -734,10 +717,7 @@ async function initFlashcards(useFilter = false) {
         const wordListL1 = allWords.map(w => w[conf.l1]).join(', ');
         const prompt = `Du bist ein intelligenter Filter. Hier ist eine Liste von Wörtern: [${wordListL1}].
         Finde ALLE Wörter in dieser Liste, die thematisch in die Kategorie "${topic}" passen.
-        Antworte AUSSCHLIESSLICH mit einem validen JSON-Array, das diese Wörter als exakte Strings enthält.
-        Beispiel-Antwort: ["Wort1", "Wort2"]
-        Wenn kein Wort zum Thema passt, antworte: []
-        Kein Markdown, keine Erklärungen.`;
+        Antworte AUSSCHLIESSLICH mit einem validen JSON-Array, das diese Wörter als exakte Strings enthält. Beispiel: ["Wort1"]`;
 
         const res = await callGemini(prompt);
         document.getElementById('fcLoader').style.display = 'none';
@@ -747,19 +727,16 @@ async function initFlashcards(useFilter = false) {
                 let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim();
                 const sIdx = cleanStr.indexOf('[');
                 const eIdx = cleanStr.lastIndexOf(']');
-                if (sIdx !== -1 && eIdx !== -1) {
-                    cleanStr = cleanStr.substring(sIdx, eIdx + 1);
-                }
+                if (sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1);
                 const matchedWords = JSON.parse(cleanStr);
                 filteredWords = allWords.filter(w => matchedWords.includes(w[conf.l1]));
                 
                 if (filteredWords.length === 0) {
-                    showToast("Keine passenden Wörter zum Thema '" + topic + "' gefunden. Zeige alle an.", "info");
+                    showToast("Keine passenden Wörter zum Thema gefunden. Zeige alle an.", "info");
                     filteredWords = [...allWords];
                     topicInput.value = "";
                 }
             } catch(e) {
-                logCustomError("FC KI Filter JSON", e);
                 showToast("⚠️ Fehler beim KI-Filtern. Zeige alle Wörter an.", "error");
                 filteredWords = [...allWords];
             }
@@ -771,16 +748,13 @@ async function initFlashcards(useFilter = false) {
     fcPool = filteredWords.sort(() => 0.5 - Math.random());
     fcIndex = 0;
     fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] };
-    
     updateFcHistoryCounts();
     document.getElementById('fcHistoryList').style.display = 'none';
-    
     renderFc();
 }
 
 function renderFc() {
     document.getElementById('fcFeedbackBox').style.display = 'none';
-    
     if(fcIndex >= fcPool.length) {
         fireConfetti();
         document.getElementById('fcCardArea').style.display = 'none';
@@ -808,29 +782,17 @@ function renderFc() {
     }, 150);
 }
 
-function flipFc() {
-    const card = document.getElementById('fcCard');
-    card.classList.toggle('flipped');
-}
-    
-function speakFc(e) {
-    e.stopPropagation(); 
-    speak(fcPool[fcIndex][conf.l3], conf.l3);
-}
+function flipFc() { document.getElementById('fcCard').classList.toggle('flipped'); }
+function speakFc(e) { e.stopPropagation(); speak(fcPool[fcIndex][conf.l3], conf.l3); }
 
 function recordFcSpeech(e) {
     e.stopPropagation(); 
-    
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
-    if (!SpeechRecognition) {
-        showToast("⚠️ Dein Browser unterstützt das Mikrofon leider nicht.", "error");
-        return;
-    }
+    if (!SpeechRecognition) { showToast("⚠️ Dein Browser unterstützt das Mikrofon leider nicht.", "error"); return; }
     
     try {
         const rec = new SpeechRecognition();
         rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE';
-        
         const btn = document.getElementById('fcMicBtn');
         btn.classList.add('mic-active');
         
@@ -840,7 +802,6 @@ function recordFcSpeech(e) {
         rec.onresult = (e) => {
             const spokenText = e.results[0][0].transcript;
             btn.classList.remove('mic-active');
-            
             document.getElementById('fcUserSaid').innerText = spokenText;
             fastEvaluateSpeech(spokenText, targetWord, 'fcFeedbackBox', 'fcFeedbackText');
         };
@@ -868,20 +829,16 @@ function handleFc(action) {
         lvl = Math.min(5, lvl + 1);
         playSound('success'); addXP(2);
         w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl);
-        db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}).catch(e => logCustomError("FC Update geuebt", e));
-        
+        db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview});
         fcSessionHistory.geuebt.unshift({ word: w, oldLvl: oldLvl, oldNextReview: oldNextReview });
-        fcIndex++;
-        renderFc();
+        fcIndex++; renderFc();
     } else if (action === 'nochmals') {
         lvl = Math.max(0, lvl - 1);
         playSound('error');
         w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl);
-        db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}).catch(e => logCustomError("FC Update nochmals", e));
-        
+        db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview});
         fcSessionHistory.nochmals.unshift({ word: w, oldLvl: oldLvl, oldNextReview: oldNextReview });
-        fcIndex++;
-        renderFc();
+        fcIndex++; renderFc();
     } else if (action === 'spaeter') {
         fcSessionHistory.spaeter.unshift({ word: w });
         fcPool.push(fcPool.splice(fcIndex, 1)[0]);
@@ -889,10 +846,7 @@ function handleFc(action) {
     }
     
     updateFcHistoryCounts();
-    
-    if(document.getElementById('fcHistoryList').style.display === 'flex') {
-        showFcList(currentFcListType);
-    }
+    if(document.getElementById('fcHistoryList').style.display === 'flex') showFcList(currentFcListType);
 }
 
 function updateFcHistoryCounts() {
@@ -903,13 +857,8 @@ function updateFcHistoryCounts() {
 
 function showFcList(type) {
     const listEl = document.getElementById('fcHistoryList');
-    if(currentFcListType === type && listEl.style.display === 'flex') {
-        listEl.style.display = 'none';
-        return;
-    }
-    
-    currentFcListType = type;
-    listEl.style.display = 'flex';
+    if(currentFcListType === type && listEl.style.display === 'flex') { listEl.style.display = 'none'; return; }
+    currentFcListType = type; listEl.style.display = 'flex';
     
     if(fcSessionHistory[type].length === 0) {
         listEl.innerHTML = `<div style="text-align:center; color:var(--text-light); font-size:0.9rem;">Noch keine Karten hier abgelegt.</div>`;
@@ -917,7 +866,6 @@ function showFcList(type) {
     }
     
     const icons = { spaeter: '🔴', nochmals: '🟠', geuebt: '🟢' };
-    
     listEl.innerHTML = fcSessionHistory[type].map((item, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:10px; border-radius:12px; border:1px solid var(--border-soft);">
             <div style="font-weight:bold; color:var(--text); font-size:0.95rem;">
@@ -930,27 +878,21 @@ function showFcList(type) {
 
 function undoFc(type, historyIndex) {
     if(!currentUser || !db) return;
-    
     const item = fcSessionHistory[type][historyIndex];
     const w = item.word;
 
     if (type === 'geuebt' || type === 'nochmals') {
-        w.level = item.oldLvl;
-        w.nextReview = item.oldNextReview;
-        db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: item.oldLvl, nextReview: item.oldNextReview}).catch(e => logCustomError("Undo FC Update", e));
+        w.level = item.oldLvl; w.nextReview = item.oldNextReview;
+        db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: item.oldLvl, nextReview: item.oldNextReview});
     } else if (type === 'spaeter') {
         const poolIdx = fcPool.findIndex(x => x.id === w.id);
-        if(poolIdx > -1) {
-            fcPool.splice(poolIdx, 1);
-        }
+        if(poolIdx > -1) fcPool.splice(poolIdx, 1);
     }
     
     fcSessionHistory[type].splice(historyIndex, 1);
     fcPool.splice(fcIndex, 0, w);
     
-    updateFcHistoryCounts();
-    showFcList(type); 
-    renderFc(); 
+    updateFcHistoryCounts(); showFcList(type); renderFc(); 
 }
 
 function openMiniGame(game) {
@@ -1125,13 +1067,13 @@ function toggleVerbSection() { const vs = document.getElementById('verbSection')
 async function fetchVerbForms() { 
     const b = document.getElementById('inDe').value || document.getElementById('inEn').value; if(!b) return; document.getElementById('loader').style.display = "block"; 
     const prompt = `Verb "${b}". JSON: {"l1P":"...", "l1F":"...", "l2P":"...", "l2F":"...", "l3P":"...", "l3F":"..."} for ${conf.l1}, ${conf.l2}, ${conf.l3}`; const res = await callGemini(prompt); document.getElementById('loader').style.display = "none"; 
-    if(res) { try { const cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const o = JSON.parse(cleanStr); document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||"lor"} catch(e) { logCustomError("Verbs JSON", e); } } 
+    if(res) { try { const cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const o = JSON.parse(cleanStr); document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||""} catch(e) { logCustomError("Verbs JSON", e); } } 
 }
 
 function listen(slot, targetId, btn) { 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
     if (!SpeechRecognition) {
-        showToast("⚠️ Dein Browser unterstützt die integrierte Spracherkennung leider nicht.", "error");
+        showToast("⚠️ Browser unterstützt die integrierte Spracherkennung nicht.", "error");
         return; 
     }
     try { 
@@ -1139,21 +1081,15 @@ function listen(slot, targetId, btn) {
         const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3);
         rec.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
         btn.classList.add('mic-active'); 
-        rec.onresult = (e) => { 
-            document.getElementById(targetId).value = e.results[0][0].transcript; 
-        }; 
+        rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; }; 
         rec.onerror = (e) => {
             btn.classList.remove('mic-active');
-            logCustomError("Eingabe Mikrofon", e.error);
-            if (e.error === 'not-allowed') {
-                showToast("⚠️ Mikrofon-Zugriff verweigert.", "error");
-            }
+            if (e.error === 'not-allowed') showToast("⚠️ Mikrofon-Zugriff verweigert.", "error");
         };
         rec.onend = () => btn.classList.remove('mic-active'); 
         rec.start(); 
     } catch(err) {
         btn.classList.remove('mic-active');
-        logCustomError("Start Eingabe Mikrofon", err);
     } 
 }
 
@@ -1219,5 +1155,108 @@ async function markWord(correct) {
 }
 
 function nextStudyWord() { studyIndex++; if(studyIndex >= studyWords.length) { fireConfetti(); generateStudyList(); } else { renderStudyWord(); } }
+
+
+// --- AUDIO-TRAINER LOGIK ---
+
+function speakAsync(text, langKey, rate = 1.0) {
+    return new Promise((resolve) => {
+        if (!('speechSynthesis' in window) || cancelAudio) return resolve();
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
+        msg.rate = rate;
+        msg.onend = () => resolve();
+        msg.onerror = () => resolve();
+        window.speechSynthesis.speak(msg);
+    });
+}
+
+const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function toggleAudioTrainer() {
+    const btn = document.getElementById('btnStartAudio');
+    if (isAudioRunning) {
+        isAudioRunning = false;
+        cancelAudio = true;
+        window.speechSynthesis.cancel(); 
+        btn.innerHTML = "▶️ Audio-Trainer starten";
+        btn.style.background = "linear-gradient(135deg, #a855f7, #ec4899)";
+        document.getElementById('audioDisplayL1').innerText = "Pausiert.";
+        document.getElementById('audioDisplayL3').innerText = "";
+        return;
+    }
+    
+    isAudioRunning = true;
+    cancelAudio = false;
+    btn.innerHTML = "⏹️ Audio-Trainer stoppen";
+    btn.style.background = "#EF4444";
+    audioTrainerLoop();
+}
+
+async function audioTrainerLoop() {
+    while (isAudioRunning && !cancelAudio) {
+        document.getElementById('audioLoader').style.display = 'block';
+        
+        const diff = document.getElementById('selAudioDiff').value;
+        const tgtLangName = ALL_LANGS[conf.l3].name;
+        
+        const prompt = `Du bist ein Sprachtrainer. Erstelle EINEN realistischen Satz auf Niveau ${diff}. Gib ihn auf Deutsch und auf ${tgtLangName} zurück. JSON-Format: {"l1": "Deutscher Satz", "l3": "Übersetzung in ${tgtLangName}"}`;
+        
+        const res = await callGemini(prompt);
+        document.getElementById('audioLoader').style.display = 'none';
+
+        if (!res || cancelAudio) {
+            if(!cancelAudio) await sleepAsync(3000);
+            continue;
+        }
+
+        let sentenceObj;
+        try {
+            let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim();
+            const sIdx = cleanStr.indexOf('{');
+            const eIdx = cleanStr.lastIndexOf('}');
+            if (sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1);
+            sentenceObj = JSON.parse(cleanStr);
+        } catch (e) {
+            await sleepAsync(2000);
+            continue;
+        }
+
+        const l1Text = sentenceObj.l1;
+        const l3Text = sentenceObj.l3;
+        
+        document.getElementById('audioDisplayL1').innerText = l1Text;
+        document.getElementById('audioDisplayL3').innerText = "";
+
+        const slowRate = parseFloat(document.getElementById('selAudioSlow').value);
+        const pauseMs = parseInt(document.getElementById('selAudioPause').value) * 1000;
+
+        if (cancelAudio) break;
+        await speakAsync(l1Text, conf.l1, 1.0);
+        
+        if (cancelAudio) break;
+        await sleepAsync(600);
+        document.getElementById('audioDisplayL3').innerText = l3Text;
+
+        if (cancelAudio) break;
+        await speakAsync(l3Text, conf.l3, 1.0);
+        
+        if (cancelAudio) break;
+        await sleepAsync(pauseMs);
+
+        if (cancelAudio) break;
+        await speakAsync(l3Text, conf.l3, slowRate);
+        
+        if (cancelAudio) break;
+        await sleepAsync(pauseMs);
+
+        if (cancelAudio) break;
+        await speakAsync(l3Text, conf.l3, 1.0);
+        
+        if (cancelAudio) break;
+        await sleepAsync(2000);
+    }
+}
 
 window.onload = () => { try { init(); } catch(e) { console.error("Kritischer Fehler beim Starten:", e); } };
