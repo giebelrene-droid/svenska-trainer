@@ -8,12 +8,10 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234F46E5%22 rx=%2220%22/><text x=%2250%22 y=%2268%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23ffffff%22>🌍</text></svg>">
     <link id="manifestLink" rel="manifest" href="">
     
-    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     
-    <!-- Design -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -85,12 +83,11 @@
     <button id="btn3" onclick="showTab('list')">📚 Liste</button>
 </div>
 
-<!-- AUDIO TRAINER TAB -->
 <div id="tabAudio" class="card" style="display:none">
     <h2>🎧 Audio-Trainer</h2>
-    <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Passives Hören: Einmal Deutsch, dreimal Fremdsprache (Normal - Langsam - Normal).</p>
+    <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Passives Hören: Einmal Deutsch, Fremdsprache (Normal - Nx Langsam - Normal).</p>
 
-    <div class="input-row" style="gap:15px; margin-bottom: 20px; align-items: flex-end;">
+    <div class="input-row" style="gap:15px; margin-bottom: 10px; align-items: flex-end;">
         <div style="flex:1">
             <label style="margin-top:0;">Niveau</label>
             <select id="selAudioDiff">
@@ -119,17 +116,38 @@
             </select>
         </div>
     </div>
+    
+    <div class="input-row" style="gap:15px; margin-bottom: 20px; align-items: flex-end;">
+        <div style="flex:1">
+            <label style="margin-top:0;">Langsame WH</label>
+            <select id="selAudioReps">
+                <option value="1">1x</option>
+                <option value="2">2x</option>
+                <option value="3" selected>3x</option>
+                <option value="4">4x</option>
+                <option value="5">5x</option>
+            </select>
+        </div>
+        <div style="flex:2">
+            <label style="margin-top:0;">Stimme (Fremdsprache)</label>
+            <select id="selAudioVoice">
+                <option value="">🤖 Standard-Stimme</option>
+            </select>
+        </div>
+    </div>
 
-    <div style="background: rgba(255,255,255,0.7); padding: 20px; border-radius: 16px; border: 1px solid var(--border-soft); text-align: center; margin-bottom: 20px; min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
-        <div id="audioDisplayL1" style="font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 10px;">Bereit zum Starten...</div>
-        <div id="audioDisplayL3" style="font-weight: 600; font-size: 1.2rem; color: var(--primary);"></div>
+    <div style="background: rgba(255,255,255,0.7); padding: 20px; border-radius: 16px; border: 1px solid var(--border-soft); text-align: center; margin-bottom: 20px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; position: relative;">
+        
+        <button class="icon-btn" onclick="saveAudioSentence()" style="position: absolute; right: 10px; top: 10px; font-size: 1.2rem; border: none; background: rgba(255,255,255,0.9); box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 45px; height: 45px;" title="Satz in Karteikarten speichern">💾</button>
+
+        <div id="audioDisplayL1" style="font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 10px; padding-right: 35px;">Bereit zum Starten...</div>
+        <div id="audioDisplayL3" style="font-weight: 600; font-size: 1.2rem; color: var(--primary); padding-right: 35px;"></div>
         <div id="audioLoader" class="loader" style="display:none; margin-top: 10px;">KI generiert Satz...</div>
     </div>
 
     <button id="btnStartAudio" class="action-btn btn-magic" onclick="toggleAudioTrainer()">▶️ Audio-Trainer starten</button>
 </div>
 
-<!-- ROLEPLAY TAB -->
 <div id="tabRoleplay" class="card" style="display:none">
     <h2>🗣️ Situations-Training</h2>
     <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Wähle ein Thema und übe verschiedene Antwortmöglichkeiten.</p>
@@ -200,7 +218,6 @@
     </div>
 </div>
 
-<!-- FLASHCARDS TAB -->
 <div id="tabFlashcards" class="card" style="display:none">
     <div style="text-align:center;">
         <h2>📇 Karteikarten</h2>
@@ -276,7 +293,6 @@
     </div>
 </div>
 
-<!-- ARCADE TAB -->
 <div id="tabArcade" class="card" style="display:none">
     <h2>🎮 Spiele-Center</h2>
     <div id="arcadeMenu" class="arcade-grid">
@@ -311,7 +327,6 @@
     </div>
 </div>
 
-<!-- STORY TAB -->
 <div id="tabStory" class="card" style="display:none">
     <h2>📖 KI-Märchen</h2>
     <button class="action-btn btn-magic" onclick="generateStory()">✨ Geschichte generieren</button>
@@ -319,7 +334,6 @@
     <div id="storyBox" class="story-box"><div id="storyContent" style="font-weight: 800; font-size: 1.2rem; color: var(--primary); margin-bottom: 15px;"></div><div id="storyTranslation" style="font-size: 0.9rem; color: var(--text-light); border-top: 1px solid #FCD34D; padding-top: 10px;"></div><button class="action-btn btn-secondary" onclick="speakStory()">🔊 Vorlesen</button></div>
 </div>
 
-<!-- ADD WORD TAB -->
 <div id="tabAdd" class="card">
     <h2 id="addTitle">➕ Neues Wort</h2>
     <input type="hidden" id="editId">
@@ -373,7 +387,6 @@
     <button class="action-btn btn-danger" id="cancelBtn" onclick="resetAddForm()" style="display:none; margin-top:10px;">Abbrechen</button>
 </div>
 
-<!-- CHAT TAB -->
 <div id="tabChat" class="card" style="display:none">
     <h2>💬 Sprachtutor</h2>
     <div class="input-row" style="margin-bottom: 15px;"><select id="chatSrcLang"></select><select id="chatTgtLang"></select></div>
@@ -382,7 +395,6 @@
     <div class="input-row"><button id="btnChatRecord" class="action-btn" onclick="toggleChatRecord()" style="margin-top:0;">🎤 Chat Starten</button><button class="icon-btn danger" onclick="clearChat()">🗑️</button></div>
 </div>
 
-<!-- LIVE TRANSLATE TAB -->
 <div id="tabLive" class="card" style="display:none">
     <h2>🎙️ Live Übersetzer</h2>
     <div class="input-row"><select id="liveSrcLang"></select><span>➡️</span><select id="liveTgtLang"></select></div>
@@ -396,7 +408,6 @@
     </div>
 </div>
 
-<!-- STUDY TAB -->
 <div id="tabStudy" class="card" style="display:none">
     <div style="background: #FFFBEB; padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 2px dashed #FCD34D;">
         <h3 style="margin-top:0; color: #D97706; font-size:1rem; margin-bottom:10px;">🏆 Tägliche Quests</h3>
@@ -414,7 +425,6 @@
     </div>
 </div>
 
-<!-- LIST TAB -->
 <div id="tabList" class="card" style="display:none">
     <h2>📚 Liste</h2>
     <div style="text-align:center; margin-bottom: 15px;"><span style="background: var(--primary-gradient); color: white; padding: 6px 16px; border-radius: 20px; font-weight: 800;">📚 <span id="wordCount">0</span> Wörter</span></div>
@@ -423,13 +433,11 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 30 (Modular & Audio-Trainer) &bull; 2026
+    SprachTutor AI &bull; Version 29.2 (Audio Pro) &bull; 2026
 </div>
 
-<!-- Toast Container -->
 <div id="toastContainer" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>
 
-<!-- JS einbinden -->
 <script src="app.js"></script>
 </body>
 </html>
