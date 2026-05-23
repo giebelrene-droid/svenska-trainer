@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -13,7 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     
-    <!-- Design auslagern -->
+    <!-- Design -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -77,6 +77,7 @@
     <button id="btnFlash" onclick="showTab('flashcards')">📇 Karteikarten</button>
     <button id="btn5" onclick="showTab('study')">👀 Lernen</button>
     <button id="btnRoleplay" onclick="showTab('roleplay')">🗣️ Szenarien</button>
+    <button id="btnAudio" onclick="showTab('audio')">🎧 Audio-Trainer</button>
     <button id="btn8" onclick="showTab('chat')">💬 Sprachtutor</button>
     <button id="btn7" onclick="showTab('live')">🎙️ Live</button>
     <button id="btnArcade" onclick="showTab('arcade')">🎮 Arcade</button>
@@ -84,6 +85,51 @@
     <button id="btn3" onclick="showTab('list')">📚 Liste</button>
 </div>
 
+<!-- AUDIO TRAINER TAB -->
+<div id="tabAudio" class="card" style="display:none">
+    <h2>🎧 Audio-Trainer</h2>
+    <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Passives Hören: Einmal Deutsch, dreimal Fremdsprache (Normal - Langsam - Normal).</p>
+
+    <div class="input-row" style="gap:15px; margin-bottom: 20px; align-items: flex-end;">
+        <div style="flex:1">
+            <label style="margin-top:0;">Niveau</label>
+            <select id="selAudioDiff">
+                <option value="A1" selected>🟢 A1 (Leicht)</option>
+                <option value="A2">🟡 A2 (Alltag)</option>
+                <option value="B1">🟠 B1 (Mittel)</option>
+                <option value="B2">🔴 B2 (Schwer)</option>
+                <option value="C1">🟣 C1 (Profi)</option>
+            </select>
+        </div>
+        <div style="flex:1">
+            <label style="margin-top:0;">Langsam</label>
+            <select id="selAudioSlow">
+                <option value="0.8">0.8x</option>
+                <option value="0.6" selected>0.6x</option>
+                <option value="0.4">0.4x</option>
+            </select>
+        </div>
+        <div style="flex:1">
+            <label style="margin-top:0;">Pause</label>
+            <select id="selAudioPause">
+                <option value="1">1 Sek.</option>
+                <option value="2" selected>2 Sek.</option>
+                <option value="3">3 Sek.</option>
+                <option value="4">4 Sek.</option>
+            </select>
+        </div>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.7); padding: 20px; border-radius: 16px; border: 1px solid var(--border-soft); text-align: center; margin-bottom: 20px; min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
+        <div id="audioDisplayL1" style="font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 10px;">Bereit zum Starten...</div>
+        <div id="audioDisplayL3" style="font-weight: 600; font-size: 1.2rem; color: var(--primary);"></div>
+        <div id="audioLoader" class="loader" style="display:none; margin-top: 10px;">KI generiert Satz...</div>
+    </div>
+
+    <button id="btnStartAudio" class="action-btn btn-magic" onclick="toggleAudioTrainer()">▶️ Audio-Trainer starten</button>
+</div>
+
+<!-- ROLEPLAY TAB -->
 <div id="tabRoleplay" class="card" style="display:none">
     <h2>🗣️ Situations-Training</h2>
     <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Wähle ein Thema und übe verschiedene Antwortmöglichkeiten.</p>
@@ -154,6 +200,7 @@
     </div>
 </div>
 
+<!-- FLASHCARDS TAB -->
 <div id="tabFlashcards" class="card" style="display:none">
     <div style="text-align:center;">
         <h2>📇 Karteikarten</h2>
@@ -173,7 +220,6 @@
     <div id="fcCardArea">
         <div class="flip-card" id="fcCard" onclick="flipFc()">
             <div class="flip-card-inner" id="fcInner">
-                <!-- VORDERSEITE -->
                 <div class="flip-card-front" style="padding:0;">
                     <div id="fcImgFront" style="width:100%; height:180px; background-color:#E5E7EB; background-size:cover; background-position:center; border-radius:22px 22px 0 0;"></div>
                     <div style="padding: 20px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1;">
@@ -181,7 +227,6 @@
                         <div id="fcFrontText">...</div>
                     </div>
                 </div>
-                <!-- RÜCKSEITE -->
                 <div class="flip-card-back" style="padding:0;">
                     <div id="fcImgBack" style="width:100%; height:100%; position:absolute; top:0; left:0; border-radius:22px; z-index:0;"></div>
                     <div style="position:relative; z-index:1; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%;">
@@ -231,6 +276,7 @@
     </div>
 </div>
 
+<!-- ARCADE TAB -->
 <div id="tabArcade" class="card" style="display:none">
     <h2>🎮 Spiele-Center</h2>
     <div id="arcadeMenu" class="arcade-grid">
@@ -265,6 +311,7 @@
     </div>
 </div>
 
+<!-- STORY TAB -->
 <div id="tabStory" class="card" style="display:none">
     <h2>📖 KI-Märchen</h2>
     <button class="action-btn btn-magic" onclick="generateStory()">✨ Geschichte generieren</button>
@@ -272,6 +319,7 @@
     <div id="storyBox" class="story-box"><div id="storyContent" style="font-weight: 800; font-size: 1.2rem; color: var(--primary); margin-bottom: 15px;"></div><div id="storyTranslation" style="font-size: 0.9rem; color: var(--text-light); border-top: 1px solid #FCD34D; padding-top: 10px;"></div><button class="action-btn btn-secondary" onclick="speakStory()">🔊 Vorlesen</button></div>
 </div>
 
+<!-- ADD WORD TAB -->
 <div id="tabAdd" class="card">
     <h2 id="addTitle">➕ Neues Wort</h2>
     <input type="hidden" id="editId">
@@ -325,6 +373,7 @@
     <button class="action-btn btn-danger" id="cancelBtn" onclick="resetAddForm()" style="display:none; margin-top:10px;">Abbrechen</button>
 </div>
 
+<!-- CHAT TAB -->
 <div id="tabChat" class="card" style="display:none">
     <h2>💬 Sprachtutor</h2>
     <div class="input-row" style="margin-bottom: 15px;"><select id="chatSrcLang"></select><select id="chatTgtLang"></select></div>
@@ -333,6 +382,7 @@
     <div class="input-row"><button id="btnChatRecord" class="action-btn" onclick="toggleChatRecord()" style="margin-top:0;">🎤 Chat Starten</button><button class="icon-btn danger" onclick="clearChat()">🗑️</button></div>
 </div>
 
+<!-- LIVE TRANSLATE TAB -->
 <div id="tabLive" class="card" style="display:none">
     <h2>🎙️ Live Übersetzer</h2>
     <div class="input-row"><select id="liveSrcLang"></select><span>➡️</span><select id="liveTgtLang"></select></div>
@@ -346,6 +396,7 @@
     </div>
 </div>
 
+<!-- STUDY TAB -->
 <div id="tabStudy" class="card" style="display:none">
     <div style="background: #FFFBEB; padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 2px dashed #FCD34D;">
         <h3 style="margin-top:0; color: #D97706; font-size:1rem; margin-bottom:10px;">🏆 Tägliche Quests</h3>
@@ -363,6 +414,7 @@
     </div>
 </div>
 
+<!-- LIST TAB -->
 <div id="tabList" class="card" style="display:none">
     <h2>📚 Liste</h2>
     <div style="text-align:center; margin-bottom: 15px;"><span style="background: var(--primary-gradient); color: white; padding: 6px 16px; border-radius: 20px; font-weight: 800;">📚 <span id="wordCount">0</span> Wörter</span></div>
@@ -371,13 +423,13 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 29.1 (Modular) &bull; 2026
+    SprachTutor AI &bull; Version 30 (Modular & Audio-Trainer) &bull; 2026
 </div>
 
-<!-- Container für die neuen Popups (Toasts) -->
+<!-- Toast Container -->
 <div id="toastContainer" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>
 
-<!-- Logik auslagern -->
+<!-- JS einbinden -->
 <script src="app.js"></script>
 </body>
 </html>
