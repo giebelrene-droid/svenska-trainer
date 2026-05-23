@@ -152,9 +152,35 @@ try {
     if(rawStats && rawStats !== "undefined") statsToday = JSON.parse(rawStats); 
 } catch(e) {}
 
-// Audio-Trainer Status Variablen
+// --- Audio-Trainer Variablen ---
 let isAudioRunning = false;
 let cancelAudio = false;
+let audioHistory = []; 
+
+// --- Stimmen laden ---
+let availableVoices = [];
+function loadVoices() {
+    availableVoices = window.speechSynthesis.getVoices();
+    updateVoiceDropdown();
+}
+if(window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    setTimeout(loadVoices, 500); 
+}
+
+function updateVoiceDropdown() {
+    const voiceSelect = document.getElementById('selAudioVoice');
+    if(!voiceSelect) return;
+    
+    const currentLangCode = ALL_LANGS[conf.l3].tts.split('-')[0]; 
+    const matchingVoices = availableVoices.filter(v => v.lang.startsWith(currentLangCode));
+    
+    let html = '<option value="">🤖 Standard-Stimme</option>';
+    matchingVoices.forEach(v => {
+        html += `<option value="${v.name}">${v.name}</option>`;
+    });
+    voiceSelect.innerHTML = html;
+}
 
 function escapeHTML(str) { return !str ? "" : String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[m]); }
 function safeJS(str) { return !str ? "" : String(str).replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
@@ -330,7 +356,18 @@ function populateLangSelects() {
         if(id === 'selL1') el.value = conf.l1; if(id === 'selL2') el.value = conf.l2; if(id === 'selL3') el.value = conf.l3; if(id === 'chatTgtLang') el.value = conf.l3; 
     }); 
 }
-function langChanged() { conf.l1 = document.getElementById('selL1').value; conf.l2 = document.getElementById('selL2').value; conf.l3 = document.getElementById('selL3').value; localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf)); updateUIForLangs(); populateLangSelects(); refreshData(); }
+
+function langChanged() { 
+    conf.l1 = document.getElementById('selL1').value; 
+    conf.l2 = document.getElementById('selL2').value; 
+    conf.l3 = document.getElementById('selL3').value; 
+    localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf)); 
+    updateUIForLangs(); 
+    populateLangSelects(); 
+    refreshData(); 
+    updateVoiceDropdown(); 
+}
+
 function updateUIForLangs() { 
     if(document.getElementById('lblL1')) document.getElementById('lblL1').innerText = ALL_LANGS[conf.l1].name; 
     if(document.getElementById('lblL2')) document.getElementById('lblL2').innerText = ALL_LANGS[conf.l2].name; 
@@ -1157,15 +1194,25 @@ async function markWord(correct) {
 function nextStudyWord() { studyIndex++; if(studyIndex >= studyWords.length) { fireConfetti(); generateStudyList(); } else { renderStudyWord(); } }
 
 
-// --- AUDIO-TRAINER LOGIK ---
+// --- AUDIO-TRAINER LOGIK (MIT GEDÄCHTNIS & STIMMEN) ---
 
 function speakAsync(text, langKey, rate = 1.0) {
     return new Promise((resolve) => {
         if (!('speechSynthesis' in window) || cancelAudio) return resolve();
         window.speechSynthesis.cancel();
+        
         const msg = new SpeechSynthesisUtterance(text);
         msg.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
         msg.rate = rate;
+        
+        if (langKey === conf.l3) {
+            const voiceSelect = document.getElementById('selAudioVoice');
+            if (voiceSelect && voiceSelect.value) {
+                const selectedVoice = availableVoices.find(v => v.name === voiceSelect.value);
+                if (selectedVoice) msg.voice = selectedVoice;
+            }
+        }
+        
         msg.onend = () => resolve();
         msg.onerror = () => resolve();
         window.speechSynthesis.speak(msg);
@@ -1201,7 +1248,20 @@ async function audioTrainerLoop() {
         const diff = document.getElementById('selAudioDiff').value;
         const tgtLangName = ALL_LANGS[conf.l3].name;
         
-        const prompt = `Du bist ein Sprachtrainer. Erstelle EINEN realistischen Satz auf Niveau ${diff}. Gib ihn auf Deutsch und auf ${tgtLangName} zurück. JSON-Format: {"l1": "Deutscher Satz", "l3": "Übersetzung in ${tgtLangName}"}`;
+        // 1. Gedächtnis bereinigen (Alles löschen, was älter als 30 Minuten ist)
+        const now = Date.now();
+        audioHistory = audioHistory.filter(item => (now - item.ts) < 1800000); 
+        
+        // 2. Warn-Liste für die KI bauen
+        const avoidList = audioHistory.map(i => i.text).join('", "');
+        const avoidPrompt = avoidList ? `Verwende AUF KEINEN FALL diese Sätze oder ähnliche: ["${avoidList}"]. ` : "";
+        
+        // 3. Zufallsthema erzwingen
+        const topics = ["Einkaufen", "Reisen", "Arbeit", "Freizeit", "Essen und Trinken", "Wetter", "Familie", "Sport", "Gesundheit", "Verkehrsmittel", "Gefühle", "Technik", "Natur", "Wohnen"];
+        const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+        const randomSeed = Math.floor(Math.random() * 10000); 
+        
+        const prompt = `Du bist ein Sprachtrainer. Erstelle EINEN realistischen Satz auf Niveau ${diff} zum Thema "${randomTopic}" (ID: ${randomSeed}). ${avoidPrompt}Gib ihn auf Deutsch und auf ${tgtLangName} zurück. JSON-Format: {"l1": "Deutscher Satz", "l3": "Übersetzung in ${tgtLangName}"}`;
         
         const res = await callGemini(prompt);
         document.getElementById('audioLoader').style.display = 'none';
@@ -1225,6 +1285,9 @@ async function audioTrainerLoop() {
 
         const l1Text = sentenceObj.l1;
         const l3Text = sentenceObj.l3;
+        
+        // 4. Satz ins Gedächtnis aufnehmen
+        audioHistory.push({text: l1Text, ts: Date.now()});
         
         document.getElementById('audioDisplayL1').innerText = l1Text;
         document.getElementById('audioDisplayL3').innerText = "";
