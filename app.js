@@ -1,4 +1,4 @@
-const APP_VERSION = "30.28";
+const APP_VERSION = "30.29";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -980,10 +980,17 @@ function showApiError(html) {
     if (!box) {
         box = document.createElement('div');
         box.id = 'apiErrorBox';
-        box.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);width:92%;max-width:560px;background:#1e293b;color:#f8fafc;font-family:monospace;font-size:0.78rem;padding:14px 16px;border-radius:14px;border:2px solid #EF4444;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-height:60vh;overflow-y:auto;line-height:1.5;';
+        box.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);width:92%;max-width:580px;background:#1e293b;color:#f8fafc;font-family:monospace;font-size:0.78rem;padding:14px 16px;border-radius:14px;border:2px solid #EF4444;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-height:70vh;overflow-y:auto;line-height:1.5;';
+        box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;position:sticky;top:0;background:#1e293b;padding-bottom:4px;"><strong style="color:#EF4444;font-size:0.85rem;">⚠️ API-Fehler</strong><button onclick="document.getElementById('apiErrorBox').remove()" style="background:#EF4444;color:white;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:800;">✕ Schließen</button></div><div id="apiErrorEntries"></div>`;
         document.body.appendChild(box);
     }
-    box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><strong style="color:#EF4444;font-size:0.85rem;">⚠️ API-Fehler</strong><button onclick="document.getElementById('apiErrorBox').remove()" style="background:#EF4444;color:white;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:800;">✕ Schließen</button></div>${html}`;
+    const entries = document.getElementById('apiErrorEntries') || box;
+    const ts = new Date().toLocaleTimeString('de-DE');
+    const entry = document.createElement('div');
+    entry.style.cssText = 'border-top:1px solid #334155;padding-top:8px;margin-top:8px;';
+    entry.innerHTML = `<span style="color:#94a3b8;font-size:0.72rem;">${ts}</span><br>${html}`;
+    entries.appendChild(entry);
+    box.scrollTop = box.scrollHeight;
 }
 
 async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
@@ -1032,7 +1039,7 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
             const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
             if (!text) {
                 const raw = JSON.stringify(d, null, 2);
-                showApiError(`<b>Leere Antwort vom Modell</b><br><pre style="margin:6px 0 0;white-space:pre-wrap;word-break:break-all;">${escapeHTML(raw)}</pre>`);
+                showApiError(`<b>Modell:</b> ${GEMINI_MODEL}<br><b>Key (Ende):</b> …${key.slice(-6)}<br><b>HTTP-Status:</b> ${resp.status}<br><b>Problem:</b> Leere Antwort vom Modell<br><pre style="margin:6px 0 0;white-space:pre-wrap;word-break:break-all;">${escapeHTML(raw)}</pre>`);
                 currentApiKeyIndex++;
                 continue;
             }
@@ -1040,7 +1047,7 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
             return text.trim();
         } catch(e) {
             logCustomError(`callGemini network`, e.message);
-            showApiError(`<b>Netzwerkfehler</b><br><pre style="margin:6px 0 0;">${escapeHTML(e.message)}</pre>`);
+            showApiError(`<b>Modell:</b> ${GEMINI_MODEL}<br><b>Key (Ende):</b> …${key.slice(-6)}<br><b>Problem:</b> Netzwerkfehler<br><pre style="margin:6px 0 0;">${escapeHTML(e.message)}</pre>`);
             currentApiKeyIndex++;
         }
     }
