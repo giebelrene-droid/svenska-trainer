@@ -1,4 +1,4 @@
-const APP_VERSION = "30.10";
+const APP_VERSION = "30.11";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -1519,12 +1519,12 @@ async function importDefaultWords() {
 
 async function forceImportDefaultWords() {
     if (!currentUser || !db) { showToast('⚠️ Warte auf Datenbank-Verbindung...', 'error'); return; }
-    showToast('⏳ Prüfe Wörterliste...', 'info');
     try {
-        const snap = await db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).limit(1).get();
-        if (!snap.empty) {
-            showToast('ℹ️ Wörter bereits vorhanden – Import übersprungen um Duplikate zu vermeiden.', 'info');
-            return;
+        const snap = await db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).get();
+        const existingCount = snap.size;
+        if (existingCount > 0) {
+            const ok = confirm('Es sind bereits ' + existingCount + ' Wörter vorhanden.\n\nTrotzdem ' + DEFAULT_WORDS.length + ' Standardwörter importieren?\n(Achtung: Es entstehen Duplikate!)');
+            if (!ok) return;
         }
         showToast('⏳ Importiere ' + DEFAULT_WORDS.length + ' Standardwörter...', 'info');
         await importDefaultWords();
