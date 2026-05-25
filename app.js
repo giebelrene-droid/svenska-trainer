@@ -1,4 +1,4 @@
-const APP_VERSION = "30.37";
+const APP_VERSION = "30.38";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -857,6 +857,15 @@ async function listGeminiModels() {
         if (box) box.innerHTML = errHtml;
         showModelPanel(errHtml);
     }
+}
+
+function alertGeminiModels() {
+    fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + geminiApiKey.split(',')[0].trim())
+        .then(r => r.json())
+        .then(d => {
+            const names = d.models ? d.models.map(m => m.name).join('\n') : JSON.stringify(d);
+            alert(names);
+        });
 }
 
 function showTab(n) {
