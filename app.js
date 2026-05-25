@@ -1,4 +1,4 @@
-const APP_VERSION = "30.20";
+const APP_VERSION = "30.21";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -213,13 +213,15 @@ function findBestVoice(langKey) {
     );
 }
 
+// buildUtterance() is ONLY used by speakAndWait() in the Audio-Trainer.
+// It checks the selAudioVoice dropdown for the user-selected voice.
 function buildUtterance(text, langKey, rate) {
     const msg = new SpeechSynthesisUtterance(text.trim());
-    msg.lang   = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
+    msg.lang   = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) || 'de-DE';
     msg.rate   = parseFloat(rate) || 1.0;
     msg.volume = 1.0;
     msg.pitch  = 1.0;
-    // User-selected voice from dropdown takes priority
+    // Audio-trainer voice dropdown takes priority for target language
     if (langKey === conf.l3 && availableVoices.length > 0) {
         const voiceSelect = document.getElementById('selAudioVoice');
         if (voiceSelect && voiceSelect.value) {
@@ -227,19 +229,28 @@ function buildUtterance(text, langKey, rate) {
             if (sel) { msg.voice = sel; return msg; }
         }
     }
-    // Auto-select: cascading search so Chrome Android always gets a real voice
     const voice = findBestVoice(langKey);
     if (voice) msg.voice = voice;
     return msg;
 }
 
+// speak() is the global TTS function used by ALL speaker buttons in the app.
+// It NEVER checks selAudioVoice — always uses findBestVoice() directly.
+// This keeps it independent of Audio-Trainer state.
 function speak(text, langKey, rate = 1.0) {
     if (!window.speechSynthesis || !text || !text.trim()) return;
     const ss = window.speechSynthesis;
     ss.cancel();
     ss.resume();
-    const msg = buildUtterance(text, langKey, rate);
-    msg.onerror = (e) => { logCustomError('speak', (e.error || String(e))); };
+    const msg = new SpeechSynthesisUtterance(text.trim());
+    msg.lang   = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) || 'de-DE';
+    msg.rate   = parseFloat(rate) || 1.0;
+    msg.volume = 1.0;
+    msg.pitch  = 1.0;
+    const voice = findBestVoice(langKey);
+    if (voice) msg.voice = voice;
+    // suppress 'interrupted' errors that come from cancel() calls
+    msg.onerror = (e) => { if (e.error !== 'interrupted') logCustomError('speak', e.error || String(e)); };
     ss.speak(msg);
 }
 
