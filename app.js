@@ -1,4 +1,4 @@
-const APP_VERSION = "30.27";
+const APP_VERSION = "30.28";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -729,6 +729,85 @@ function activateTTS() {
 }
 function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); cachedGeminiModel = null; }
 function saveDeeplKey() { deeplApiKey = document.getElementById('inpDeeplKey').value.trim(); localStorage.setItem('trainerDeeplKey', deeplApiKey); }
+
+async function testApiKeys() {
+    const box = document.getElementById('apiKeyTestResults');
+    if (!box) return;
+    box.style.display = 'block';
+    box.innerHTML = '<span style="color:#94a3b8;">⏳ Teste Keys…</span>';
+
+    const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
+    if (keys.length === 0) {
+        box.innerHTML = '<span style="color:#f87171;">Kein Gemini API-Key eingetragen.</span>';
+        return;
+    }
+
+    const minimalPayload = {
+        contents: [{ role: 'user', parts: [{ text: 'Hi' }] }]
+    };
+
+    let html = `<div style="color:#94a3b8;margin-bottom:6px;">Modell: <b style="color:#e2e8f0;">${GEMINI_MODEL}</b></div>`;
+
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const preview = '…' + key.slice(-6);
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+        let status = '?', ok = false, detail = '';
+        try {
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(minimalPayload)
+            });
+            status = resp.status;
+            const d = await resp.json();
+            if (d.error) {
+                detail = d.error.message || JSON.stringify(d.error);
+            } else if (d.candidates?.[0]?.content?.parts?.[0]?.text) {
+                ok = true;
+            } else {
+                detail = 'Leere Antwort: ' + JSON.stringify(d).slice(0, 120);
+            }
+        } catch(e) {
+            detail = 'Netzwerkfehler: ' + e.message;
+        }
+
+        const color  = ok ? '#4ade80' : '#f87171';
+        const icon   = ok ? '✅' : '❌';
+        const label  = ok ? 'OK' : `HTTP ${status}`;
+        html += `<div style="padding:5px 0;border-bottom:1px solid #1e293b;">`;
+        html += `<span style="color:${color};">${icon} Key ${i+1} <b>${escapeHTML(preview)}</b> — ${label}</span>`;
+        if (detail) html += `<div style="color:#fbbf24;font-size:0.72rem;margin-top:2px;word-break:break-all;">${escapeHTML(detail)}</div>`;
+        html += `</div>`;
+    }
+
+    // Also test DeepL if a key is present
+    if (deeplApiKey.trim()) {
+        const dk = deeplApiKey.trim();
+        const dPreview = '…' + dk.slice(-6);
+        let dOk = false, dDetail = '';
+        try {
+            const body = new URLSearchParams({ auth_key: dk, text: 'Hello', source_lang: 'EN', target_lang: 'DE' });
+            const resp = await fetch(getDeeplUrl(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+            const d = await resp.json();
+            if (d.translations?.[0]?.text) { dOk = true; }
+            else { dDetail = d.message || JSON.stringify(d).slice(0, 120); }
+        } catch(e) { dDetail = 'Netzwerkfehler: ' + e.message; }
+
+        const dColor = dOk ? '#4ade80' : '#f87171';
+        const dIcon  = dOk ? '✅' : '❌';
+        html += `<div style="padding:5px 0;margin-top:6px;">`;
+        html += `<span style="color:#94a3b8;">DeepL </span><span style="color:${dColor};">${dIcon} <b>${escapeHTML(dPreview)}</b> — ${dOk ? 'OK' : 'Fehler'}</span>`;
+        if (dDetail) html += `<div style="color:#fbbf24;font-size:0.72rem;margin-top:2px;word-break:break-all;">${escapeHTML(dDetail)}</div>`;
+        html += `</div>`;
+    }
+
+    box.innerHTML = html;
+}
 
 function showTab(n) {
     try {
