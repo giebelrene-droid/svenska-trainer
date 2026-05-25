@@ -1,4 +1,4 @@
-const APP_VERSION = "30.24";
+const APP_VERSION = "30.25";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -828,7 +828,8 @@ function switchUser() { currentCollIndex = parseInt(document.getElementById('sel
 // ==========================================
 // 5. GEMINI API ANBINDUNG
 // ==========================================
-const GEMINI_MODELS = ['gemini-2.0-flash'];
+// Fixed model list — no auto-discovery. Try in order until one responds.
+const GEMINI_MODELS = ['gemini-2.0-flash-exp', 'gemini-2.0-flash', 'gemini-1.5-flash-002'];
 
 async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
@@ -840,7 +841,7 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     const activeLoader = Array.from(document.querySelectorAll('.loader')).find(el => el.offsetWidth > 0);
     const originalLoaderText = activeLoader ? activeLoader.innerText : "";
 
-    // Build request payload once
+    // Build payload once
     let payload = { contents: [] };
     if (systemPrompt) {
         payload.contents.push({ role: "user",  parts: [{ text: "SYSTEM-ANWEISUNG: " + systemPrompt }] });
@@ -855,12 +856,12 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     }
     payload.contents.push({ role: "user", parts: userParts });
 
-    // Try every model × every key, show actual API error each time
-    let lastErrorMsg = "";
+    // Try cached model first, then full list
     const modelsToTry = cachedGeminiModel
         ? [cachedGeminiModel, ...GEMINI_MODELS.filter(m => m !== cachedGeminiModel)]
         : GEMINI_MODELS;
 
+    let lastErrorMsg = "";
     for (const model of modelsToTry) {
         for (let i = 0; i < keys.length; i++) {
             const key = keys[currentApiKeyIndex % keys.length];
@@ -873,12 +874,14 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
                     body: JSON.stringify(payload)
                 });
                 const d = await resp.json();
-                if (d.error) {
-                    throw new Error(d.error.message || JSON.stringify(d.error));
-                }
+                if (d.error) throw new Error(d.error.message || JSON.stringify(d.error));
                 const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!text) throw new Error("Leere Antwort vom Modell");
-                cachedGeminiModel = model; // remember the working model
+                if (!text) throw new Error("Leere Antwort");
+                // First success: remember model and confirm to user if it changed
+                if (model !== cachedGeminiModel) {
+                    showToast(`✅ KI-Modell: ${model}`, 'success');
+                    cachedGeminiModel = model;
+                }
                 if (activeLoader) activeLoader.innerText = originalLoaderText;
                 return text.trim();
             } catch(e) {
@@ -890,6 +893,7 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     }
 
     if (activeLoader) activeLoader.innerText = originalLoaderText;
+    showToast(`⚠️ Alle Modelle fehlgeschlagen: ${lastErrorMsg}`, 'error');
     logCustomError('callGemini failed', lastErrorMsg);
     return null;
 }
