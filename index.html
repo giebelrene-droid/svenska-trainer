@@ -64,7 +64,7 @@
 <div class="top-bar">
     <div class="app-title-wrap">
         <div class="app-title">SprachTutor AI</div>
-        <span class="version-badge" id="versionBadge">v30.16</span>
+        <span class="version-badge" id="versionBadge">v30.17</span>
     </div>
     <div class="top-stats">
         <div class="stats-badge" style="color: var(--primary);">👑 <span id="uiLevel">1</span></div>
@@ -85,6 +85,14 @@
     <button id="btnArcade" onclick="showTab('arcade')">🎮 Arcade</button>
     <button id="btnStory" onclick="showTab('story')">📖 KI-Märchen</button>
     <button id="btn3" onclick="showTab('list')">📚 Liste</button>
+</div>
+
+<div id="ttsUnlockBanner" style="display:none; background:linear-gradient(135deg,#4F46E5,#7C3AED); color:white; border-radius:16px; padding:16px 20px; margin-bottom:15px; align-items:center; justify-content:space-between; gap:12px; box-shadow:0 10px 25px -5px rgba(79,70,229,0.4); animation:fadeIn 0.4s ease-out; transition:opacity 0.3s ease, transform 0.3s ease;">
+    <div>
+        <div style="font-weight:800; font-size:1rem;">🔇 Sprachausgabe nicht aktiv</div>
+        <div style="font-size:0.8rem; opacity:0.85; margin-top:3px;">Einmal tippen — dauerhaft aktivieren</div>
+    </div>
+    <button onclick="activateTTS()" style="background:white; color:#4F46E5; border:none; border-radius:12px; padding:12px 16px; font-weight:800; font-size:0.9rem; cursor:pointer; white-space:nowrap; flex-shrink:0; box-shadow:0 4px 10px rgba(0,0,0,0.15);">🔊 Ton aktivieren</button>
 </div>
 
 <div id="tabAudio" class="card" style="display:none">
@@ -433,7 +441,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version <span id="footerVersion">30.16</span> (Ultimate Edition) &bull; 2026
+    SprachTutor AI &bull; Version <span id="footerVersion">30.17</span> (Ultimate Edition) &bull; 2026
 </div>
 
 <div id="toastContainer" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>

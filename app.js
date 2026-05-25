@@ -1,4 +1,4 @@
-const APP_VERSION = "30.16";
+const APP_VERSION = "30.17";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -263,7 +263,11 @@ function init() {
     try { const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames); const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx); } catch(e){}
     const todayStr = new Date().toDateString(); if(statsToday.date !== todayStr) { statsToday = {learned:0, added:0, date:todayStr}; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); }
     loadUserLangs(); renderRenameInputs(); updateUserDropdown(); populateLangSelects(); checkStreak(); updateQuests(); updateSaveModeUI(); 
-    showTab('add'); 
+    showTab('add');
+    if (window.speechSynthesis && !localStorage.getItem('ttsUnlocked')) {
+        const b = document.getElementById('ttsUnlockBanner');
+        if (b) b.style.display = 'flex';
+    }
     if(typeof firebase !== 'undefined') { firebase.auth().signInAnonymously().catch((e)=>{}); firebase.auth().onAuthStateChanged((user) => { if (user) { currentUser = user; refreshData(); } }); }
 }
 
@@ -275,6 +279,32 @@ function updateSaveModeUI() {
 function toggleSaveMode() { isFastInputMode = !isFastInputMode; localStorage.setItem('trainerFastInput', isFastInputMode); updateSaveModeUI(); }
 function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
 function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
+
+function activateTTS() {
+    const banner = document.getElementById('ttsUnlockBanner');
+    if (window.speechSynthesis) {
+        const ss = window.speechSynthesis;
+        ss.cancel();
+        ss.resume();
+        const unlock = new SpeechSynthesisUtterance('');
+        unlock.volume = 0;
+        ss.speak(unlock);
+        ss.cancel();
+        ss.resume();
+        setTimeout(() => {
+            const test = buildUtterance('Sprachausgabe aktiviert!', 'de', 1.0);
+            ss.cancel();
+            ss.resume();
+            ss.speak(test);
+        }, 200);
+    }
+    localStorage.setItem('ttsUnlocked', '1');
+    if (banner) {
+        banner.style.opacity = '0';
+        banner.style.transform = 'translateY(-8px)';
+        setTimeout(() => { banner.style.display = 'none'; }, 350);
+    }
+}
 function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); cachedGeminiModel = null; }
 
 function showTab(n) { 
