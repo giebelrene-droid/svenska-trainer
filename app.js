@@ -1,4 +1,4 @@
-const APP_VERSION = "30.13";
+const APP_VERSION = "30.14";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -206,10 +206,45 @@ function buildUtterance(text, langKey, rate) {
     return msg;
 }
 
+function showTTSDebug(text, langKey) {
+    const ss = window.speechSynthesis;
+    const hasSS = !!ss;
+    const paused = hasSS ? ss.paused : 'n/a';
+    const speaking = hasSS ? ss.speaking : 'n/a';
+    const voiceCount = availableVoices.length;
+    let voiceName = 'Standard';
+    if (availableVoices.length > 0) {
+        const voiceSelect = document.getElementById('selAudioVoice');
+        if (voiceSelect && voiceSelect.value) {
+            const sel = availableVoices.find(v => v.name === voiceSelect.value);
+            if (sel) voiceName = sel.name;
+        }
+    }
+    const lines = [
+        '🔊 TTS Debug',
+        'SS vorhanden: ' + (hasSS ? '✅' : '❌'),
+        'paused: ' + paused,
+        'speaking: ' + speaking,
+        'Stimmen: ' + voiceCount,
+        'Stimme: ' + voiceName.slice(0, 30),
+        'Text: "' + (text || '').slice(0, 40) + '"',
+        'Lang: ' + langKey,
+        'isAndroidChrome: ' + isAndroidChrome,
+    ];
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.style.cssText = 'background:#111827;color:#f9fafb;padding:14px 18px;border-radius:14px;font-weight:600;font-size:0.78rem;font-family:monospace;box-shadow:0 10px 25px rgba(0,0,0,0.4);opacity:0;transform:translateY(20px);transition:all 0.3s ease-out;line-height:1.7;white-space:pre;border:1px solid #374151;';
+    toast.textContent = lines.join('\n');
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; }, 10);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; setTimeout(() => toast.remove(), 300); }, 10000);
+}
+
 function speak(text, langKey, rate = 1.0) {
+    showTTSDebug(text, langKey);
     if (!window.speechSynthesis || !text || !text.trim()) return;
     const ss = window.speechSynthesis;
-    // 3) Vor jedem speak(): cancel() dann resume() — einziger bekannter Fix für Chrome Android
     ss.cancel();
     ss.resume();
     const msg = buildUtterance(text, langKey, rate);
