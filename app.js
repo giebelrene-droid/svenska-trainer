@@ -1,4 +1,4 @@
-const APP_VERSION = "30.34";
+const APP_VERSION = "30.35";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -751,7 +751,7 @@ async function testApiKeys() {
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
         const preview = '…' + key.slice(-6);
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[0]}:generateContent?key=${key}`;
+        const url = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODELS[0]}:generateContent?key=${key}`;
         let status = '?', ok = false, detail = '';
         try {
             const resp = await fetch(url, {
@@ -819,7 +819,7 @@ async function listGeminiModels() {
     box.innerHTML = '<span style="color:#94a3b8;">⏳ Rufe Modellliste ab…</span>';
     const key = keys[0];
     try {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${key}`);
         const d = await resp.json();
         if (d.error) {
             box.innerHTML = `<span style="color:#f87171;">❌ API-Fehler ${resp.status}:</span><br><pre style="color:#fbbf24;white-space:pre-wrap;word-break:break-all;margin:4px 0 0;">${escapeHTML(JSON.stringify(d.error, null, 2))}</pre>`;
@@ -1003,7 +1003,7 @@ async function translateAllWithDeepL(text, sourceLangKey) {
 // ==========================================
 // 5b. GEMINI API ANBINDUNG
 // ==========================================
-const GEMINI_MODELS = ['gemini-2.5-flash-preview-05-20', 'gemini-2.5-pro-preview-05-06', 'gemini-1.5-flash-8b', 'gemini-1.5-pro-002'];
+const GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-pro'];
 
 function showApiError(html) {
     let box = document.getElementById('apiErrorBox');
@@ -1053,7 +1053,7 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
 
         for (let i = 0; i < keys.length; i++) {
             const key = keys[currentApiKeyIndex % keys.length];
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+            const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${key}`;
             try {
                 const resp = await fetch(url, {
                     method: "POST",
