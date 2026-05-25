@@ -1,4 +1,4 @@
-const APP_VERSION = "30.12";
+const APP_VERSION = "30.13";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -120,17 +120,28 @@ if (!('speechSynthesis' in window)) {
 }
 
 // ── ANDROID CHROME FIX ───────────────────────────────────────────────────
-// 1) Beim ersten Klick irgendwo auf der Seite: leere Utterance → entsperrt Chrome
-document.addEventListener('click', function unlockTTS() {
-    if (!window.speechSynthesis) return;
-    const u = new SpeechSynthesisUtterance('');
-    u.volume = 0;
-    window.speechSynthesis.speak(u);
-}, { once: true });
+// Erkennung: Android + Chrome, aber nicht Opera, Samsung Browser oder Edge
+const isAndroidChrome = /Android/i.test(navigator.userAgent) &&
+    /Chrome\/\d+/.test(navigator.userAgent) &&
+    !/OPR\/|SamsungBrowser|EdgA\//.test(navigator.userAgent);
+console.log('[TTS] isAndroidChrome:', isAndroidChrome, '| UA:', navigator.userAgent.slice(0, 120));
 
-// 2) Alle 5s resume() aufrufen — verhindert Chrome-Android-Pause-Bug
-if (window.speechSynthesis) {
-    setInterval(() => { window.speechSynthesis.resume(); }, 5000);
+if (isAndroidChrome && window.speechSynthesis) {
+    // 1) Erster Klick → leere Utterance entsperrt Chrome, sofortiges cancel() leert die Queue
+    document.addEventListener('click', function unlockTTS() {
+        const u = new SpeechSynthesisUtterance('');
+        u.volume = 0;
+        window.speechSynthesis.speak(u);
+        window.speechSynthesis.cancel();
+        console.log('[TTS] unlockTTS fired (Android Chrome first click)');
+    }, { once: true });
+
+    // 2) Keepalive alle 10s — verhindert dass Chrome speechSynthesis automatisch pausiert
+    setInterval(() => {
+        const ss = window.speechSynthesis;
+        console.log('[TTS] keepalive — speaking:', ss.speaking, '| paused:', ss.paused);
+        ss.resume();
+    }, 10000);
 }
 // ─────────────────────────────────────────────────────────────────────────
 
