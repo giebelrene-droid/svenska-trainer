@@ -16,6 +16,42 @@
 </head>
 <body>
 
+<!-- ONBOARDING -->
+<div id="onboardingOverlay" style="display:none;">
+    <div class="ob-slide active" id="obs0">
+        <div class="ob-icon">🌍</div>
+        <div class="ob-title">Willkommen bei<br>SprachTutor AI!</div>
+        <div class="ob-desc">Lerne Schwedisch (oder jede andere Sprache) mit KI, Karteikarten und Spielen — in deinem eigenen Tempo.</div>
+    </div>
+    <div class="ob-slide" id="obs1">
+        <div class="ob-icon">📇</div>
+        <div class="ob-title">Smarte Karteikarten</div>
+        <div class="ob-desc">Das Spaced-Repetition-System zeigt dir Wörter genau dann, wenn du sie vergessen würdest. Effizient und effektiv.</div>
+    </div>
+    <div class="ob-slide" id="obs2">
+        <div class="ob-icon">🎮</div>
+        <div class="ob-title">Lernen macht Spaß!</div>
+        <div class="ob-desc">Quiz, Arcade-Spiele, KI-Gespräche und Audio-Trainer — 2500 Wörter warten auf dich. Los geht's!</div>
+    </div>
+    <div class="ob-dots"><div class="ob-dot active" id="od0"></div><div class="ob-dot" id="od1"></div><div class="ob-dot" id="od2"></div></div>
+    <button class="ob-btn" id="obBtn" onclick="obNext()">Weiter →</button>
+</div>
+
+<!-- ACHIEVEMENT POPUP -->
+<div class="ach-popup" id="achPopup">
+    <div style="font-size:2rem;" id="achPopupIcon">🏆</div>
+    <div id="achPopupName" style="font-size:1.1rem;">Achievement!</div>
+    <div id="achPopupDesc" style="font-size:0.78rem; opacity:0.9; margin-top:2px;"></div>
+</div>
+
+<!-- WORD DETAIL OVERLAY -->
+<div id="wordDetailOverlay" onclick="closeWordDetail(event)">
+    <div class="wd-box">
+        <div class="wd-handle"></div>
+        <div id="wdContent"></div>
+    </div>
+</div>
+
 <div id="offlineBanner">⚠️ Datenbank konnte nicht geladen werden. Prüfe deine Verbindung!</div>
 
 <div id="settingsOverlay">
@@ -39,6 +75,10 @@
         <button class="action-btn btn-secondary" onclick="document.getElementById('importFile').click()">📂 Backup laden</button>
         <button class="action-btn btn-success" onclick="forceImportDefaultWords()">📚 Standardwörter importieren</button>
         <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Profil-Vokabeln löschen</button>
+        <div class="setting-row" style="margin-top:15px;">
+            <span style="font-weight:700; font-size:0.95rem;">🌙 Dark Mode</span>
+            <label class="toggle-sw"><input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(this.checked)"><span class="toggle-sl"></span></label>
+        </div>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
         
         <button class="action-btn btn-secondary" onclick="openErrorLog()" style="margin-top: 15px; border-style: dashed;">🐛 Fehlerprotokoll anzeigen</button>
@@ -64,7 +104,7 @@
 <div class="top-bar">
     <div class="app-title-wrap">
         <div class="app-title">SprachTutor AI</div>
-        <span class="version-badge" id="versionBadge">v30.17</span>
+        <span class="version-badge" id="versionBadge">v30.18</span>
     </div>
     <div class="top-stats">
         <div class="stats-badge" style="color: var(--primary);">👑 <span id="uiLevel">1</span></div>
@@ -87,12 +127,104 @@
     <button id="btn3" onclick="showTab('list')">📚 Liste</button>
 </div>
 
+<!-- SUBNAVS -->
+<div id="subnavLearn" class="subnav">
+    <button onclick="showTab('flashcards')">📇 Karteikarten</button>
+    <button onclick="showTab('study')">👀 Spaced Rep.</button>
+    <button onclick="showTab('quiz')">🧩 Quiz</button>
+</div>
+<div id="subnavPractice" class="subnav">
+    <button onclick="showTab('roleplay')">🗣️ Szenarien</button>
+    <button onclick="showTab('chat')">💬 Chat</button>
+    <button onclick="showTab('live')">🎙️ Live</button>
+    <button onclick="showTab('audio')">🎧 Audio</button>
+    <button onclick="showTab('sentences')">📝 Sätze</button>
+</div>
+<div id="subnavMore" class="subnav">
+    <button onclick="showTab('list')">📚 Liste</button>
+    <button onclick="showTab('arcade')">🎮 Arcade</button>
+    <button onclick="showTab('story')">📖 Märchen</button>
+    <button onclick="showTab('achievements')">🏆 Abzeichen</button>
+</div>
+
 <div id="ttsUnlockBanner" style="display:none; background:linear-gradient(135deg,#4F46E5,#7C3AED); color:white; border-radius:16px; padding:16px 20px; margin-bottom:15px; align-items:center; justify-content:space-between; gap:12px; box-shadow:0 10px 25px -5px rgba(79,70,229,0.4); animation:fadeIn 0.4s ease-out; transition:opacity 0.3s ease, transform 0.3s ease;">
     <div>
         <div style="font-weight:800; font-size:1rem;">🔇 Sprachausgabe nicht aktiv</div>
         <div style="font-size:0.8rem; opacity:0.85; margin-top:3px;">Einmal tippen — dauerhaft aktivieren</div>
     </div>
     <button onclick="activateTTS()" style="background:white; color:#4F46E5; border:none; border-radius:12px; padding:12px 16px; font-weight:800; font-size:0.9rem; cursor:pointer; white-space:nowrap; flex-shrink:0; box-shadow:0 4px 10px rgba(0,0,0,0.15);">🔊 Ton aktivieren</button>
+</div>
+
+<!-- HOME / DASHBOARD -->
+<div id="tabHome" class="card" style="display:none">
+    <h2>🏠 Mein Fortschritt</h2>
+    <div id="dailyMotivation" style="background:var(--primary-gradient);color:white;padding:14px 16px;border-radius:16px;margin-bottom:14px;font-weight:700;font-size:0.92rem;line-height:1.5;"></div>
+    <div class="dash-section">
+        <p class="dash-title">📅 Diese Woche gelernt</p>
+        <div class="week-bars" id="weekBars"></div>
+    </div>
+    <div class="dash-section">
+        <p class="dash-title">📊 Wörter nach Level</p>
+        <div id="levelBars"></div>
+    </div>
+    <div class="dash-section">
+        <p class="dash-title">👨‍👩‍👧‍👦 Familien-Rangliste diese Woche</p>
+        <div id="familyLeaderboard"></div>
+    </div>
+    <div class="dash-section">
+        <p class="dash-title">😰 Schwächste Wörter</p>
+        <div id="weakWords"></div>
+    </div>
+</div>
+
+<!-- QUIZ -->
+<div id="tabQuiz" class="card" style="display:none">
+    <h2>🧩 Quiz</h2>
+    <div id="quizSetup">
+        <div style="display:flex;gap:10px;margin-bottom:15px;">
+            <button class="action-btn btn-secondary" style="margin-top:0;flex:1;" onclick="startQuiz('mc')">🎯 Multiple Choice</button>
+            <button class="action-btn btn-secondary" style="margin-top:0;flex:1;" onclick="startQuiz('gap')">✏️ Lückentext</button>
+        </div>
+        <button class="action-btn btn-magic" style="margin-top:0;" onclick="startQuiz('timed')">⏱️ Zeitdruck-Modus</button>
+        <div id="quizHighscore" style="text-align:center;margin-top:20px;"></div>
+    </div>
+    <div id="quizGame" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div style="font-weight:800;font-size:0.85rem;color:var(--text-light);">Frage <span id="qNum">1</span>/<span id="qTotal">10</span></div>
+            <div style="font-weight:800;font-size:0.85rem;color:var(--primary);">⭐ <span id="qScore">0</span> Punkte</div>
+        </div>
+        <div class="quiz-timer-bar"><div class="quiz-timer-fill" id="qTimerFill" style="width:100%"></div></div>
+        <div id="qQuestion" style="font-size:1.4rem;font-weight:800;text-align:center;margin:15px 0;color:var(--primary);"></div>
+        <div id="qOptions"></div>
+        <div id="qGap" style="display:none;">
+            <input type="text" id="qGapInput" placeholder="Antwort eingeben..." style="margin-bottom:10px;">
+            <button class="action-btn" onclick="checkGap()" style="margin-top:0;">Prüfen</button>
+        </div>
+        <div id="qFeedback" style="text-align:center;font-weight:800;font-size:1rem;min-height:24px;margin-top:10px;"></div>
+    </div>
+    <div id="quizResult" style="display:none;text-align:center;padding:20px 0;">
+        <div style="font-size:3rem;margin-bottom:10px;">🎉</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--primary);" id="qFinalScore"></div>
+        <div id="qRating" style="font-size:0.9rem;color:var(--text-light);margin:8px 0 20px;"></div>
+        <button class="action-btn" onclick="startQuiz(lastQuizMode)">🔁 Nochmal</button>
+        <button class="action-btn btn-secondary" onclick="showQuizSetup()" style="margin-top:10px;">Zurück</button>
+    </div>
+</div>
+
+<!-- SATZ-TRAINER -->
+<div id="tabSentences" class="card" style="display:none">
+    <h2>📝 Satz-Trainer</h2>
+    <p style="font-size:0.85rem;color:var(--text-light);margin-top:-15px;">KI generiert täglich 5 Sätze aus deinen Wörtern.</p>
+    <button class="action-btn btn-magic" onclick="generateDailySentences()">✨ 5 Sätze generieren</button>
+    <div id="sentLoader" class="loader">KI generiert Sätze...</div>
+    <div id="sentList" style="margin-top:10px;"></div>
+</div>
+
+<!-- ABZEICHEN -->
+<div id="tabAchievements" class="card" style="display:none">
+    <h2>🏆 Abzeichen</h2>
+    <p style="font-size:0.85rem;color:var(--text-light);margin-top:-15px;" id="achUnlockedCount"></p>
+    <div class="ach-grid" id="achGrid"></div>
 </div>
 
 <div id="tabAudio" class="card" style="display:none">
@@ -441,10 +573,29 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version <span id="footerVersion">30.17</span> (Ultimate Edition) &bull; 2026
+    SprachTutor AI &bull; Version <span id="footerVersion">30.18</span> (Ultimate Edition) &bull; 2026
 </div>
 
-<div id="toastContainer" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+    <button class="bnav-btn" id="bnav-home" onclick="showTab('home')">
+        <span class="bnav-icon">🏠</span>Start
+    </button>
+    <button class="bnav-btn" id="bnav-learn" onclick="showSection('learn')">
+        <span class="bnav-icon">📚</span>Lernen
+    </button>
+    <div class="bnav-center-wrap">
+        <button class="bnav-center" onclick="showTab('add')" title="Wort hinzufügen">➕</button>
+    </div>
+    <button class="bnav-btn" id="bnav-practice" onclick="showSection('practice')">
+        <span class="bnav-icon">🗣️</span>Üben
+    </button>
+    <button class="bnav-btn" id="bnav-more" onclick="showSection('more')">
+        <span class="bnav-icon">⋯</span>Mehr
+    </button>
+</nav>
+
+<div id="toastContainer" style="position: fixed; bottom: 95px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>
 
 <script src="app.js?v=30.0"></script>
 </body>

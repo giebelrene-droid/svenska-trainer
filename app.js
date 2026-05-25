@@ -1,4 +1,4 @@
-const APP_VERSION = "30.17";
+const APP_VERSION = "30.18";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -259,16 +259,390 @@ function updateVersionDisplay() {
 function init() {
     removeBrokenServiceWorkers();
     updateVersionDisplay();
-    if(document.getElementById('inpGeminiKey')) document.getElementById('inpGeminiKey').value = geminiApiKey; 
+    applyDarkMode();
+    if(document.getElementById('inpGeminiKey')) document.getElementById('inpGeminiKey').value = geminiApiKey;
     try { const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames); const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx); } catch(e){}
     const todayStr = new Date().toDateString(); if(statsToday.date !== todayStr) { statsToday = {learned:0, added:0, date:todayStr}; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); }
-    loadUserLangs(); renderRenameInputs(); updateUserDropdown(); populateLangSelects(); checkStreak(); updateQuests(); updateSaveModeUI(); 
-    showTab('add');
+    loadUserLangs(); renderRenameInputs(); updateUserDropdown(); populateLangSelects(); checkStreak(); updateQuests(); updateSaveModeUI();
+    // Onboarding on first visit
+    if (!localStorage.getItem('onboardingDone')) { showOnboarding(); } else { showTab('home'); }
     if (window.speechSynthesis && !localStorage.getItem('ttsUnlocked')) {
         const b = document.getElementById('ttsUnlockBanner');
         if (b) b.style.display = 'flex';
     }
     if(typeof firebase !== 'undefined') { firebase.auth().signInAnonymously().catch((e)=>{}); firebase.auth().onAuthStateChanged((user) => { if (user) { currentUser = user; refreshData(); } }); }
+}
+
+// ==========================================
+// DARK MODE
+// ==========================================
+function applyDarkMode() {
+    const stored = localStorage.getItem('darkMode');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const on = stored !== null ? stored === '1' : prefersDark;
+    document.documentElement.setAttribute('data-theme', on ? 'dark' : 'light');
+    const tog = document.getElementById('darkModeToggle');
+    if (tog) tog.checked = on;
+}
+function toggleDarkMode(on) {
+    localStorage.setItem('darkMode', on ? '1' : '0');
+    document.documentElement.setAttribute('data-theme', on ? 'dark' : 'light');
+}
+window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (localStorage.getItem('darkMode') === null) applyDarkMode();
+});
+
+// ==========================================
+// NAVIGATION — BOTTOM BAR + SUBNAVS
+// ==========================================
+const TAB_TO_SECTION = {
+    home:'home', add:'add',
+    flashcards:'learn', study:'learn', quiz:'learn',
+    roleplay:'practice', chat:'practice', live:'practice', audio:'practice', sentences:'practice',
+    list:'more', arcade:'more', story:'more', achievements:'more'
+};
+const SECTION_SUBNAVS = { learn:'subnavLearn', practice:'subnavPractice', more:'subnavMore' };
+const SECTION_DEFAULT = { home:'home', learn:'flashcards', add:'add', practice:'roleplay', more:'list' };
+
+function showSection(name) { showTab(SECTION_DEFAULT[name]); }
+
+// ==========================================
+// ONBOARDING
+// ==========================================
+let obCurrent = 0;
+function showOnboarding() {
+    const ov = document.getElementById('onboardingOverlay');
+    if (ov) { ov.style.display = 'flex'; setObSlide(0); }
+}
+function setObSlide(n) {
+    obCurrent = n;
+    [0,1,2].forEach(i => {
+        document.getElementById('obs'+i).classList.toggle('active', i===n);
+        document.getElementById('od'+i).classList.toggle('active', i===n);
+    });
+    const btn = document.getElementById('obBtn');
+    if (btn) btn.textContent = n < 2 ? 'Weiter →' : '🚀 Los geht\'s!';
+}
+function obNext() {
+    if (obCurrent < 2) { setObSlide(obCurrent + 1); return; }
+    localStorage.setItem('onboardingDone', '1');
+    const ov = document.getElementById('onboardingOverlay');
+    if (ov) { ov.style.opacity = '0'; ov.style.transition = 'opacity 0.4s'; setTimeout(() => { ov.style.display = 'none'; }, 400); }
+    showTab('home');
+}
+
+// ==========================================
+// ACHIEVEMENTS
+// ==========================================
+const ACHIEVEMENTS = [
+    { id:'first10',   icon:'🌱', name:'Erste Schritte',  desc:'10 Wörter hinzugefügt',   check:()=>allWords.length>=10 },
+    { id:'words50',   icon:'📗', name:'Sammler',         desc:'50 Wörter',               check:()=>allWords.length>=50 },
+    { id:'words100',  icon:'📚', name:'Wortschatz',      desc:'100 Wörter',              check:()=>allWords.length>=100 },
+    { id:'words500',  icon:'🏛️', name:'Bibliothek',      desc:'500 Wörter',              check:()=>allWords.length>=500 },
+    { id:'words2000', icon:'🌐', name:'Polyglott',       desc:'2000 Wörter',             check:()=>allWords.length>=2000 },
+    { id:'streak3',   icon:'🔥', name:'Am Ball bleiben', desc:'3 Tage Streak',           check:()=>userStreak>=3 },
+    { id:'streak7',   icon:'⚡', name:'Wochenkrieger',   desc:'7 Tage Streak',           check:()=>userStreak>=7 },
+    { id:'streak30',  icon:'💎', name:'Monatsheld',      desc:'30 Tage Streak',          check:()=>userStreak>=30 },
+    { id:'xp100',     icon:'⭐', name:'Fleißig',         desc:'100 XP gesammelt',        check:()=>userXP>=100 },
+    { id:'xp500',     icon:'🌟', name:'Eifer',           desc:'500 XP gesammelt',        check:()=>userXP>=500 },
+    { id:'xp2000',    icon:'🏆', name:'Meister',         desc:'2000 XP gesammelt',       check:()=>userXP>=2000 },
+    { id:'quiz10',    icon:'🧩', name:'Quiz-Starter',    desc:'10 Quiz-Fragen richtig',  check:()=>(parseInt(localStorage.getItem('quizCorrect')||0))>=10 },
+    { id:'quiz50',    icon:'🎯', name:'Quiz-Meister',    desc:'50 Quiz-Fragen richtig',  check:()=>(parseInt(localStorage.getItem('quizCorrect')||0))>=50 },
+    { id:'fc100',     icon:'📇', name:'Karten-Fan',      desc:'100 Karten geübt',        check:()=>(parseInt(localStorage.getItem('fcPracticed')||0))>=100 },
+    { id:'allLevels', icon:'🎓', name:'Level-Up!',       desc:'Ein Wort auf Level 5',    check:()=>allWords.some(w=>(w.level||0)>=5) },
+];
+let unlockedAch = new Set(JSON.parse(localStorage.getItem('unlockedAch')||'[]'));
+
+function checkAchievements() {
+    ACHIEVEMENTS.forEach(a => {
+        if (!unlockedAch.has(a.id) && a.check()) {
+            unlockedAch.add(a.id);
+            localStorage.setItem('unlockedAch', JSON.stringify([...unlockedAch]));
+            showAchievementPopup(a);
+        }
+    });
+    renderAchievements();
+}
+function showAchievementPopup(a) {
+    const p = document.getElementById('achPopup');
+    if (!p) return;
+    document.getElementById('achPopupIcon').textContent = a.icon;
+    document.getElementById('achPopupName').textContent = a.name;
+    document.getElementById('achPopupDesc').textContent = a.desc;
+    p.classList.add('show');
+    setTimeout(() => p.classList.remove('show'), 3500);
+}
+function renderAchievements() {
+    const grid = document.getElementById('achGrid');
+    if (!grid) return;
+    grid.innerHTML = ACHIEVEMENTS.map(a => `<div class="ach-item${unlockedAch.has(a.id)?' unlocked':''}"><span class="ach-icon">${a.icon}</span><span class="ach-name">${a.name}</span></div>`).join('');
+    const cnt = document.getElementById('achUnlockedCount');
+    if (cnt) cnt.textContent = `${unlockedAch.size} von ${ACHIEVEMENTS.length} freigeschaltet`;
+}
+
+// ==========================================
+// DASHBOARD
+// ==========================================
+const MOTIVATIONS = [
+    '🌅 Heute ist ein guter Tag zum Lernen!',
+    '💪 Kontinuität schlägt Intensität — jeden Tag ein bisschen!',
+    '🧠 Jedes neue Wort öffnet eine neue Tür.',
+    '🚀 Du bist {streak} Tage am Stück dabei — weiter so!',
+    '🌍 Die Welt gehört denen, die ihre Sprache sprechen.',
+    '⚡ Kurz aber regelmäßig — so funktioniert Sprachenlernen.',
+    '🎯 Fokus auf die schwachen Wörter — da wächst du am meisten!',
+];
+function renderDashboard() {
+    const mot = document.getElementById('dailyMotivation');
+    if (mot) {
+        const m = MOTIVATIONS[Math.floor(Math.random()*MOTIVATIONS.length)];
+        mot.innerHTML = m.replace('{streak}', `<strong>${userStreak}</strong>`);
+    }
+    renderWeekBars();
+    renderLevelBars();
+    renderFamilyLeaderboard();
+    renderWeakWords();
+}
+function recordDailyActivity() {
+    const today = new Date().toDateString();
+    let hist = JSON.parse(localStorage.getItem('weekActivity')||'{}');
+    hist[today] = (hist[today]||0) + 1;
+    // keep only last 30 days
+    const keys = Object.keys(hist).sort((a,b)=>new Date(a)-new Date(b));
+    if (keys.length > 30) keys.slice(0, keys.length-30).forEach(k=>delete hist[k]);
+    localStorage.setItem('weekActivity', JSON.stringify(hist));
+}
+function renderWeekBars() {
+    const el = document.getElementById('weekBars');
+    if (!el) return;
+    const hist = JSON.parse(localStorage.getItem('weekActivity')||'{}');
+    const days = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+    const today = new Date();
+    const weekData = [];
+    for (let i=6; i>=0; i--) {
+        const d = new Date(today); d.setDate(today.getDate()-i);
+        const key = d.toDateString();
+        weekData.push({ label: days[d.getDay()===0?6:d.getDay()-1], count: hist[key]||0 });
+    }
+    const max = Math.max(1, ...weekData.map(d=>d.count));
+    el.innerHTML = weekData.map(d => `<div class="week-bar-wrap">
+        <div class="week-bar-num">${d.count||''}</div>
+        <div class="week-bar" style="height:${Math.max(4,(d.count/max)*60)}px"></div>
+        <div class="week-bar-label">${d.label}</div>
+    </div>`).join('');
+}
+function renderLevelBars() {
+    const el = document.getElementById('levelBars');
+    if (!el || !allWords.length) return;
+    const LEVEL_COLORS = ['#9CA3AF','#FCD34D','#F59E0B','#10B981','#3B82F6','#4F46E5'];
+    const counts = [0,0,0,0,0,0];
+    allWords.forEach(w => counts[Math.min(5,w.level||0)]++);
+    el.innerHTML = counts.map((c,i) => `<div class="level-bar-row">
+        <span style="font-size:0.75rem;font-weight:800;width:52px;color:var(--text-light)">Level ${i}</span>
+        <div class="level-bar-bg"><div class="level-bar-fill" style="width:${allWords.length?((c/allWords.length)*100).toFixed(1):0}%;background:${LEVEL_COLORS[i]}"></div></div>
+        <span style="font-size:0.72rem;font-weight:800;width:28px;text-align:right;color:var(--text-light)">${c}</span>
+    </div>`).join('');
+}
+function renderFamilyLeaderboard() {
+    const el = document.getElementById('familyLeaderboard');
+    if (!el) return;
+    const medals = ['🥇','🥈','🥉','4️⃣'];
+    const weekActs = JSON.parse(localStorage.getItem('weekActPerUser')||'{}');
+    const entries = userNames.map((n,i) => ({ name:n, xp: parseInt(weekActs[i]||0) }))
+        .sort((a,b)=>b.xp-a.xp);
+    el.innerHTML = entries.map((e,i) => `<div class="family-row">
+        <span class="family-medal">${medals[i]}</span>
+        <span class="family-name">${escapeHTML(e.name)}</span>
+        <span class="family-xp">${e.xp} XP</span>
+    </div>`).join('');
+}
+function renderWeakWords() {
+    const el = document.getElementById('weakWords');
+    if (!el) return;
+    const weak = [...allWords].filter(w=>(w.level||0)<=1).sort((a,b)=>(a.level||0)-(b.level||0)).slice(0,5);
+    if (!weak.length) { el.innerHTML = '<p style="font-size:0.85rem;color:var(--text-light);margin:0;">Keine schwachen Wörter — super!</p>'; return; }
+    el.innerHTML = weak.map(w=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border-soft);">
+        <span style="font-weight:700">${escapeHTML(w[conf.l1])}</span>
+        <span style="font-size:0.8rem;color:var(--text-light)">${escapeHTML(w[conf.l3])}</span>
+        <span class="level-dot lvl-${w.level||0}"></span>
+    </div>`).join('');
+}
+
+// ==========================================
+// QUIZ MODE
+// ==========================================
+let quizWords=[], quizIndex=0, quizScore=0, quizTimerInterval=null, quizTimerLeft=15, lastQuizMode='mc';
+function showQuizSetup() {
+    document.getElementById('quizSetup').style.display='block';
+    document.getElementById('quizGame').style.display='none';
+    document.getElementById('quizResult').style.display='none';
+    const hs = localStorage.getItem('quizHighscore')||'0';
+    document.getElementById('quizHighscore').innerHTML = `<span style="font-size:0.85rem;color:var(--text-light)">🏆 Highscore: <strong>${hs} Punkte</strong></span>`;
+}
+function startQuiz(mode) {
+    if (allWords.length < 4) return showToast('Min. 4 Wörter für Quiz nötig!','error');
+    lastQuizMode = mode;
+    quizWords = [...allWords].sort(()=>0.5-Math.random()).slice(0,10);
+    quizIndex = 0; quizScore = 0;
+    document.getElementById('quizSetup').style.display='none';
+    document.getElementById('quizGame').style.display='block';
+    document.getElementById('quizResult').style.display='none';
+    document.getElementById('qTotal').textContent=quizWords.length;
+    renderQuizQuestion(mode);
+}
+function renderQuizQuestion(mode) {
+    if (quizIndex >= quizWords.length) { endQuiz(); return; }
+    clearInterval(quizTimerInterval);
+    const w = quizWords[quizIndex];
+    document.getElementById('qNum').textContent = quizIndex+1;
+    document.getElementById('qScore').textContent = quizScore;
+    document.getElementById('qFeedback').textContent='';
+    document.getElementById('qGap').style.display='none';
+    document.getElementById('qOptions').innerHTML='';
+    document.getElementById('qQuestion').textContent = w[conf.l1];
+    if (mode==='gap') {
+        const blanked = w[conf.l3].replace(/\S/g,(c,i)=>i===0?c:'_');
+        document.getElementById('qQuestion').textContent = `${w[conf.l1]} → ${blanked}`;
+        document.getElementById('qGap').style.display='block';
+        document.getElementById('qGapInput').value='';
+        document.getElementById('qGapInput').focus();
+    } else {
+        const wrongs = allWords.filter(x=>x.id!==w.id).sort(()=>0.5-Math.random()).slice(0,3).map(x=>x[conf.l3]);
+        const opts = [w[conf.l3],...wrongs].sort(()=>0.5-Math.random());
+        document.getElementById('qOptions').innerHTML = opts.map(o=>`<button class="quiz-option" onclick="checkAnswer(this,'${escapeHTML(o).replace(/'/g,"\\'")}','${escapeHTML(w[conf.l3]).replace(/'/g,"\\'")}','${mode}')">${escapeHTML(o)}</button>`).join('');
+    }
+    if (mode==='timed') {
+        quizTimerLeft=15;
+        document.getElementById('qTimerFill').style.width='100%';
+        quizTimerInterval = setInterval(()=>{
+            quizTimerLeft--;
+            document.getElementById('qTimerFill').style.width=`${(quizTimerLeft/15)*100}%`;
+            if (quizTimerLeft<=0) { clearInterval(quizTimerInterval); autoWrongQuiz(mode); }
+        },1000);
+    } else { document.getElementById('qTimerFill').style.width='100%'; }
+}
+function checkAnswer(btn, chosen, correct, mode) {
+    clearInterval(quizTimerInterval);
+    const isRight = chosen===correct;
+    document.querySelectorAll('.quiz-option').forEach(b=>{
+        if (b.textContent===correct) b.classList.add('correct');
+    });
+    if (!isRight) { btn.classList.add('wrong'); }
+    else { quizScore += mode==='timed' ? Math.max(1,quizTimerLeft)*10 : 10; incrementQuizCorrect(); }
+    document.getElementById('qFeedback').textContent = isRight ? '✅ Richtig!' : `❌ Richtig: ${correct}`;
+    document.getElementById('qScore').textContent = quizScore;
+    document.querySelectorAll('.quiz-option').forEach(b=>b.disabled=true);
+    setTimeout(()=>{ quizIndex++; renderQuizQuestion(mode); }, 1200);
+}
+function checkGap() {
+    clearInterval(quizTimerInterval);
+    const w = quizWords[quizIndex];
+    const inp = document.getElementById('qGapInput').value.trim().toLowerCase();
+    const correct = (w[conf.l3]||'').trim().toLowerCase();
+    const isRight = inp===correct;
+    if (isRight) { quizScore+=10; incrementQuizCorrect(); }
+    document.getElementById('qFeedback').textContent = isRight ? '✅ Richtig!' : `❌ Richtig: ${w[conf.l3]}`;
+    document.getElementById('qGap').querySelector('button').disabled=true;
+    setTimeout(()=>{ quizIndex++; renderQuizQuestion(lastQuizMode); }, 1400);
+}
+function autoWrongQuiz(mode) {
+    document.getElementById('qFeedback').textContent = `⏱️ Zeit! Richtig: ${quizWords[quizIndex][conf.l3]}`;
+    document.querySelectorAll('.quiz-option').forEach(b=>b.disabled=true);
+    setTimeout(()=>{ quizIndex++; renderQuizQuestion(mode); }, 1200);
+}
+function incrementQuizCorrect() {
+    const v = parseInt(localStorage.getItem('quizCorrect')||'0')+1;
+    localStorage.setItem('quizCorrect',v);
+    checkAchievements();
+}
+function endQuiz() {
+    clearInterval(quizTimerInterval);
+    document.getElementById('quizGame').style.display='none';
+    document.getElementById('quizResult').style.display='block';
+    document.getElementById('qFinalScore').textContent=`${quizScore} Punkte`;
+    const pct = Math.round((quizScore/(quizWords.length*10))*100);
+    const msgs = [[80,'🌟 Hervorragend!'],[60,'👍 Gut gemacht!'],[40,'😊 Solide!'],[0,'💪 Weiter üben!']];
+    document.getElementById('qRating').textContent = msgs.find(([t])=>pct>=t)[1];
+    const hs = parseInt(localStorage.getItem('quizHighscore')||'0');
+    if (quizScore>hs) localStorage.setItem('quizHighscore',quizScore);
+    addXP(Math.floor(quizScore/10));
+    checkAchievements();
+}
+
+// ==========================================
+// WORD DETAILS MODAL
+// ==========================================
+let wdExampleCache = {};
+function openWordDetail(id) {
+    const w = allWords.find(x=>x.id===id);
+    if (!w) return;
+    const ov = document.getElementById('wordDetailOverlay');
+    if (!ov) return;
+    const nextStr = w.nextReview ? new Date(w.nextReview).toLocaleDateString('de-DE') : 'Jetzt';
+    document.getElementById('wdContent').innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <h3 style="margin:0;font-size:1.5rem;color:var(--primary)">${escapeHTML(w[conf.l1])}</h3>
+            <div style="display:flex;gap:8px;">
+                <button class="icon-btn" onclick="speak('${safeJS(w[conf.l3])}','${conf.l3}')" style="font-size:1.1rem;padding:8px;">🔊</button>
+                <button class="icon-btn" onclick="closeWordDetail();editWord('${w.id}')" style="font-size:1rem;padding:8px;">✎</button>
+            </div>
+        </div>
+        <div class="wd-row"><span style="font-size:1.4rem">${ALL_LANGS[conf.l1].flag}</span><span style="flex:1;font-weight:800">${escapeHTML(w[conf.l1])}</span></div>
+        <div class="wd-row"><span style="font-size:1.4rem">${ALL_LANGS[conf.l2].flag}</span><span style="flex:1;font-weight:800">${escapeHTML(w[conf.l2])}</span></div>
+        <div class="wd-row"><span style="font-size:1.4rem">${ALL_LANGS[conf.l3].flag}</span><span style="flex:1;font-weight:800">${escapeHTML(w[conf.l3])}</span><button class="icon-btn" onclick="speak('${safeJS(w[conf.l3])}','${conf.l3}')" style="font-size:0.9rem;padding:6px;border:none;background:transparent;">🔊</button></div>
+        <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;">
+            <span style="background:var(--primary-gradient);color:white;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:800;">Level ${w.level||0}</span>
+            <span style="background:rgba(229,231,235,0.6);padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:800;color:var(--text-light);">Nächste Wiederholung: ${nextStr}</span>
+        </div>
+        <div id="wdExampleArea"><button class="action-btn btn-secondary" style="font-size:0.85rem;padding:10px;margin-top:0;" onclick="loadWdExample('${w.id}','${safeJS(w[conf.l1])}','${safeJS(w[conf.l3])}')">✨ Beispielsatz generieren</button></div>
+    `;
+    if (wdExampleCache[id]) showWdExample(id, wdExampleCache[id]);
+    ov.style.display = 'flex';
+}
+function closeWordDetail(e) {
+    if (e && e.target !== document.getElementById('wordDetailOverlay')) return;
+    document.getElementById('wordDetailOverlay').style.display='none';
+}
+async function loadWdExample(id, l1Word, l3Word) {
+    const area = document.getElementById('wdExampleArea');
+    if (!area) return;
+    area.innerHTML='<div class="loader" style="display:block;margin:0;">KI generiert...</div>';
+    const res = await callGemini(`Erstelle einen kurzen Beispielsatz (max 8 Wörter) auf ${ALL_LANGS[conf.l3].name} mit dem Wort "${l3Word}". Format: "${l3Word}" Satz auf ${ALL_LANGS[conf.l3].name} ||| Deutsche Übersetzung`);
+    if (res) {
+        wdExampleCache[id] = res;
+        showWdExample(id, res);
+    } else { area.innerHTML='<p style="font-size:0.8rem;color:var(--text-light)">Fehler beim Generieren.</p>'; }
+}
+function showWdExample(id, res) {
+    const area = document.getElementById('wdExampleArea');
+    if (!area) return;
+    const parts = res.split('|||');
+    const w = allWords.find(x=>x.id===id);
+    area.innerHTML = `<div class="wd-example">
+        <div style="font-weight:800;margin-bottom:4px;">${escapeHTML((parts[0]||'').trim())}</div>
+        <div style="font-size:0.82rem;color:var(--text-light)">${escapeHTML((parts[1]||'').trim())}</div>
+        <button class="icon-btn" onclick="speak('${safeJS((parts[0]||'').trim())}','${conf.l3}')" style="font-size:0.85rem;padding:5px;border:none;background:transparent;margin-top:6px;">🔊 Anhören</button>
+    </div>`;
+}
+
+// ==========================================
+// SENTENCE TRAINER
+// ==========================================
+async function generateDailySentences() {
+    if (allWords.length < 3) return showToast('Min. 3 Wörter nötig!','error');
+    document.getElementById('sentLoader').style.display='block';
+    document.getElementById('sentList').innerHTML='';
+    const sample = [...allWords].sort(()=>0.5-Math.random()).slice(0,8).map(w=>w[conf.l3]).join(', ');
+    const res = await callGemini(`Erstelle genau 5 kurze Beispielsätze auf ${ALL_LANGS[conf.l3].name} (max je 10 Wörter) die diese Wörter verwenden: ${sample}. Format: jeder Satz auf einer eigenen Zeile, dann nach "---" die deutschen Übersetzungen in derselben Reihenfolge.`);
+    document.getElementById('sentLoader').style.display='none';
+    if (!res) return showToast('Fehler beim Generieren.','error');
+    const halves = res.split('---');
+    const svLines = (halves[0]||'').trim().split('\n').map(s=>s.trim()).filter(Boolean);
+    const deLines = (halves[1]||'').trim().split('\n').map(s=>s.trim()).filter(Boolean);
+    document.getElementById('sentList').innerHTML = svLines.map((s,i)=>`<div class="sent-item">
+        <div class="sent-l3">${escapeHTML(s)} <button onclick="speak('${safeJS(s)}','${conf.l3}')" style="border:none;background:transparent;cursor:pointer;font-size:1rem;">🔊</button></div>
+        <div class="sent-l1">${escapeHTML(deLines[i]||'')}</div>
+    </div>`).join('');
 }
 
 function updateSaveModeUI() {
@@ -307,25 +681,48 @@ function activateTTS() {
 }
 function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); cachedGeminiModel = null; }
 
-function showTab(n) { 
+function showTab(n) {
     try {
-        if(isLiveRecording) toggleLiveRecord(); 
+        if(isLiveRecording) toggleLiveRecord();
         if(isChatSessionActive) toggleChatRecord();
-        if(isAudioRunning && n !== 'audio') toggleAudioTrainer(); 
-        
-        document.querySelectorAll('.nav-scroll button').forEach(b=>b.classList.remove('active')); 
-        const btnMap = { 'add':'btn1', 'flashcards':'btnFlash', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'arcade':'btnArcade', 'story':'btnStory', 'roleplay':'btnRoleplay', 'audio':'btnAudio' };
-        if(btnMap[n] && document.getElementById(btnMap[n])) document.getElementById(btnMap[n]).classList.add('active');
-        
-        const tabs = ['tabAdd', 'tabFlashcards', 'tabChat','tabLive','tabStudy','tabList','tabArcade','tabStory','tabRoleplay', 'tabAudio'];
-        tabs.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+        if(isAudioRunning && n !== 'audio') toggleAudioTrainer();
+
+        // Hide all tabs
+        const allTabIds = ['tabAdd','tabFlashcards','tabChat','tabLive','tabStudy','tabList','tabArcade','tabStory','tabRoleplay','tabAudio','tabHome','tabQuiz','tabSentences','tabAchievements'];
+        allTabIds.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
         const activeTab = document.getElementById('tab' + n.charAt(0).toUpperCase() + n.slice(1));
         if(activeTab) activeTab.style.display = 'block';
-        
+
+        // Bottom nav active state
+        const section = TAB_TO_SECTION[n] || 'home';
+        document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+        const bnavBtn = document.getElementById('bnav-'+section);
+        if (bnavBtn) bnavBtn.classList.add('active');
+
+        // Show correct subnav, update its active button
+        ['subnavLearn','subnavPractice','subnavMore'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.classList.remove('visible'); el.querySelectorAll('button').forEach(b=>b.classList.remove('active')); }
+        });
+        const subnavId = SECTION_SUBNAVS[section];
+        if (subnavId) {
+            const subnav = document.getElementById(subnavId);
+            if (subnav) {
+                subnav.classList.add('visible');
+                subnav.querySelectorAll('button').forEach(b => {
+                    if ((b.getAttribute('onclick')||'').includes(`'${n}'`)) b.classList.add('active');
+                });
+            }
+        }
+
         if(n === 'list') { document.getElementById('listSearch').value = ''; renderList(); }
         if(n === 'study') generateStudyList();
-        if(n === 'flashcards' && fcPool.length === 0) initFlashcards(false); 
+        if(n === 'flashcards' && fcPool.length === 0) initFlashcards(false);
         if(n === 'arcade') openMiniGame('Menu');
+        if(n === 'home') renderDashboard();
+        if(n === 'quiz') showQuizSetup();
+        if(n === 'achievements') renderAchievements();
+        recordDailyActivity();
     } catch(err) { logCustomError("Tab Navigation", err); }
 }
 
@@ -349,7 +746,16 @@ function fireConfetti() {
 
 function speakInput(inputId, slot) { const text = document.getElementById(inputId).value; if(!text) return; const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3); speak(text, langKey); }
 function checkStreak() { const today = new Date().toDateString(); if(lastActiveDate !== today) { const yesterday = new Date(Date.now() - 86400000).toDateString(); if(lastActiveDate === yesterday) { userStreak++; } else { userStreak = 1; } lastActiveDate = today; localStorage.setItem('trainerLastDate', today); localStorage.setItem('trainerStreak', userStreak); } updateStatsUI(); }
-function addXP(amount) { userXP += amount; localStorage.setItem('trainerXP', userXP); updateStatsUI(); }
+function addXP(amount) {
+    userXP += amount;
+    localStorage.setItem('trainerXP', userXP);
+    // Track per-user weekly XP for family leaderboard
+    const wap = JSON.parse(localStorage.getItem('weekActPerUser')||'{}');
+    wap[currentCollIndex] = (wap[currentCollIndex]||0) + amount;
+    localStorage.setItem('weekActPerUser', JSON.stringify(wap));
+    updateStatsUI();
+    checkAchievements();
+}
 function getUserLevel() { return Math.floor(userXP / 100) + 1; }
 function updateStatsUI() { if(document.getElementById('uiStreak')) document.getElementById('uiStreak').innerText = userStreak; if(document.getElementById('uiXP')) document.getElementById('uiXP').innerText = userXP; if(document.getElementById('uiLevel')) document.getElementById('uiLevel').innerText = getUserLevel(); }
 function updateQuests() { try { if(statsToday.learned >= 5) { const q1 = document.getElementById('q1'); if(q1) q1.classList.add('quest-done'); } if(statsToday.added >= 2) { const q2 = document.getElementById('q2'); if(q2) q2.classList.add('quest-done'); } } catch(e){} }
@@ -592,7 +998,13 @@ async function initFlashcards(useFilter = false) {
         const res = await callGemini(prompt); document.getElementById('fcLoader').style.display = 'none';
         if (res) { try { let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const sIdx = cleanStr.indexOf('['); const eIdx = cleanStr.lastIndexOf(']'); if (sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1); const matchedWords = JSON.parse(cleanStr); filteredWords = allWords.filter(w => matchedWords.includes(w[conf.l1])); if (filteredWords.length === 0) { showToast("Keine passenden Wörter zum Thema gefunden.", "info"); filteredWords = [...allWords]; topicInput.value = ""; } } catch(e) { showToast("⚠️ Fehler beim KI-Filtern.", "error"); filteredWords = [...allWords]; } } else { filteredWords = [...allWords]; }
     }
-    fcPool = filteredWords.sort(() => 0.5 - Math.random()); fcIndex = 0; fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] }; updateFcHistoryCounts(); document.getElementById('fcHistoryList').style.display = 'none'; renderFc();
+    // Prioritize low-level (weak) words by weighted shuffle
+    filteredWords.sort((a, b) => {
+        const wa = (6 - (a.level || 0)) + Math.random() * 2;
+        const wb = (6 - (b.level || 0)) + Math.random() * 2;
+        return wb - wa;
+    });
+    fcPool = filteredWords; fcIndex = 0; fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] }; updateFcHistoryCounts(); document.getElementById('fcHistoryList').style.display = 'none'; renderFc();
 }
 function renderFc() {
     document.getElementById('fcFeedbackBox').style.display = 'none';
@@ -707,10 +1119,10 @@ function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRe
 function editWord(id) { const w = allWords.find(item => item.id === id); if(!w) return; document.getElementById('editId').value = id; document.getElementById('inDe').value = w[conf.l1] || ""; document.getElementById('inEn').value = w[conf.l2] || ""; document.getElementById('inSv').value = w[conf.l3] || ""; document.getElementById('addTitle').innerText = "✎ Bearbeiten"; document.getElementById('cancelBtn').style.display = "block"; showTab('add'); }
 function resetAddForm() { document.getElementById('editId').value = ""; ['inDe','inEn','inSv'].forEach(id => document.getElementById(id).value = ""); document.getElementById('addTitle').innerText = "➕ Neues Wort"; document.getElementById('cancelBtn').style.display = "none"; }
 function debouncedFilterListWords() { clearTimeout(listDebounceTimer); listDebounceTimer = setTimeout(renderList, 300); }
-function renderList() { const q = document.getElementById('listSearch') ? document.getElementById('listSearch').value.toLowerCase().trim() : ""; const filtered = q ? allWords.filter(w => (w[conf.l1] && w[conf.l1].toLowerCase().includes(q)) || (w[conf.l3] && w[conf.l3].toLowerCase().includes(q))) : allWords; document.getElementById('listCont').innerHTML = filtered.map(w => `<div class="card" style="padding:15px; margin-bottom:10px;"><div class="word-item-actions"><button class="icon-btn" onclick="editWord('${w.id}')" style="padding:8px; font-size:1rem;">✎</button><button class="icon-btn danger" onclick="delWord('${w.id}')" style="padding:8px; font-size:1rem;">X</button></div><div style="font-weight:800; color:var(--primary); font-size:1.1rem; padding-right:80px;"><span class="level-dot lvl-${w.level||0}"></span>${escapeHTML(w[conf.l1])}</div><div style="color:var(--text-light); font-size:0.9rem; margin-top:5px; padding-left: 20px;">${escapeHTML(w[conf.l3])} | ${escapeHTML(w[conf.l2])}</div></div>`).join(''); }
+function renderList() { const q = document.getElementById('listSearch') ? document.getElementById('listSearch').value.toLowerCase().trim() : ""; const filtered = q ? allWords.filter(w => (w[conf.l1] && w[conf.l1].toLowerCase().includes(q)) || (w[conf.l3] && w[conf.l3].toLowerCase().includes(q))) : allWords; document.getElementById('listCont').innerHTML = filtered.map(w => `<div class="card" style="padding:15px; margin-bottom:10px; cursor:pointer;" onclick="openWordDetail('${w.id}')"><div class="word-item-actions"><button class="icon-btn" onclick="event.stopPropagation();editWord('${w.id}')" style="padding:8px; font-size:1rem;">✎</button><button class="icon-btn danger" onclick="event.stopPropagation();delWord('${w.id}')" style="padding:8px; font-size:1rem;">X</button></div><div style="font-weight:800; color:var(--primary); font-size:1.1rem; padding-right:80px;"><span class="level-dot lvl-${w.level||0}"></span>${escapeHTML(w[conf.l1])}</div><div style="color:var(--text-light); font-size:0.9rem; margin-top:5px; padding-left: 20px;">${escapeHTML(w[conf.l3])} | ${escapeHTML(w[conf.l2])}</div></div>`).join(''); }
 async function delWord(id) { if(!db) return; if(confirm("Löschen?")) { await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(id).delete(); refreshData(); } }
 function getNextReviewTimestamp(level) { const daysToWait = [0, 1, 3, 7, 14, 30]; const nextDate = new Date(); nextDate.setDate(nextDate.getDate() + (daysToWait[level] || 0)); return nextDate.getTime(); }
-function manualSave() { if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info"); const eid = document.getElementById('editId').value; const d = { [conf.l1]: document.getElementById('inDe').value, [conf.l2]: document.getElementById('inEn').value, [conf.l3]: document.getElementById('inSv').value }; if(!d[conf.l1]) return showToast("Bitte Feld 1 ausfüllen!", "error"); const ref = db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex); if(!eid) { d.ts = firebase.firestore.FieldValue.serverTimestamp(); d.level = 0; d.nextReview = getNextReviewTimestamp(0); } const promise = eid ? ref.doc(eid).update(d) : ref.add(d); promise.then(() => { if(!eid) { playSound('success'); addXP(10); statsToday.added++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); if(statsToday.added === 2) { addXP(15); fireConfetti(); } } resetAddForm(); refreshData(); if(!isFastInputMode) showTab('list'); else showToast("✅ Wort gespeichert!", "success"); }).catch(e => logCustomError("Wort speichern", e)); }
+function manualSave() { if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info"); const eid = document.getElementById('editId').value; const d = { [conf.l1]: document.getElementById('inDe').value, [conf.l2]: document.getElementById('inEn').value, [conf.l3]: document.getElementById('inSv').value }; if(!d[conf.l1]) return showToast("Bitte Feld 1 ausfüllen!", "error"); const ref = db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex); if(!eid) { d.ts = firebase.firestore.FieldValue.serverTimestamp(); d.level = 0; d.nextReview = getNextReviewTimestamp(0); } const promise = eid ? ref.doc(eid).update(d) : ref.add(d); promise.then(() => { if(!eid) { playSound('success'); addXP(10); statsToday.added++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); recordDailyActivity(); if(statsToday.added === 2) { addXP(15); fireConfetti(); } } resetAddForm(); refreshData(); if(!isFastInputMode) showTab('list'); else showToast("✅ Wort gespeichert!", "success"); }).catch(e => logCustomError("Wort speichern", e)); }
 const DEFAULT_WORDS = [
   // Tiere
   {de:"Hund",en:"Dog",sv:"Hund"},{de:"Katze",en:"Cat",sv:"Katt"},{de:"Vogel",en:"Bird",sv:"Fågel"},
@@ -1813,10 +2225,12 @@ async function refreshData() {
 function onDataReady() {
     const fcTab = document.getElementById('tabFlashcards');
     if (fcTab && fcTab.style.display !== 'none' && fcPool.length === 0) initFlashcards(false);
+    const homeTab = document.getElementById('tabHome');
+    if (homeTab && homeTab.style.display !== 'none') renderDashboard();
 }
 function generateStudyList() { if(!allWords.length) { document.getElementById('studyContainer').innerHTML = "<p style='text-align:center;'>Füge zuerst Wörter hinzu!</p>"; document.getElementById('studyActions').style.display = 'none'; return; } const now = Date.now(); let dueWords = allWords.filter(w => !w.nextReview || w.nextReview <= now); if(dueWords.length === 0) { document.getElementById('studyContainer').innerHTML = "<p style='text-align:center; font-size:1.2rem;'>🎉 Alle aktuellen Vokabeln gelernt!<br>Komm morgen wieder.</p>"; document.getElementById('studyWordCount').innerText="Fertig"; document.getElementById('studyActions').style.display = 'none'; return; } document.getElementById('studyActions').style.display = 'flex'; studyWords = dueWords.sort(() => 0.5 - Math.random()).slice(0, 15); studyIndex = 0; renderStudyWord(); }
 function renderStudyWord() { if(!studyWords.length) return; const w = studyWords[studyIndex]; document.getElementById('studyWordCount').innerText = `${studyIndex+1}/${studyWords.length}`; document.getElementById('studyContainer').innerHTML = `<div style="text-align:center; margin-bottom:10px;"><span class="level-dot lvl-${w.level||0}"></span><span style="font-size:0.8rem; color:var(--text-light); font-weight:bold;">Level ${w.level||0}</span></div><div style="font-size:2.2rem; font-weight:800; color:var(--primary); text-align:center; margin:10px 0;">${escapeHTML(w[conf.l1])}</div><div style="text-align:center; margin-bottom:15px;"><div style="font-size:1.5rem;">${ALL_LANGS[conf.l3].flag} ${escapeHTML(w[conf.l3])} <button class="icon-btn" style="display:inline-flex; border:none; background:transparent;" onclick="speak('${safeJS(w[conf.l3])}','${conf.l3}')">🔊</button></div></div><div style="text-align:center;"><div style="font-size:1.2rem; color:var(--text-light);">${ALL_LANGS[conf.l2].flag} ${escapeHTML(w[conf.l2])}</div></div>`; }
-async function markWord(correct) { if(!studyWords.length || !currentUser || !db) return; const w = studyWords[studyIndex]; let lvl = w.level || 0; if(correct) { lvl = Math.min(5, lvl + 1); playSound('success'); addXP(5); statsToday.learned++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); if(statsToday.learned === 5) { addXP(20); fireConfetti(); } } else { lvl = Math.max(0, lvl - 1); playSound('error'); } w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl); db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}); setTimeout(nextStudyWord, 300); }
+async function markWord(correct) { if(!studyWords.length || !currentUser || !db) return; const w = studyWords[studyIndex]; let lvl = w.level || 0; if(correct) { lvl = Math.min(5, lvl + 1); playSound('success'); addXP(5); statsToday.learned++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); recordDailyActivity(); if(statsToday.learned === 5) { addXP(20); fireConfetti(); } } else { lvl = Math.max(0, lvl - 1); playSound('error'); } w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl); db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}); setTimeout(nextStudyWord, 300); }
 function nextStudyWord() { studyIndex++; if(studyIndex >= studyWords.length) { fireConfetti(); generateStudyList(); } else { renderStudyWord(); } }
 
 window.onload = () => { try { init(); } catch(e) { console.error("Kritischer Fehler beim Starten:", e); } };
