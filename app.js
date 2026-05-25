@@ -1,4 +1,4 @@
-const APP_VERSION = "30.11";
+const APP_VERSION = "30.12";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -1494,6 +1494,207 @@ const DEFAULT_WORDS = [
   {de:"traditionell",en:"traditional",sv:"traditionell"},{de:"beliebt",en:"popular",sv:"populär"},{de:"selten",en:"rare",sv:"sällsynt"},
   {de:"häufig",en:"frequent",sv:"frekvent"},{de:"möglich",en:"possible",sv:"möjlig"},{de:"unmöglich",en:"impossible",sv:"omöjlig"},
   {de:"notwendig",en:"necessary",sv:"nödvändig"},{de:"freiwillig",en:"voluntary",sv:"frivillig"},
+  // IT & Programmierung
+  {de:"Algorithmus",en:"Algorithm",sv:"Algoritm"},{de:"Datenbank",en:"Database",sv:"Databas"},{de:"Variable",en:"Variable",sv:"Variabel"},
+  {de:"Funktion",en:"Function",sv:"Funktion"},{de:"Schleife",en:"Loop",sv:"Loop"},{de:"Bedingung",en:"Condition",sv:"Villkor"},
+  {de:"Fehler",en:"Bug",sv:"Bugg"},{de:"Debuggen",en:"Debugging",sv:"Felsökning"},{de:"Kompilieren",en:"Compiling",sv:"Kompilering"},
+  {de:"Quellcode",en:"Source code",sv:"Källkod"},{de:"Klasse",en:"Class",sv:"Klass"},{de:"Objekt",en:"Object",sv:"Objekt"},
+  {de:"Methode",en:"Method",sv:"Metod"},{de:"Schnittstelle",en:"Interface",sv:"Gränssnitt"},{de:"Bibliothek",en:"Library",sv:"Bibliotek"},
+  {de:"Framework",en:"Framework",sv:"Ramverk"},{de:"Deployment",en:"Deployment",sv:"Driftsättning"},{de:"Server",en:"Server",sv:"Server"},
+  {de:"Client",en:"Client",sv:"Klient"},{de:"API",en:"API",sv:"API"},
+  // Social Media & Kommunikation
+  {de:"Follower",en:"Follower",sv:"Följare"},{de:"Beitrag",en:"Post",sv:"Inlägg"},{de:"Kommentar",en:"Comment",sv:"Kommentar"},
+  {de:"Teilen",en:"Share",sv:"Dela"},{de:"Liken",en:"Like",sv:"Gilla"},{de:"Hashtag",en:"Hashtag",sv:"Hashtag"},
+  {de:"Profil",en:"Profile",sv:"Profil"},{de:"Benachrichtigung",en:"Notification",sv:"Avisering"},{de:"Direktnachricht",en:"Direct message",sv:"Direktmeddelande"},
+  {de:"Livestream",en:"Livestream",sv:"Direktsändning"},{de:"Abonnent",en:"Subscriber",sv:"Prenumerant"},{de:"Inhalt",en:"Content",sv:"Innehåll"},
+  {de:"Influencer",en:"Influencer",sv:"Influencer"},{de:"Viral",en:"Viral",sv:"Viral"},{de:"Trend",en:"Trend",sv:"Trend"},
+  // Energie & Umwelt
+  {de:"Solarenergie",en:"Solar energy",sv:"Solenergi"},{de:"Windkraft",en:"Wind power",sv:"Vindkraft"},{de:"Wasserkraft",en:"Hydropower",sv:"Vattenkraft"},
+  {de:"Kernenergie",en:"Nuclear energy",sv:"Kärnenergi"},{de:"Kohle",en:"Coal",sv:"Kol"},{de:"Erdöl",en:"Oil",sv:"Olja"},
+  {de:"Erdgas",en:"Natural gas",sv:"Naturgas"},{de:"Batterie",en:"Battery",sv:"Batteri"},{de:"Steckdose",en:"Socket",sv:"Uttag"},
+  {de:"Stromleitung",en:"Power line",sv:"Kraftledning"},{de:"Kraftwerk",en:"Power plant",sv:"Kraftverk"},{de:"CO2-Ausstoß",en:"CO2 emission",sv:"CO2-utsläpp"},
+  {de:"Treibhausgas",en:"Greenhouse gas",sv:"Växthusgas"},{de:"Biokraftstoff",en:"Biofuel",sv:"Biobränsle"},{de:"Elektroauto",en:"Electric car",sv:"Elbil"},
+  // Bildung & Universität
+  {de:"Vorlesung",en:"Lecture",sv:"Föreläsning"},{de:"Seminar",en:"Seminar",sv:"Seminarium"},{de:"Hausarbeit",en:"Essay",sv:"Uppsats"},
+  {de:"Abschluss",en:"Degree",sv:"Examen"},{de:"Bachelor",en:"Bachelor",sv:"Kandidat"},{de:"Master",en:"Master",sv:"Master"},
+  {de:"Doktorat",en:"Doctorate",sv:"Doktorat"},{de:"Stipendium",en:"Scholarship",sv:"Stipendium"},{de:"Studiengebühren",en:"Tuition fees",sv:"Studieavgifter"},
+  {de:"Campus",en:"Campus",sv:"Campus"},{de:"Mensa",en:"Canteen",sv:"Matsal"},{de:"Bibliothekskarte",en:"Library card",sv:"Bibliotekskort"},
+  {de:"Prüfung",en:"Exam",sv:"Prov"},{de:"Zeugnis",en:"Certificate",sv:"Betyg"},{de:"Lehrplan",en:"Curriculum",sv:"Läroplan"},
+  // Karriere & Arbeit
+  {de:"Bewerbung",en:"Application",sv:"Ansökan"},{de:"Lebenslauf",en:"CV",sv:"CV"},{de:"Vorstellungsgespräch",en:"Job interview",sv:"Jobbintervju"},
+  {de:"Kündigung",en:"Resignation",sv:"Uppsägning"},{de:"Beförderung",en:"Promotion",sv:"Befordran"},{de:"Gehalt",en:"Salary",sv:"Lön"},
+  {de:"Überstunden",en:"Overtime",sv:"Övertid"},{de:"Homeoffice",en:"Home office",sv:"Hemmakontor"},{de:"Teilzeit",en:"Part-time",sv:"Deltid"},
+  {de:"Vollzeit",en:"Full-time",sv:"Heltid"},{de:"Selbstständig",en:"Freelance",sv:"Frilans"},{de:"Kollege",en:"Colleague",sv:"Kollega"},
+  {de:"Vorgesetzter",en:"Supervisor",sv:"Chef"},{de:"Mitarbeiter",en:"Employee",sv:"Anställd"},{de:"Besprechung",en:"Meeting",sv:"Möte"},
+  // Medien & Presse
+  {de:"Zeitung",en:"Newspaper",sv:"Tidning"},{de:"Zeitschrift",en:"Magazine",sv:"Tidskrift"},{de:"Artikel",en:"Article",sv:"Artikel"},
+  {de:"Schlagzeile",en:"Headline",sv:"Rubrik"},{de:"Journalist",en:"Journalist",sv:"Journalist"},{de:"Redakteur",en:"Editor",sv:"Redaktör"},
+  {de:"Interview",en:"Interview",sv:"Intervju"},{de:"Reportage",en:"Report",sv:"Reportage"},{de:"Bericht",en:"Report",sv:"Rapport"},
+  {de:"Nachrichten",en:"News",sv:"Nyheter"},{de:"Sendung",en:"Broadcast",sv:"Sändning"},{de:"Moderator",en:"Presenter",sv:"Presentatör"},
+  {de:"Werbung",en:"Advertisement",sv:"Reklam"},{de:"Dokumentarfilm",en:"Documentary",sv:"Dokumentär"},{de:"Podcast",en:"Podcast",sv:"Podcast"},
+  // Kleidung & Mode erweitert
+  {de:"Regenmantel",en:"Raincoat",sv:"Regnkappa"},{de:"Blazer",en:"Blazer",sv:"Kavaj"},{de:"Weste",en:"Vest",sv:"Väst"},
+  {de:"Leggings",en:"Leggings",sv:"Tights"},{de:"Overall",en:"Overall",sv:"Overall"},{de:"Kittel",en:"Smock",sv:"Rock"},
+  {de:"Badeanzug",en:"Swimsuit",sv:"Baddräkt"},{de:"Bikini",en:"Bikini",sv:"Bikini"},{de:"Unterwäsche",en:"Underwear",sv:"Underkläder"},
+  {de:"Socken",en:"Socks",sv:"Strumpor"},{de:"Strumpfhose",en:"Tights",sv:"Strumpbyxor"},{de:"Schlafanzug",en:"Pyjamas",sv:"Pyjamas"},
+  {de:"Uniform",en:"Uniform",sv:"Uniform"},{de:"Kostüm",en:"Costume",sv:"Kostym"},{de:"Smoking",en:"Tuxedo",sv:"Frack"},
+  // Küche & Kochen erweitert
+  {de:"Pfanne",en:"Frying pan",sv:"Stekpanna"},{de:"Topf",en:"Pot",sv:"Kastrull"},{de:"Wok",en:"Wok",sv:"Wok"},
+  {de:"Schneidebrett",en:"Cutting board",sv:"Skärbräda"},{de:"Küchenmesser",en:"Kitchen knife",sv:"Köksknivar"},{de:"Reibe",en:"Grater",sv:"Rivjärn"},
+  {de:"Sieb",en:"Sieve",sv:"Sil"},{de:"Küchenwaage",en:"Kitchen scale",sv:"Köksvåg"},{de:"Mixer",en:"Blender",sv:"Mixer"},
+  {de:"Backofen",en:"Oven",sv:"Ugn"},{de:"Mikrowelle",en:"Microwave",sv:"Mikrovågsugn"},{de:"Geschirrspüler",en:"Dishwasher",sv:"Diskmaskin"},
+  {de:"Kühlschrank",en:"Fridge",sv:"Kylskåp"},{de:"Gefrierschrank",en:"Freezer",sv:"Frys"},{de:"Herd",en:"Stove",sv:"Spis"},
+  // Haustiere & Tierpflege
+  {de:"Tierarzt",en:"Vet",sv:"Veterinär"},{de:"Impfung",en:"Vaccination",sv:"Vaccination"},{de:"Leine",en:"Leash",sv:"Koppel"},
+  {de:"Halsband",en:"Collar",sv:"Halsband"},{de:"Käfig",en:"Cage",sv:"Bur"},{de:"Aquarium",en:"Aquarium",sv:"Akvarium"},
+  {de:"Tierfutter",en:"Pet food",sv:"Djurmat"},{de:"Stall",en:"Stable",sv:"Stall"},{de:"Zwinger",en:"Kennel",sv:"Hundkoja"},
+  {de:"Fellpflege",en:"Grooming",sv:"Grooming"},{de:"Kastrieren",en:"Neutering",sv:"Kastrering"},{de:"Chip",en:"Microchip",sv:"Mikrochip"},
+  // Musik & Konzert erweitert
+  {de:"Bühne",en:"Stage",sv:"Scen"},{de:"Dirigent",en:"Conductor",sv:"Dirigent"},{de:"Orchester",en:"Orchestra",sv:"Orkester"},
+  {de:"Chor",en:"Choir",sv:"Kör"},{de:"Solo",en:"Solo",sv:"Solo"},{de:"Duett",en:"Duet",sv:"Duett"},
+  {de:"Takt",en:"Beat",sv:"Takt"},{de:"Melodie",en:"Melody",sv:"Melodi"},{de:"Harmonie",en:"Harmony",sv:"Harmoni"},
+  {de:"Akkord",en:"Chord",sv:"Ackord"},{de:"Noten",en:"Sheet music",sv:"Noter"},{de:"Probe",en:"Rehearsal",sv:"Repetition"},
+  {de:"Tournee",en:"Tour",sv:"Turné"},{de:"Festival",en:"Festival",sv:"Festival"},{de:"Zugabe",en:"Encore",sv:"Extranummer"},
+  // Reise & Tourismus erweitert
+  {de:"Reisebüro",en:"Travel agency",sv:"Resebyrå"},{de:"Reiseführer",en:"Guidebook",sv:"Resehandbok"},{de:"Ausflug",en:"Excursion",sv:"Utflykt"},
+  {de:"Rundreise",en:"Round trip",sv:"Rundresa"},{de:"Kreuzfahrt",en:"Cruise",sv:"Kryssning"},{de:"Hafen",en:"Port",sv:"Hamn"},
+  {de:"Flugsteig",en:"Gate",sv:"Gate"},{de:"Einreise",en:"Entry",sv:"Inresa"},{de:"Ausreise",en:"Exit",sv:"Utresa"},
+  {de:"Zoll",en:"Customs",sv:"Tull"},{de:"Gepäckband",en:"Baggage belt",sv:"Bagagebana"},{de:"Abflug",en:"Departure",sv:"Avgång"},
+  {de:"Ankunft",en:"Arrival",sv:"Ankomst"},{de:"Verspätung",en:"Delay",sv:"Försening"},{de:"Umsteigen",en:"Transfer",sv:"Byte"},
+  // Sport & Fitness erweitert
+  {de:"Fitnessstudio",en:"Gym",sv:"Gym"},{de:"Hantel",en:"Dumbbell",sv:"Hantel"},{de:"Treadmill",en:"Treadmill",sv:"Löpband"},
+  {de:"Yogamatte",en:"Yoga mat",sv:"Yogamatta"},{de:"Personal Trainer",en:"Personal trainer",sv:"Personlig tränare"},{de:"Aufwärmen",en:"Warm-up",sv:"Uppvärmning"},
+  {de:"Abkühlen",en:"Cool-down",sv:"Nedvarvning"},{de:"Wiederholung",en:"Repetition",sv:"Repetition"},{de:"Satz",en:"Set",sv:"Set"},
+  {de:"Muskeln",en:"Muscles",sv:"Muskler"},{de:"Ausdauer",en:"Endurance",sv:"Uthållighet"},{de:"Koordination",en:"Coordination",sv:"Koordination"},
+  {de:"Gleichgewicht",en:"Balance",sv:"Balans"},{de:"Flexibilität",en:"Flexibility",sv:"Flexibilitet"},{de:"Kraft",en:"Strength",sv:"Styrka"},
+  // Farben & Design erweitert
+  {de:"Türkis",en:"Turquoise",sv:"Turkos"},{de:"Beige",en:"Beige",sv:"Beige"},{de:"Khaki",en:"Khaki",sv:"Khaki"},
+  {de:"Koralle",en:"Coral",sv:"Korall"},{de:"Lavendel",en:"Lavender",sv:"Lavendel"},{de:"Smaragdgrün",en:"Emerald green",sv:"Smaragdgrönt"},
+  {de:"Elfenbein",en:"Ivory",sv:"Elfenben"},{de:"Schokoladenbraun",en:"Chocolate brown",sv:"Chokladbrun"},{de:"Mintgrün",en:"Mint green",sv:"Mintgrön"},
+  {de:"Dunkelblau",en:"Navy blue",sv:"Marinblå"},{de:"Hellgrau",en:"Light grey",sv:"Ljusgrå"},{de:"Anthrazit",en:"Anthracite",sv:"Antracit"},
+  // Gesundheit & Medizin erweitert
+  {de:"Physiotherapie",en:"Physiotherapy",sv:"Sjukgymnastik"},{de:"Psychotherapie",en:"Psychotherapy",sv:"Psykoterapi"},{de:"Ernährungsberatung",en:"Nutrition counseling",sv:"Kostrådgivning"},
+  {de:"Bluttest",en:"Blood test",sv:"Blodprov"},{de:"Ultraschall",en:"Ultrasound",sv:"Ultraljud"},{de:"Röntgen",en:"X-ray",sv:"Röntgen"},
+  {de:"MRT",en:"MRI",sv:"MRT"},{de:"EKG",en:"ECG",sv:"EKG"},{de:"Operation",en:"Surgery",sv:"Operation"},
+  {de:"Narkose",en:"Anesthesia",sv:"Anestesi"},{de:"Naht",en:"Stitch",sv:"Stygn"},{de:"Gips",en:"Cast",sv:"Gips"},
+  {de:"Rollstuhl",en:"Wheelchair",sv:"Rullstol"},{de:"Krücken",en:"Crutches",sv:"Kryckor"},{de:"Prothese",en:"Prosthesis",sv:"Protes"},
+  // Mathematik erweitert
+  {de:"Addition",en:"Addition",sv:"Addition"},{de:"Subtraktion",en:"Subtraction",sv:"Subtraktion"},{de:"Multiplikation",en:"Multiplication",sv:"Multiplikation"},
+  {de:"Division",en:"Division",sv:"Division"},{de:"Bruch",en:"Fraction",sv:"Bråk"},{de:"Prozent",en:"Percent",sv:"Procent"},
+  {de:"Gleichung",en:"Equation",sv:"Ekvation"},{de:"Integral",en:"Integral",sv:"Integral"},{de:"Ableitung",en:"Derivative",sv:"Derivata"},
+  {de:"Wahrscheinlichkeit",en:"Probability",sv:"Sannolikhet"},{de:"Statistik",en:"Statistics",sv:"Statistik"},{de:"Geometrie",en:"Geometry",sv:"Geometri"},
+  {de:"Algebra",en:"Algebra",sv:"Algebra"},{de:"Koordinate",en:"Coordinate",sv:"Koordinat"},{de:"Vektor",en:"Vector",sv:"Vektor"},
+  // Wirtschaft & Handel erweitert
+  {de:"Import",en:"Import",sv:"Import"},{de:"Export",en:"Export",sv:"Export"},{de:"Handelsabkommen",en:"Trade agreement",sv:"Handelsavtal"},
+  {de:"Zölle",en:"Tariffs",sv:"Tullar"},{de:"Marktanteil",en:"Market share",sv:"Marknadsandel"},{de:"Umsatz",en:"Revenue",sv:"Omsättning"},
+  {de:"Gewinn",en:"Profit",sv:"Vinst"},{de:"Verlust",en:"Loss",sv:"Förlust"},{de:"Investition",en:"Investment",sv:"Investering"},
+  {de:"Rendite",en:"Return",sv:"Avkastning"},{de:"Dividende",en:"Dividend",sv:"Utdelning"},{de:"Aktie",en:"Share",sv:"Aktie"},
+  {de:"Börse",en:"Stock exchange",sv:"Börs"},{de:"Fusion",en:"Merger",sv:"Fusion"},{de:"Übernahme",en:"Acquisition",sv:"Förvärv"},
+  // Lebensmittel & Ernährung erweitert
+  {de:"Vitamin",en:"Vitamin",sv:"Vitamin"},{de:"Mineral",en:"Mineral",sv:"Mineral"},{de:"Protein",en:"Protein",sv:"Protein"},
+  {de:"Kohlenhydrat",en:"Carbohydrate",sv:"Kolhydrat"},{de:"Fett",en:"Fat",sv:"Fett"},{de:"Kalorien",en:"Calories",sv:"Kalorier"},
+  {de:"Diät",en:"Diet",sv:"Diet"},{de:"Vegetarisch",en:"Vegetarian",sv:"Vegetarisk"},{de:"Vegan",en:"Vegan",sv:"Vegansk"},
+  {de:"Glutenfrei",en:"Gluten-free",sv:"Glutenfri"},{de:"Bio",en:"Organic",sv:"Ekologisk"},{de:"Frisch",en:"Fresh",sv:"Färsk"},
+  {de:"Tiefgekühltes",en:"Frozen food",sv:"Fryst mat"},{de:"Konserven",en:"Canned food",sv:"Konserver"},{de:"Haltbarkeitsdatum",en:"Expiry date",sv:"Bäst-före-datum"},
+  // Recht & Justiz erweitert
+  {de:"Gericht",en:"Court",sv:"Domstol"},{de:"Richter",en:"Judge",sv:"Domare"},{de:"Anwalt",en:"Lawyer",sv:"Advokat"},
+  {de:"Staatsanwalt",en:"Prosecutor",sv:"Åklagare"},{de:"Zeuge",en:"Witness",sv:"Vittne"},{de:"Beweis",en:"Evidence",sv:"Bevis"},
+  {de:"Urteil",en:"Verdict",sv:"Dom"},{de:"Strafe",en:"Sentence",sv:"Straff"},{de:"Berufung",en:"Appeal",sv:"Överklagande"},
+  {de:"Freispruch",en:"Acquittal",sv:"Frigivning"},{de:"Verurteilung",en:"Conviction",sv:"Fällande dom"},{de:"Verbrechen",en:"Crime",sv:"Brott"},
+  {de:"Täter",en:"Perpetrator",sv:"Gärningsman"},{de:"Opfer",en:"Victim",sv:"Offer"},{de:"Haftstrafe",en:"Prison sentence",sv:"Fängelsestraff"},
+  // Natur & Geographie
+  {de:"Kontinent",en:"Continent",sv:"Kontinent"},{de:"Ozean",en:"Ocean",sv:"Ocean"},{de:"Halbinsel",en:"Peninsula",sv:"Halvö"},
+  {de:"Insel",en:"Island",sv:"Ö"},{de:"Kap",en:"Cape",sv:"Kap"},{de:"Delta",en:"Delta",sv:"Delta"},
+  {de:"Plateau",en:"Plateau",sv:"Platå"},{de:"Tiefebene",en:"Plain",sv:"Lågland"},{de:"Hochland",en:"Highlands",sv:"Högland"},
+  {de:"Steppe",en:"Steppe",sv:"Stäpp"},{de:"Savanne",en:"Savanna",sv:"Savann"},{de:"Regenwald",en:"Rainforest",sv:"Regnskog"},
+  {de:"Tundra",en:"Tundra",sv:"Tundra"},{de:"Moor",en:"Moor",sv:"Mosse"},{de:"Sumpf",en:"Swamp",sv:"Träsk"},
+  // Emotionen & Psychologie erweitert
+  {de:"Empathie",en:"Empathy",sv:"Empati"},{de:"Mitgefühl",en:"Compassion",sv:"Medkänsla"},{de:"Frustration",en:"Frustration",sv:"Frustration"},
+  {de:"Enttäuschung",en:"Disappointment",sv:"Besvikelse"},{de:"Verlegenheit",en:"Embarrassment",sv:"Genans"},{de:"Stolz",en:"Pride",sv:"Stolthet"},
+  {de:"Scham",en:"Shame",sv:"Skam"},{de:"Schuld",en:"Guilt",sv:"Skuld"},{de:"Neid",en:"Envy",sv:"Avund"},
+  {de:"Eifersucht",en:"Jealousy",sv:"Svartsjuka"},{de:"Dankbarkeit",en:"Gratitude",sv:"Tacksamhet"},{de:"Begeisterung",en:"Enthusiasm",sv:"Entusiasm"},
+  {de:"Neugierde",en:"Curiosity",sv:"Nyfikenhet"},{de:"Langeweile",en:"Boredom",sv:"Tristess"},{de:"Einsamkeit",en:"Loneliness",sv:"Ensamhet"},
+  // Wohnen & Einrichten erweitert
+  {de:"Wohnzimmer",en:"Living room",sv:"Vardagsrum"},{de:"Schlafzimmer",en:"Bedroom",sv:"Sovrum"},{de:"Kinderzimmer",en:"Children's room",sv:"Barnrum"},
+  {de:"Arbeitszimmer",en:"Study",sv:"Arbetsrum"},{de:"Dachboden",en:"Attic",sv:"Vind"},{de:"Heizung",en:"Heating",sv:"Uppvärmning"},
+  {de:"Klimaanlage",en:"Air conditioning",sv:"Luftkonditionering"},{de:"Rolladen",en:"Shutter",sv:"Rullgardin"},{de:"Jalousie",en:"Blinds",sv:"Persienn"},
+  {de:"Teppich",en:"Carpet",sv:"Matta"},{de:"Parkett",en:"Parquet",sv:"Parkettgolv"},{de:"Tapete",en:"Wallpaper",sv:"Tapet"},
+  {de:"Steckdose",en:"Socket",sv:"Vägguttag"},{de:"Lichtschalter",en:"Light switch",sv:"Ljusbrytare"},{de:"Sicherung",en:"Fuse",sv:"Säkring"},
+  // Sprache & Linguistik
+  {de:"Substantiv",en:"Noun",sv:"Substantiv"},{de:"Verb",en:"Verb",sv:"Verb"},{de:"Adjektiv",en:"Adjective",sv:"Adjektiv"},
+  {de:"Adverb",en:"Adverb",sv:"Adverb"},{de:"Satz",en:"Sentence",sv:"Mening"},{de:"Absatz",en:"Paragraph",sv:"Stycke"},
+  {de:"Grammatik",en:"Grammar",sv:"Grammatik"},{de:"Vokabular",en:"Vocabulary",sv:"Vokabulär"},{de:"Aussprache",en:"Pronunciation",sv:"Uttal"},
+  {de:"Betonung",en:"Stress",sv:"Betoning"},{de:"Dialekt",en:"Dialect",sv:"Dialekt"},{de:"Akzent",en:"Accent",sv:"Accent"},
+  {de:"Übersetzung",en:"Translation",sv:"Översättning"},{de:"Dolmetscher",en:"Interpreter",sv:"Tolk"},{de:"Muttersprache",en:"Mother tongue",sv:"Modersmål"},
+  // Tier- & Pflanzenwelt erweitert
+  {de:"Reptil",en:"Reptile",sv:"Reptil"},{de:"Amphibie",en:"Amphibian",sv:"Amfibie"},{de:"Säugetier",en:"Mammal",sv:"Däggdjur"},
+  {de:"Raubtier",en:"Predator",sv:"Rovdjur"},{de:"Beute",en:"Prey",sv:"Byte"},{de:"Herde",en:"Herd",sv:"Hjord"},
+  {de:"Schwarm",en:"Flock",sv:"Flock"},{de:"Rudel",en:"Pack",sv:"Flock"},{de:"Nest",en:"Nest",sv:"Bo"},
+  {de:"Höhle",en:"Den",sv:"Lya"},{de:"Bau",en:"Burrow",sv:"Gryt"},{de:"Migration",en:"Migration",sv:"Migration"},
+  {de:"Hibernation",en:"Hibernation",sv:"Dvala"},{de:"Fotosynthese",en:"Photosynthesis",sv:"Fotosyntes"},{de:"Pollination",en:"Pollination",sv:"Pollinering"},
+  // Zahlen & Mengen erweitert
+  {de:"Million",en:"Million",sv:"Miljon"},{de:"Milliarde",en:"Billion",sv:"Miljard"},{de:"Billion",en:"Trillion",sv:"Biljon"},
+  {de:"Null",en:"Zero",sv:"Noll"},{de:"Unendlich",en:"Infinite",sv:"Oändlig"},{de:"Hälfte",en:"Half",sv:"Hälften"},
+  {de:"Drittel",en:"Third",sv:"Tredjedel"},{de:"Viertel",en:"Quarter",sv:"Kvart"},{de:"Dutzend",en:"Dozen",sv:"Dussin"},
+  {de:"Paar",en:"Pair",sv:"Par"},{de:"Gruppe",en:"Group",sv:"Grupp"},{de:"Menge",en:"Quantity",sv:"Mängd"},
+  {de:"Summe",en:"Sum",sv:"Summa"},{de:"Differenz",en:"Difference",sv:"Differens"},{de:"Produkt",en:"Product",sv:"Produkt"},
+  // Gesellschaft & Kultur
+  {de:"Tradition",en:"Tradition",sv:"Tradition"},{de:"Brauch",en:"Custom",sv:"Sedvänja"},{de:"Ritual",en:"Ritual",sv:"Ritual"},
+  {de:"Feier",en:"Celebration",sv:"Firande"},{de:"Zeremonie",en:"Ceremony",sv:"Ceremoni"},{de:"Generation",en:"Generation",sv:"Generation"},
+  {de:"Gemeinschaft",en:"Community",sv:"Gemenskap"},{de:"Gesellschaft",en:"Society",sv:"Samhälle"},{de:"Bevölkerung",en:"Population",sv:"Befolkning"},
+  {de:"Minderheit",en:"Minority",sv:"Minoritet"},{de:"Mehrheit",en:"Majority",sv:"Majoritet"},{de:"Integration",en:"Integration",sv:"Integration"},
+  {de:"Diskriminierung",en:"Discrimination",sv:"Diskriminering"},{de:"Gleichberechtigung",en:"Equality",sv:"Jämlikhet"},{de:"Vielfalt",en:"Diversity",sv:"Mångfald"},
+  // Persönlichkeit & Charakter
+  {de:"geduldig",en:"patient",sv:"tålmodig"},{de:"ungeduldig",en:"impatient",sv:"otålmodig"},{de:"ehrlich",en:"honest",sv:"ärlig"},
+  {de:"unehrlich",en:"dishonest",sv:"oärlig"},{de:"mutig",en:"brave",sv:"modig"},{de:"ängstlich",en:"anxious",sv:"ängslig"},
+  {de:"neugierig",en:"curious",sv:"nyfiken"},{de:"kreativ",en:"creative",sv:"kreativ"},{de:"praktisch",en:"practical",sv:"praktisk"},
+  {de:"logisch",en:"logical",sv:"logisk"},{de:"intuitiv",en:"intuitive",sv:"intuitiv"},{de:"spontan",en:"spontaneous",sv:"spontan"},
+  {de:"zuverlässig",en:"reliable",sv:"pålitlig"},{de:"verantwortungsbewusst",en:"responsible",sv:"ansvarsfull"},{de:"ehrgeizig",en:"ambitious",sv:"ambitiös"},
+  // Technik & Maschinen erweitert
+  {de:"Motor",en:"Engine",sv:"Motor"},{de:"Getriebe",en:"Gearbox",sv:"Växellåda"},{de:"Bremse",en:"Brake",sv:"Broms"},
+  {de:"Lenkrad",en:"Steering wheel",sv:"Ratt"},{de:"Kupplung",en:"Clutch",sv:"Koppling"},{de:"Auspuff",en:"Exhaust",sv:"Avgasrör"},
+  {de:"Tank",en:"Tank",sv:"Tank"},{de:"Reifendruck",en:"Tyre pressure",sv:"Däcktryck"},{de:"Windschutzscheibe",en:"Windscreen",sv:"Vindruta"},
+  {de:"Scheibenwischer",en:"Windscreen wiper",sv:"Vindrutetorkare"},{de:"Scheinwerfer",en:"Headlight",sv:"Strålkastare"},{de:"Blinker",en:"Indicator",sv:"Blinkers"},
+  // Finanzwesen & Banking erweitert
+  {de:"Kontostand",en:"Account balance",sv:"Kontosaldo"},{de:"Überweisung",en:"Transfer",sv:"Överföring"},{de:"Dauerauftrag",en:"Standing order",sv:"Autogiro"},
+  {de:"Zinsen",en:"Interest",sv:"Ränta"},{de:"Kredit",en:"Loan",sv:"Kredit"},{de:"Hypothek",en:"Mortgage",sv:"Bolån"},
+  {de:"Pfand",en:"Deposit",sv:"Deposition"},{de:"Rente",en:"Pension",sv:"Pension"},{de:"Steuer",en:"Tax",sv:"Skatt"},
+  {de:"Mehrwertsteuer",en:"VAT",sv:"Moms"},{de:"Einkommensteuer",en:"Income tax",sv:"Inkomstskatt"},{de:"Steuererklärung",en:"Tax return",sv:"Skattedeklaration"},
+  // Polizei & Sicherheit
+  {de:"Polizei",en:"Police",sv:"Polis"},{de:"Feuerwehr",en:"Fire brigade",sv:"Brandkår"},{de:"Notfall",en:"Emergency",sv:"Nödsituation"},
+  {de:"Notruf",en:"Emergency call",sv:"Nödsamtal"},{de:"Alarm",en:"Alarm",sv:"Larm"},{de:"Überwachung",en:"Surveillance",sv:"Övervakning"},
+  {de:"Sicherheit",en:"Security",sv:"Säkerhet"},{de:"Schutz",en:"Protection",sv:"Skydd"},{de:"Gefahr",en:"Danger",sv:"Fara"},
+  // Wetter & Klima erweitert
+  {de:"Temperatur",en:"Temperature",sv:"Temperatur"},{de:"Luftfeuchtigkeit",en:"Humidity",sv:"Luftfuktighet"},{de:"Niederschlag",en:"Precipitation",sv:"Nederbörd"},
+  {de:"Barometer",en:"Barometer",sv:"Barometer"},{de:"Wettervorhersage",en:"Weather forecast",sv:"Väderprognos"},{de:"Jahreszeit",en:"Season",sv:"Årstid"},
+  {de:"Hitzewelle",en:"Heat wave",sv:"Värmebölja"},{de:"Kältewelle",en:"Cold wave",sv:"Köldknäpp"},{de:"Schneefall",en:"Snowfall",sv:"Snöfall"},
+  {de:"Hagel",en:"Hail",sv:"Hagel"},{de:"Nebel",en:"Fog",sv:"Dimma"},{de:"Gewitter",en:"Thunderstorm",sv:"Åskväder"},
+  // Philosophie & Ethik erweitert
+  {de:"Wahrheit",en:"Truth",sv:"Sanning"},{de:"Lüge",en:"Lie",sv:"Lögn"},{de:"Gerechtigkeit",en:"Justice",sv:"Rättvisa"},
+  {de:"Freiheit",en:"Freedom",sv:"Frihet"},{de:"Gleichheit",en:"Equality",sv:"Likhet"},{de:"Würde",en:"Dignity",sv:"Värdighet"},
+  {de:"Wert",en:"Value",sv:"Värde"},{de:"Norm",en:"Norm",sv:"Norm"},{de:"Moral",en:"Morality",sv:"Moral"},
+  {de:"Ethik",en:"Ethics",sv:"Etik"},{de:"Pflicht",en:"Duty",sv:"Plikt"},{de:"Recht",en:"Right",sv:"Rätt"},
+  // Weitere Verben des Alltags
+  {de:"anrufen",en:"to call",sv:"att ringa"},{de:"abholen",en:"to pick up",sv:"att hämta"},{de:"bringen",en:"to bring",sv:"att ta med"},
+  {de:"vergessen",en:"to forget",sv:"att glömma"},{de:"erinnern",en:"to remember",sv:"att komma ihåg"},{de:"planen",en:"to plan",sv:"att planera"},
+  {de:"organisieren",en:"to organize",sv:"att organisera"},{de:"vorbereiten",en:"to prepare",sv:"att förbereda"},{de:"beginnen",en:"to begin",sv:"att börja"},
+  {de:"beenden",en:"to finish",sv:"att avsluta"},{de:"wiederholen",en:"to repeat",sv:"att upprepa"},{de:"überprüfen",en:"to check",sv:"att kontrollera"},
+  // Freizeit & Unterhaltung
+  {de:"Kino",en:"Cinema",sv:"Bio"},{de:"Theater",en:"Theatre",sv:"Teater"},{de:"Museum",en:"Museum",sv:"Museum"},
+  {de:"Ausstellung",en:"Exhibition",sv:"Utställning"},{de:"Konzert",en:"Concert",sv:"Konsert"},{de:"Oper",en:"Opera",sv:"Opera"},
+  {de:"Zirkus",en:"Circus",sv:"Cirkus"},{de:"Vergnügungspark",en:"Amusement park",sv:"Nöjespark"},{de:"Zoo",en:"Zoo",sv:"Djurpark"},
+  {de:"Aquarium",en:"Aquarium",sv:"Akvarium"},{de:"Botanischer Garten",en:"Botanical garden",sv:"Botanisk trädgård"},{de:"Sportplatz",en:"Sports ground",sv:"Idrottsplan"},
+  {de:"Schwimmbad",en:"Swimming pool",sv:"Simhall"},{de:"Bibliothek",en:"Library",sv:"Bibliotek"},{de:"Buchhandlung",en:"Bookshop",sv:"Bokhandel"},
+  // Küstenregion & Meer
+  {de:"Küste",en:"Coast",sv:"Kust"},{de:"Strand",en:"Beach",sv:"Strand"},{de:"Welle",en:"Wave",sv:"Våg"},
+  {de:"Ebbe",en:"Low tide",sv:"Ebb"},{de:"Flut",en:"High tide",sv:"Flod"},{de:"Riff",en:"Reef",sv:"Rev"},
+  {de:"Koralle",en:"Coral",sv:"Korall"},{de:"Muschel",en:"Shell",sv:"Snäcka"},{de:"Seestern",en:"Starfish",sv:"Sjöstjärna"},
+  {de:"Leuchtturm",en:"Lighthouse",sv:"Fyr"},{de:"Hafen",en:"Harbour",sv:"Hamn"},{de:"Anker",en:"Anchor",sv:"Ankare"},
+  {de:"Segel",en:"Sail",sv:"Segel"},{de:"Ruder",en:"Oar",sv:"Åra"},{de:"Fischnetz",en:"Fishing net",sv:"Fisknät"},
+  {de:"Welpe",en:"Puppy",sv:"Valp"},{de:"Kätzchen",en:"Kitten",sv:"Kattunge"},{de:"Fohlen",en:"Foal",sv:"Föl"},
+  {de:"Küken",en:"Chick",sv:"Kyckling"},{de:"Ferkel",en:"Piglet",sv:"Smågris"},{de:"Lamm",en:"Lamb",sv:"Lamm"},
+  {de:"Kalb",en:"Calf",sv:"Kalv"},{de:"Junges",en:"Young animal",sv:"Unge"},{de:"Welpenwurf",en:"Litter",sv:"Kull"},
+  {de:"Zwilling",en:"Twin",sv:"Tvilling"},{de:"Drilling",en:"Triplet",sv:"Trilling"},{de:"Geschwister",en:"Siblings",sv:"Syskon"},
 ];
 
 async function importDefaultWords() {
