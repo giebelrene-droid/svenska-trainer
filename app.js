@@ -1,4 +1,4 @@
-const APP_VERSION = "30.5";
+const APP_VERSION = "30.6";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -106,44 +106,49 @@ let isAudioRunning = false; let cancelAudio = false; let audioHistory = []; let 
 let availableVoices = [];
 
 // ==========================================
-// 3. SPRACHAUSGABE & STIMMEN (STABIL FÜR MOBIL)
+// 3. SPRACHAUSGABE & STIMMEN (ANDROID CHROME FIX)
 // ==========================================
 
-// Sichtbare Diagnose-Box die bei Problemen eingeblendet wird
-function showSpeechDiag(msg) {
-    let box = document.getElementById('speechDiagBox');
-    if (!box) {
-        box = document.createElement('div');
-        box.id = 'speechDiagBox';
-        box.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;font-size:0.78rem;font-weight:700;padding:10px 14px;z-index:99999;word-break:break-all;white-space:pre-wrap;max-height:40vh;overflow-y:auto;';
-        document.body.prepend(box);
-    }
-    const line = document.createElement('div');
-    line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-    box.prepend(line);
-    console.warn('SPEECH-DIAG:', msg);
+// Prüfe speechSynthesis beim Laden
+if (!('speechSynthesis' in window)) {
+    document.addEventListener('DOMContentLoaded', () => {
+        const b = document.createElement('div');
+        b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#7c3aed;color:#fff;font-size:0.9rem;font-weight:800;padding:14px;z-index:99999;text-align:center;';
+        b.textContent = '⚠️ Dein Browser unterstützt Text-to-Speech nicht. Lautsprecher-Buttons funktionieren nicht.';
+        document.body.prepend(b);
+    });
 }
 
-// Prüfe speechSynthesis-Verfügbarkeit und zeige Fehler sofort an
-(function checkSpeechSupport() {
-    if (!('speechSynthesis' in window)) {
-        const banner = document.createElement('div');
-        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#7c3aed;color:#fff;font-size:0.9rem;font-weight:800;padding:14px;z-index:99999;text-align:center;';
-        banner.textContent = '⚠️ Dein Browser unterstützt Text-to-Speech (speechSynthesis) nicht. Lautsprecher-Buttons funktionieren nicht.';
-        document.addEventListener('DOMContentLoaded', () => document.body.prepend(banner));
-        console.error('speechSynthesis nicht verfügbar!');
-    } else {
-        console.log('[TTS] speechSynthesis vorhanden ✓');
+// ── ANDROID CHROME UNLOCK ─────────────────────────────────────────────────
+// Android Chrome blockiert speechSynthesis bis zum ersten User-Gesture.
+// Beim ersten touchstart/click wird eine stille Utterance gespielt → entsperrt.
+let ttsUnlocked = false;
+
+function unlockSpeechSynthesis() {
+    if (ttsUnlocked || !window.speechSynthesis) return;
+    try {
+        const u = new SpeechSynthesisUtterance(' ');
+        u.volume = 0;
+        u.rate = 10;
+        u.onend   = () => { ttsUnlocked = true; };
+        u.onerror = () => { ttsUnlocked = true; };
+        window.speechSynthesis.speak(u);
+        setTimeout(() => { if (!ttsUnlocked) ttsUnlocked = true; }, 800);
+    } catch(e) {
+        ttsUnlocked = true;
     }
-})();
+}
+
+document.addEventListener('touchstart', unlockSpeechSynthesis, { once: true, passive: true });
+document.addEventListener('click',      unlockSpeechSynthesis, { once: true });
+// ─────────────────────────────────────────────────────────────────────────
 
 function loadVoices() {
+    if (!window.speechSynthesis) return;
     const voices = window.speechSynthesis.getVoices();
-    console.log('[TTS] loadVoices() → ' + voices.length + ' Stimmen gefunden');
     if (voices.length > 0) {
         availableVoices = voices;
         updateVoiceDropdown();
-        showSpeechDiag('Stimmen geladen: ' + voices.length + ' | Erste: ' + voices[0].name + ' (' + voices[0].lang + ')');
     }
 }
 if (window.speechSynthesis) {
@@ -153,7 +158,7 @@ if (window.speechSynthesis) {
 }
 
 function updateVoiceDropdown() {
-    const voiceSelect = document.getElementById('selAudioVoice'); if(!voiceSelect) return;
+    const voiceSelect = document.getElementById('selAudioVoice'); if (!voiceSelect) return;
     const currentLangCode = ALL_LANGS[conf.l3].tts.split('-')[0];
     const matchingVoices = availableVoices.filter(v => v.lang.startsWith(currentLangCode));
     let html = '<option value="">🤖 Standard-Stimme</option>';
@@ -161,7 +166,7 @@ function updateVoiceDropdown() {
     voiceSelect.innerHTML = html;
 }
 
-// Chrome/Android: Synthesis bricht nach ~15s ab — Keepalive verhindert das
+// Chrome/Android: Synthesis bricht nach ~15s ab
 let synthKeepAliveTimer = null;
 function startSynthKeepAlive() {
     stopSynthKeepAlive();
@@ -176,61 +181,42 @@ function stopSynthKeepAlive() {
     if (synthKeepAliveTimer) { clearInterval(synthKeepAliveTimer); synthKeepAliveTimer = null; }
 }
 
-// Wenn Tab wieder sichtbar wird: Synthesis aus Pause-State holen
+// Tab wieder sichtbar → aus Pause-State holen
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && window.speechSynthesis) {
         window.speechSynthesis.resume();
-        console.log('[TTS] visibilitychange → resume() aufgerufen');
     }
 });
 
 function buildUtterance(text, langKey, rate) {
     const msg = new SpeechSynthesisUtterance(text.trim());
-    msg.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
-    msg.rate = parseFloat(rate) || 1.0;
+    msg.lang   = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
+    msg.rate   = parseFloat(rate) || 1.0;
     msg.volume = 1.0;
-    msg.pitch = 1.0;
+    msg.pitch  = 1.0;
     if (langKey === conf.l3 && availableVoices.length > 0) {
         const voiceSelect = document.getElementById('selAudioVoice');
         if (voiceSelect && voiceSelect.value) {
-            const selectedVoice = availableVoices.find(v => v.name === voiceSelect.value);
-            if (selectedVoice) msg.voice = selectedVoice;
+            const sel = availableVoices.find(v => v.name === voiceSelect.value);
+            if (sel) msg.voice = sel;
         }
     }
     return msg;
 }
 
 function speak(text, langKey, rate = 1.0) {
+    if (!window.speechSynthesis || !text || !text.trim()) return;
+
     const ss = window.speechSynthesis;
-    const diagPrefix = `speak("${(text||'').slice(0,30)}", lang=${langKey}, rate=${rate})`;
-
-    if (!('speechSynthesis' in window)) {
-        showSpeechDiag(diagPrefix + ' → FEHLER: speechSynthesis nicht in window!');
-        return;
-    }
-    if (!text || !text.trim()) {
-        console.log('[TTS]', diagPrefix, '→ abgebrochen: leerer Text');
-        return;
-    }
-
-    console.log('[TTS]', diagPrefix, '| speaking=' + ss.speaking + ' pending=' + ss.pending + ' paused=' + ss.paused + ' voices=' + availableVoices.length);
-    showSpeechDiag(diagPrefix + ' | speaking=' + ss.speaking + ' paused=' + ss.paused + ' voices=' + availableVoices.length);
-
-    ss.cancel();
+    // cancel() NUR nach Unlock — auf Android Chrome bricht cancel() VOR dem ersten
+    // speak() den internen Gesture-Lock und verhindert alle weiteren Ausgaben.
+    if (ttsUnlocked && (ss.speaking || ss.pending)) ss.cancel();
     if (ss.paused) ss.resume();
 
     const msg = buildUtterance(text, langKey, rate);
-    msg.onstart = () => { console.log('[TTS] onstart → Sprache beginnt:', langKey); showSpeechDiag('✅ onstart: spricht jetzt [' + langKey + ']'); };
-    msg.onend   = () => { console.log('[TTS] onend → Sprache beendet:', langKey); };
-    msg.onerror = (e) => {
-        const errMsg = diagPrefix + ' → onerror: ' + (e.error || String(e));
-        showSpeechDiag('❌ ' + errMsg);
-        logCustomError('speak', errMsg);
-    };
+    msg.onerror = (e) => { logCustomError('speak', (e.error || String(e))); };
 
     ss.speak(msg);
-    console.log('[TTS] ss.speak() aufgerufen. Danach: speaking=' + ss.speaking + ' pending=' + ss.pending);
-    showSpeechDiag('ss.speak() aufgerufen → speaking=' + ss.speaking + ' pending=' + ss.pending);
 }
 
 // ==========================================
@@ -403,24 +389,19 @@ function speakAsync(text, langKey, rate = 1.0) {
     return new Promise((resolve) => {
         const diagPrefix = `speakAsync("${(text||'').slice(0,25)}", ${langKey}, ${rate})`;
         if (!('speechSynthesis' in window) || cancelAudio || !text || !text.trim()) {
-            console.log('[TTS]', diagPrefix, '→ übersprungen (kein SS / cancelAudio / leerer Text)');
             return resolve();
         }
 
         const ss = window.speechSynthesis;
-        console.log('[TTS]', diagPrefix, '| speaking=' + ss.speaking + ' paused=' + ss.paused);
 
         currentUtterance = buildUtterance(text, langKey, rate);
 
         let resolved = false;
         const done = () => { if (!resolved) { resolved = true; currentUtterance = null; resolve(); } };
 
-        currentUtterance.onstart = () => console.log('[TTS] speakAsync onstart →', langKey);
-        currentUtterance.onend = () => { console.log('[TTS] speakAsync onend →', langKey); done(); };
+        currentUtterance.onend = () => { done(); };
         currentUtterance.onerror = (e) => {
-            const errMsg = diagPrefix + ' onerror: ' + (e.error || String(e));
-            showSpeechDiag('❌ ' + errMsg);
-            logCustomError('speakAsync', errMsg);
+            logCustomError('speakAsync', (e.error || String(e)));
             done();
         };
 
@@ -431,7 +412,6 @@ function speakAsync(text, langKey, rate = 1.0) {
 
         if (ss.paused) ss.resume();
         ss.speak(currentUtterance);
-        console.log('[TTS] speakAsync ss.speak() aufgerufen → speaking=' + ss.speaking);
     });
 }
 const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
