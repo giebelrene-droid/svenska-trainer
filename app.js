@@ -1,4 +1,4 @@
-const APP_VERSION = "30.36";
+const APP_VERSION = "30.37";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -809,35 +809,53 @@ async function testApiKeys() {
     box.innerHTML = html;
 }
 
+function showModelPanel(html) {
+    let panel = document.getElementById('modelListPanel');
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'modelListPanel';
+        panel.style.cssText = 'position:fixed;top:60px;right:12px;width:320px;max-width:94vw;background:#0f172a;color:#f8fafc;font-family:monospace;font-size:0.75rem;padding:14px 16px;border-radius:14px;border:2px solid #6366f1;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,0.6);max-height:75vh;overflow-y:auto;line-height:1.6;';
+        document.body.appendChild(panel);
+    }
+    panel.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;position:sticky;top:0;background:#0f172a;padding-bottom:4px;border-bottom:1px solid #1e293b;"><strong style="color:#818cf8;">📋 Gemini Modelle</strong><button onclick="document.getElementById('modelListPanel').remove()" style="background:#6366f1;color:white;border:none;border-radius:8px;padding:3px 10px;cursor:pointer;font-weight:800;">✕</button></div>${html}`;
+}
+
 async function listGeminiModels() {
     const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
     const box = document.getElementById('apiKeyTestResults');
-    if (!box) return;
-    box.style.display = 'block';
-    if (!keys.length) { box.innerHTML = '<span style="color:#f87171;">Kein Gemini API-Key eingetragen.</span>'; return; }
+    if (box) { box.style.display = 'block'; box.innerHTML = '<span style="color:#94a3b8;">⏳ Rufe Modellliste ab…</span>'; }
+    if (!keys.length) {
+        const msg = '<span style="color:#f87171;">Kein Gemini API-Key eingetragen.</span>';
+        if (box) box.innerHTML = msg;
+        showModelPanel(msg);
+        return;
+    }
 
-    box.innerHTML = '<span style="color:#94a3b8;">⏳ Rufe Modellliste ab…</span>';
     const key = keys[0];
     try {
         const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
         const d = await resp.json();
         if (d.error) {
-            box.innerHTML = `<span style="color:#f87171;">❌ API-Fehler ${resp.status}:</span><br><pre style="color:#fbbf24;white-space:pre-wrap;word-break:break-all;margin:4px 0 0;">${escapeHTML(JSON.stringify(d.error, null, 2))}</pre>`;
+            const errHtml = `<span style="color:#f87171;">❌ HTTP ${resp.status}</span><br><pre style="color:#fbbf24;white-space:pre-wrap;word-break:break-all;margin:4px 0 0;">${escapeHTML(JSON.stringify(d.error, null, 2))}</pre>`;
+            if (box) box.innerHTML = errHtml;
+            showModelPanel(errHtml);
             return;
         }
         const models = (d.models || []);
-        let html = `<div style="color:#94a3b8;margin-bottom:8px;">Key: …${escapeHTML(key.slice(-6))} &nbsp;|&nbsp; <b style="color:#e2e8f0;">${models.length}</b> Modelle total</div>`;
+        let listHtml = `<div style="color:#94a3b8;margin-bottom:8px;">Key: …${escapeHTML(key.slice(-6))} &nbsp;|&nbsp; <b style="color:#e2e8f0;">${models.length}</b> Modelle</div>`;
         for (const m of models) {
-            const name = m.name.replace('models/', '');
             const canGenerate = (m.supportedGenerationMethods || []).includes('generateContent');
             const color = canGenerate ? '#4ade80' : '#64748b';
-            const tag = canGenerate ? ' <span style="color:#818cf8;font-size:0.68rem;">[generateContent]</span>' : '';
-            html += `<div style="color:${color};padding:1px 0;">${escapeHTML(name)}${tag}</div>`;
+            const tag = canGenerate ? ' <span style="color:#818cf8;">[✓]</span>' : '';
+            listHtml += `<div style="color:${color};padding:1px 0;word-break:break-all;">${escapeHTML(m.name)}${tag}</div>`;
         }
-        if (models.length === 0) html += '<div style="color:#fbbf24;">Keine Modelle zurückgegeben.</div>';
-        box.innerHTML = html;
+        if (models.length === 0) listHtml += '<div style="color:#fbbf24;">Keine Modelle zurückgegeben.</div>';
+        if (box) box.innerHTML = listHtml;
+        showModelPanel(listHtml);
     } catch(e) {
-        box.innerHTML = `<span style="color:#f87171;">❌ Netzwerkfehler: ${escapeHTML(e.message)}</span>`;
+        const errHtml = `<span style="color:#f87171;">❌ Netzwerkfehler: ${escapeHTML(e.message)}</span>`;
+        if (box) box.innerHTML = errHtml;
+        showModelPanel(errHtml);
     }
 }
 
