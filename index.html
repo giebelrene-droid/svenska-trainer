@@ -3,59 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SprachTutor AI - Pro Edition</title>
-    <link rel="stylesheet" href="style.css?v=30.0">
+    <title>SprachTutor AI</title>
+    <link rel="stylesheet" href="style.css?v=29.2">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-    <div id="toastContainer" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999;"></div>
+    <div id="toastContainer"></div>
 
-    <header class="top-bar">
+    <div class="top-bar">
         <div class="app-title">SprachTutor AI</div>
-        <div class="top-stats">
-            <span id="uiLevel">Level 1</span> | <span id="uiStreak">0 Tage</span>
-        </div>
-    </header>
-
-    <nav class="nav-scroll">
-        <button id="btn1" class="active" onclick="showTab('add')">➕ Wort</button>
-        <button id="btnFlash" onclick="showTab('flashcards')">📇 Karten</button>
-        <button id="btnStudy" onclick="showTab('study')">👀 Lernen</button>
-        <button id="btnRoleplay" onclick="showTab('roleplay')">🗣️ Szenarien</button>
-        <button id="btnAudio" onclick="showTab('audio')">🎧 Audio</button>
-        <button id="btnChat" onclick="showTab('chat')">💬 Tutor</button>
-        <button id="btnList" onclick="showTab('list')">📚 Liste</button>
-        <button id="btnArcade" onclick="showTab('arcade')">🎮 Arcade</button>
-    </nav>
-
-    <div id="tabAudio" class="card" style="display:none">
-        <h2>🎧 Audio-Trainer</h2>
-        <div class="input-row">
-            <select id="selAudioDiff">
-                <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
-            </select>
-            <select id="selAudioVoice"><option value="">🤖 Standard-Stimme</option></select>
-            <select id="selAudioReps"><option value="3">3x WH</option></select>
-        </div>
-        <div class="audio-box" style="margin: 20px 0; padding: 20px; background: #f9f9f9; border-radius: 12px;">
-            <div id="audioDisplayL1" style="font-weight:bold; font-size: 1.1rem;">Bereit...</div>
-            <div id="audioDisplayL3" style="color:var(--primary); font-size: 1.2rem; margin-top: 10px;"></div>
-        </div>
-        <button id="btnStartAudio" class="action-btn" onclick="toggleAudioTrainer()">▶️ Audio-Trainer starten</button>
-        <div id="audioLoader" class="loader" style="display:none;">KI generiert Satz...</div>
     </div>
 
-    <div id="tabAdd" class="card">...</div>
-    <div id="tabList" class="card" style="display:none">...</div>
-    <div id="tabFlashcards" class="card" style="display:none">...</div>
-    <div id="tabChat" class="card" style="display:none">...</div>
-    <div id="tabStudy" class="card" style="display:none">...</div>
-    <div id="tabRoleplay" class="card" style="display:none">...</div>
-    <div id="tabArcade" class="card" style="display:none">...</div>
+    <div class="nav-scroll">
+        <button id="btn1" onclick="showTab('add')">➕ Wort</button>
+        <button id="btnFlash" onclick="showTab('flashcards')">📇 Karten</button>
+        <button id="btn5" onclick="showTab('study')">👀 Lernen</button>
+        <button id="btnRoleplay" onclick="showTab('roleplay')">🗣️ Szenarien</button>
+        <button id="btnAudio" onclick="showTab('audio')">🎧 Audio</button>
+        <button id="btn8" onclick="showTab('chat')">💬 Tutor</button>
+        <button id="btn7" onclick="showTab('live')">🎙️ Live</button>
+        <button id="btn3" onclick="showTab('list')">📚 Liste</button>
+        <button id="btnArcade" onclick="showTab('arcade')">🎮 Spiele</button>
+    </div>
 
-    <script src="app.js?v=30.0"></script>
+    <div id="tabAdd" class="card"></div>
+    <div id="tabFlashcards" class="card" style="display:none"></div>
+    <div id="tabStudy" class="card" style="display:none"></div>
+    <div id="tabRoleplay" class="card" style="display:none"></div>
+    <div id="tabAudio" class="card" style="display:none">
+        <h2>🎧 Audio-Trainer</h2>
+        <div id="audioDisplayL1"></div><div id="audioDisplayL3"></div>
+        <button id="btnStartAudio" onclick="toggleAudioTrainer()">▶️ Starten</button>
+    </div>
+    <div id="tabChat" class="card" style="display:none"></div>
+    <div id="tabLive" class="card" style="display:none"></div>
+    <div id="tabList" class="card" style="display:none"></div>
+    <div id="tabArcade" class="card" style="display:none"></div>
+
+    <script src="app.js?v=29.2"></script>
 </body>
 </html>
