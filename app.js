@@ -1,4 +1,4 @@
-const APP_VERSION = "30.7";
+const APP_VERSION = "30.8";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -902,6 +902,14 @@ async function importDefaultWords() {
         showToast('✅ ' + DEFAULT_WORDS.length + ' Standardwörter importiert!', 'success');
         refreshData();
     } catch(e) { logCustomError('importDefaultWords', e); }
+}
+
+async function forceImportDefaultWords() {
+    if (!currentUser || !db) { showToast('⚠️ Warte auf Datenbank-Verbindung...', 'error'); return; }
+    const flagKey = 'defaultImported_' + currentUser.uid + '_' + currentCollIndex;
+    localStorage.removeItem(flagKey);
+    showToast('⏳ Importiere Standardwörter...', 'info');
+    await importDefaultWords();
 }
 
 async function refreshData() { if(!currentUser || !db) return; const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).orderBy("ts", "desc").get(); if(s) { allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderList(); if (allWords.length === 0) importDefaultWords(); } }
