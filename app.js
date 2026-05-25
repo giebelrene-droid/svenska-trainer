@@ -1,4 +1,4 @@
-const APP_VERSION = "30.31";
+const APP_VERSION = "30.32";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -1399,30 +1399,47 @@ if (identified) {
     const word = identified.trim();
     let obj = null;
     // Step 2: translate into all languages — DeepL first, Gemini fallback
-    if (deeplApiKey.trim()) obj = await translateAllWithDeepL(word, conf.l1);
+    if (deeplApiKey.trim()) { setEngineBadge('loading_deepl'); obj = await translateAllWithDeepL(word, conf.l1); if (obj) setEngineBadge('done_deepl'); }
     if (!obj) {
+        setEngineBadge('loading_gemini');
         try {
             const res2 = await callGemini(`Translate the word "${word}". Respond ONLY with a valid JSON object: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`);
-            if (res2) { let c = res2.replace(/`{3}json/gi,'').replace(/`{3}/g,'').trim(); const s=c.indexOf('{'),e2=c.lastIndexOf('}'); if(s!==-1&&e2!==-1)c=c.substring(s,e2+1); obj=JSON.parse(c); }
-        } catch(err) { showToast("⚠️ Übersetzung fehlgeschlagen.", "error"); }
+            if (res2) { let c = res2.replace(/`{3}json/gi,'').replace(/`{3}/g,'').trim(); const s=c.indexOf('{'),e2=c.lastIndexOf('}'); if(s!==-1&&e2!==-1)c=c.substring(s,e2+1); obj=JSON.parse(c); if (obj) setEngineBadge('done_gemini'); }
+        } catch(err) { showToast("⚠️ Übersetzung fehlgeschlagen.", "error"); setEngineBadge('hidden'); }
     }
     if (obj) { document.getElementById('inDe').value = obj[conf.l1]||word; document.getElementById('inEn').value = obj[conf.l2]||""; document.getElementById('inSv').value = obj[conf.l3]||""; }
 }
 input.value = ""; }; img.src = e.target.result; }; reader.readAsDataURL(file); }
+function setEngineBadge(state) {
+    const b = document.getElementById('translateEngineBadge');
+    if (!b) return;
+    const styles = {
+        loading_deepl:  { text: '🔵 DeepL…',  bg: '#1e3a5f', color: '#60a5fa', show: true },
+        loading_gemini: { text: '🤖 Gemini…', bg: '#2d1b69', color: '#a78bfa', show: true },
+        done_deepl:     { text: '🔵 DeepL',   bg: '#1e3a5f', color: '#60a5fa', show: true },
+        done_gemini:    { text: '🤖 Gemini',  bg: '#2d1b69', color: '#a78bfa', show: true },
+        hidden:         { show: false }
+    };
+    const s = styles[state] || styles.hidden;
+    b.style.display = s.show ? 'inline-block' : 'none';
+    if (s.show) { b.textContent = s.text; b.style.background = s.bg; b.style.color = s.color; }
+}
+
 async function handleSmartTranslate() {
     const txt = document.getElementById('inDe').value || document.getElementById('inEn').value || document.getElementById('inSv').value;
     if (!txt) return;
-    // Detect which field is filled to know the source language
     const srcKey = document.getElementById('inDe').value ? conf.l1 : (document.getElementById('inEn').value ? conf.l2 : conf.l3);
     document.getElementById('loader').style.display = "block";
     let obj = null;
-    // Try DeepL first
+    // DeepL first
     if (deeplApiKey.trim()) {
+        setEngineBadge('loading_deepl');
         obj = await translateAllWithDeepL(txt, srcKey);
-        if (obj) showToast('🔵 DeepL', 'success');
+        if (obj) setEngineBadge('done_deepl');
     }
     // Gemini fallback
     if (!obj) {
+        setEngineBadge('loading_gemini');
         try {
             const res = await callGemini(`Übersetze das Wort "${txt}". Antworte NUR mit einem validen JSON Objekt: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`);
             if (res) {
@@ -1430,13 +1447,16 @@ async function handleSmartTranslate() {
                 const s = clean.indexOf('{'), e2 = clean.lastIndexOf('}');
                 if (s !== -1 && e2 !== -1) clean = clean.substring(s, e2 + 1);
                 obj = JSON.parse(clean);
+                if (obj) setEngineBadge('done_gemini');
             }
-        } catch(e) { showToast("Übersetzung fehlgeschlagen.", "error"); }
+        } catch(e) { showToast("Übersetzung fehlgeschlagen.", "error"); setEngineBadge('hidden'); }
     }
     if (obj) {
         document.getElementById('inDe').value = obj[conf.l1] || "";
         document.getElementById('inEn').value = obj[conf.l2] || "";
         document.getElementById('inSv').value = obj[conf.l3] || "";
+    } else {
+        setEngineBadge('hidden');
     }
     document.getElementById('loader').style.display = "none";
 }
