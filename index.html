@@ -4,45 +4,436 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SprachTutor AI</title>
-    <link rel="stylesheet" href="style.css?v=29.2">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234F46E5%22 rx=%2220%22/><text x=%2250%22 y=%2268%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23ffffff%22>🌍</text></svg>">
+    <link id="manifestLink" rel="manifest" href="">
+    
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <link rel="stylesheet" href="style.css?v=30.0">
 </head>
 <body>
 
-    <div id="toastContainer"></div>
+<div id="offlineBanner">⚠️ Datenbank konnte nicht geladen werden. Prüfe deine Verbindung!</div>
 
-    <div class="top-bar">
-        <div class="app-title">SprachTutor AI</div>
+<div id="settingsOverlay">
+    <div class="settings-box">
+        <h2>⚙️ Einstellungen</h2>
+        <label>🔑 Gemini API-Schlüssel (Mehrere mit Komma trennen)</label>
+        <div class="input-row"><input type="text" id="inpGeminiKey" placeholder="AIzaSy..., AIzaSy..." oninput="saveApiKey()"></div>
+        <label style="margin-top: 20px;">👤 Aktiver Benutzer</label>
+        <select id="selUser" onchange="switchUser()" style="margin-bottom:15px;"></select>
+        <label>🌍 Lern-Sprachen</label>
+        <div style="display:flex; gap:10px; margin-bottom: 10px;">
+            <select id="selL1" onchange="langChanged()"></select>
+            <select id="selL2" onchange="langChanged()"></select>
+            <select id="selL3" onchange="langChanged()"></select>
+        </div>
+        <div style="background:rgba(255,255,255,0.7); padding:15px; border-radius:16px; border:1px solid var(--border-soft); margin-bottom:20px;">
+            <p style="font-size:0.75rem; font-weight:800; color:var(--text-light); margin-top:0;">BENUTZER UMBENENNEN</p>
+            <div id="renameContainer"></div>
+        </div>
+        <button class="action-btn btn-magic" onclick="migrateOldData()">🛟 Alte Vokabeln importieren</button>
+        <button class="action-btn btn-secondary" onclick="document.getElementById('importFile').click()">📂 Backup laden</button>
+        <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Profil-Vokabeln löschen</button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+        
+        <button class="action-btn btn-secondary" onclick="openErrorLog()" style="margin-top: 15px; border-style: dashed;">🐛 Fehlerprotokoll anzeigen</button>
+        
+        <button class="action-btn" onclick="closeSettings()" style="margin-top: 30px;">Fertig</button>
+    </div>
+</div>
+
+<div id="errorLogOverlay">
+    <div class="settings-box" style="max-width: 500px;">
+        <h2>🐛 Fehlerprotokoll</h2>
+        <p style="font-size:0.8rem; color:var(--text-light); margin-top:-15px;">Hier werden alle unsichtbaren Hintergrund-Fehler der App gespeichert, um bei der Fehlersuche zu helfen.</p>
+        <div id="errorLogList" style="background:#111827; color:#10B981; font-family:monospace; font-size:0.8rem; padding:15px; border-radius:12px; height:300px; overflow-y:auto; margin-bottom:15px; word-break: break-all;">
+            Keine Fehler aufgezeichnet.
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="action-btn btn-danger" onclick="clearErrorLog()" style="flex:1;">🗑️ Leeren</button>
+            <button class="action-btn" onclick="closeErrorLog()" style="flex:1;">Schließen</button>
+        </div>
+    </div>
+</div>
+
+<div class="top-bar">
+    <div class="app-title">SprachTutor AI</div>
+    <div class="top-stats">
+        <div class="stats-badge" style="color: var(--primary);">👑 <span id="uiLevel">1</span></div>
+        <div class="stats-badge"><span style="color: var(--accent);">🔥 <span id="uiStreak">0</span></span></div>
+        <div class="stats-badge"><span style="color: var(--secondary);">⭐ <span id="uiXP">0</span></span></div>
+        <button class="settings-btn" onclick="openSettings()">⚙️</button>
+    </div>
+</div>
+
+<div class="nav-scroll">
+    <button id="btn1" class="active" onclick="showTab('add')">➕ Wort</button>
+    <button id="btnFlash" onclick="showTab('flashcards')">📇 Karteikarten</button>
+    <button id="btn5" onclick="showTab('study')">👀 Lernen</button>
+    <button id="btnRoleplay" onclick="showTab('roleplay')">🗣️ Szenarien</button>
+    <button id="btnAudio" onclick="showTab('audio')">🎧 Audio-Trainer</button>
+    <button id="btn8" onclick="showTab('chat')">💬 Sprachtutor</button>
+    <button id="btn7" onclick="showTab('live')">🎙️ Live</button>
+    <button id="btnArcade" onclick="showTab('arcade')">🎮 Arcade</button>
+    <button id="btnStory" onclick="showTab('story')">📖 KI-Märchen</button>
+    <button id="btn3" onclick="showTab('list')">📚 Liste</button>
+</div>
+
+<div id="tabAudio" class="card" style="display:none">
+    <h2>🎧 Audio-Trainer</h2>
+    <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Passives Hören: Einmal Deutsch, Fremdsprache (Normal - Nx Langsam - Normal).</p>
+
+    <div class="input-row" style="gap:15px; margin-bottom: 10px; align-items: flex-end;">
+        <div style="flex:1">
+            <label style="margin-top:0;">Niveau</label>
+            <select id="selAudioDiff">
+                <option value="A1" selected>🟢 A1 (Leicht)</option>
+                <option value="A2">🟡 A2 (Alltag)</option>
+                <option value="B1">🟠 B1 (Mittel)</option>
+                <option value="B2">🔴 B2 (Schwer)</option>
+                <option value="C1">🟣 C1 (Profi)</option>
+            </select>
+        </div>
+        <div style="flex:1">
+            <label style="margin-top:0;">Langsam</label>
+            <select id="selAudioSlow">
+                <option value="0.8">0.8x</option>
+                <option value="0.6" selected>0.6x</option>
+                <option value="0.4">0.4x</option>
+            </select>
+        </div>
+        <div style="flex:1">
+            <label style="margin-top:0;">Pause</label>
+            <select id="selAudioPause">
+                <option value="1">1 Sek.</option>
+                <option value="2" selected>2 Sek.</option>
+                <option value="3">3 Sek.</option>
+                <option value="4">4 Sek.</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="input-row" style="gap:15px; margin-bottom: 20px; align-items: flex-end;">
+        <div style="flex:1">
+            <label style="margin-top:0;">Langsame WH</label>
+            <select id="selAudioReps">
+                <option value="1">1x</option>
+                <option value="2">2x</option>
+                <option value="3" selected>3x</option>
+                <option value="4">4x</option>
+                <option value="5">5x</option>
+            </select>
+        </div>
+        <div style="flex:2">
+            <label style="margin-top:0;">Stimme (Fremdsprache)</label>
+            <select id="selAudioVoice">
+                <option value="">🤖 Standard-Stimme</option>
+            </select>
+        </div>
     </div>
 
-    <div class="nav-scroll">
-        <button id="btn1" onclick="showTab('add')">➕ Wort</button>
-        <button id="btnFlash" onclick="showTab('flashcards')">📇 Karten</button>
-        <button id="btn5" onclick="showTab('study')">👀 Lernen</button>
-        <button id="btnRoleplay" onclick="showTab('roleplay')">🗣️ Szenarien</button>
-        <button id="btnAudio" onclick="showTab('audio')">🎧 Audio</button>
-        <button id="btn8" onclick="showTab('chat')">💬 Tutor</button>
-        <button id="btn7" onclick="showTab('live')">🎙️ Live</button>
-        <button id="btn3" onclick="showTab('list')">📚 Liste</button>
-        <button id="btnArcade" onclick="showTab('arcade')">🎮 Spiele</button>
+    <div style="background: rgba(255,255,255,0.7); padding: 20px; border-radius: 16px; border: 1px solid var(--border-soft); text-align: center; margin-bottom: 20px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; position: relative;">
+        <button class="icon-btn" onclick="saveAudioSentence()" style="position: absolute; right: 10px; top: 10px; font-size: 1.2rem; border: none; background: rgba(255,255,255,0.9); box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 45px; height: 45px;" title="Satz in Karteikarten speichern">💾</button>
+        <div id="audioDisplayL1" style="font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 10px; padding-right: 35px;">Bereit zum Starten...</div>
+        <div id="audioDisplayL3" style="font-weight: 600; font-size: 1.2rem; color: var(--primary); padding-right: 35px;"></div>
+        <div id="audioLoader" class="loader" style="display:none; margin-top: 10px;">KI generiert Satz...</div>
     </div>
 
-    <div id="tabAdd" class="card"></div>
-    <div id="tabFlashcards" class="card" style="display:none"></div>
-    <div id="tabStudy" class="card" style="display:none"></div>
-    <div id="tabRoleplay" class="card" style="display:none"></div>
-    <div id="tabAudio" class="card" style="display:none">
-        <h2>🎧 Audio-Trainer</h2>
-        <div id="audioDisplayL1"></div><div id="audioDisplayL3"></div>
-        <button id="btnStartAudio" onclick="toggleAudioTrainer()">▶️ Starten</button>
-    </div>
-    <div id="tabChat" class="card" style="display:none"></div>
-    <div id="tabLive" class="card" style="display:none"></div>
-    <div id="tabList" class="card" style="display:none"></div>
-    <div id="tabArcade" class="card" style="display:none"></div>
+    <button id="btnStartAudio" class="action-btn btn-magic" onclick="toggleAudioTrainer()">▶️ Audio-Trainer starten</button>
+</div>
 
-    <script src="app.js?v=29.2"></script>
+<div id="tabRoleplay" class="card" style="display:none">
+    <h2>🗣️ Situations-Training</h2>
+    <p style="font-size:0.85rem; color:var(--text-light); margin-top:-15px;">Wähle ein Thema und übe verschiedene Antwortmöglichkeiten.</p>
+    
+    <label>Wähle dein Thema</label>
+    <select id="selRpTopic" onchange="checkCustomTopic()" style="margin-bottom: 15px;">
+        <option value="Begrüßung und Smalltalk">👋 Begrüßung & Smalltalk</option>
+        <option value="Im Arbeitsalltag und mit Kollegen sprechen">💼 Arbeitsleben & Kollegen</option>
+        <option value="Besuch im Krankenhaus oder beim Arzt">🏥 Krankenhaus / Arzt</option>
+        <option value="Ein Bahnticket am Schalter buchen">🚆 Bahnticket buchen</option>
+        <option value="Im Supermarkt oder auf dem Markt einkaufen">🛒 Im Supermarkt einkaufen</option>
+        <option value="Im Restaurant Essen bestellen">🍽️ Im Restaurant bestellen</option>
+        <option value="custom">✏️ Eigener Themenwunsch...</option>
+    </select>
+    
+    <div id="customTopicRow" class="input-row" style="display:none; margin-bottom: 15px;">
+        <input type="text" id="inpCustomTopic" placeholder="Z.B. Auto in der Werkstatt abgeben..." oninput="invalidateRpBuffer()">
+    </div>
+
+    <div class="input-row" style="gap:15px; margin-bottom: 20px; align-items: flex-end;">
+        <div style="flex:1">
+            <label style="margin-top:0;">Niveau</label>
+            <select id="selRpDifficulty" onchange="invalidateRpBuffer()">
+                <option value="A1">🟢 A1 (Leicht)</option>
+                <option value="A2" selected>🟡 A2 (Alltag)</option>
+                <option value="B1">🟠 B1 (Mittel)</option>
+                <option value="B2">🔴 B2 (Schwer)</option>
+            </select>
+        </div>
+        <div style="flex:1">
+            <label style="margin-top:0;">Tempo</label>
+            <select id="selRpSpeed">
+                <option value="1.0">▶️ Normal</option>
+                <option value="0.75">🐢 Langsam</option>
+                <option value="0.5">🐌 Sehr langsam</option>
+            </select>
+        </div>
+        <div style="flex:1">
+            <label style="margin-top:0;">Denkpause</label>
+            <select id="selRpMicPatience">
+                <option value="1">1 Sek.</option>
+                <option value="2">2 Sek.</option>
+                <option value="3" selected>3 Sek.</option>
+                <option value="4">4 Sek.</option>
+                <option value="5">5 Sek.</option>
+            </select>
+        </div>
+    </div>
+    
+    <button class="action-btn btn-magic" onclick="startRoleplay()">🚀 3 Sätze generieren</button>
+
+    <div id="rpArea" style="display:none; margin-top:25px; border-top:2px dashed var(--border-soft); padding-top:20px;">
+        <div style="text-align:center; margin-bottom:15px;">
+            <span style="font-size:0.75rem; background:#E5E7EB; padding:4px 10px; border-radius:10px; font-weight:800; color:var(--text-light);" id="rpTopicDisplay">THEMA</span>
+        </div>
+        
+        <div id="rpLoader" class="loader" style="margin-bottom:20px;">KI generiert Sätze...</div>
+        <div id="rpOptionsContainer"></div>
+        <button class="action-btn btn-secondary" onclick="generateRpSentence()" style="margin-top: 15px; font-size: 0.9rem; border-style: dashed;" id="btnRpRefresh">🔄 3 neue Sätze generieren</button>
+        <div id="rpEvalLoader" class="loader" style="margin-top:20px;">Analysiere Aussprache...</div>
+        
+        <div id="rpFeedbackBox" style="display:none; background:rgba(255,255,255,0.8); padding:18px; border-radius:20px; border:1px solid var(--border-soft); margin-top:20px;">
+            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">DU HAST GESAGT:</div>
+            <div id="rpUserSaid" style="font-style:italic; color:var(--text); font-weight:600; margin-bottom:15px;">...</div>
+            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">ERGEBNIS:</div>
+            <div id="rpFeedbackText" style="color:var(--primary); font-weight:600; font-size:0.95rem;">...</div>
+        </div>
+    </div>
+</div>
+
+<div id="tabFlashcards" class="card" style="display:none">
+    <div style="text-align:center;">
+        <h2>📇 Karteikarten</h2>
+        <p id="fcCount" style="font-weight:800; color:var(--primary); margin-top: -15px;">0/0</p>
+    </div>
+    
+    <div style="background: rgba(255,255,255,0.7); padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 1px solid var(--border-soft);">
+        <label style="margin-top: 0;">🎯 Thematisch üben (KI-Filter)</label>
+        <div class="input-row" style="margin-bottom:0;">
+            <input type="text" id="fcTopicInput" placeholder="z.B. Arbeit, Medizin, Autos...">
+            <button class="action-btn btn-magic" style="margin-top: 0; width: auto; padding: 16px 20px;" onclick="initFlashcards(true)">Filtern</button>
+        </div>
+    </div>
+
+    <div id="fcLoader" class="loader" style="margin-bottom:20px;">KI durchsucht Wörterbuch...</div>
+    
+    <div id="fcCardArea">
+        <div class="flip-card" id="fcCard" onclick="flipFc()">
+            <div class="flip-card-inner" id="fcInner">
+                <div class="flip-card-front" style="padding:0;">
+                    <div id="fcImgFront" style="width:100%; height:180px; background-color:#E5E7EB; background-size:cover; background-position:center; border-radius:22px 22px 0 0;"></div>
+                    <div style="padding: 20px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1;">
+                        <div class="fc-lang-label" id="fcLabelL1">Deutsch</div>
+                        <div id="fcFrontText">...</div>
+                    </div>
+                </div>
+                <div class="flip-card-back" style="padding:0;">
+                    <div id="fcImgBack" style="width:100%; height:100%; position:absolute; top:0; left:0; border-radius:22px; z-index:0;"></div>
+                    <div style="position:relative; z-index:1; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%;">
+                        <div class="fc-lang-label" id="fcLabelL3" style="color: rgba(255,255,255,0.8);">Schwedisch</div>
+                        <div id="fcBackText">...</div>
+                        
+                        <div style="display:flex; gap: 15px; margin-top:25px;">
+                            <button class="icon-btn" onclick="speakFc(event)" style="border:none; background:rgba(255,255,255,0.25); color:white; width:55px; height:55px; border-radius:50%; font-size:1.5rem; box-shadow:0 4px 10px rgba(0,0,0,0.1);">🔊</button>
+                            <button class="icon-btn" id="fcMicBtn" onclick="recordFcSpeech(event)" style="border:none; background:rgba(255,255,255,0.25); color:white; width:55px; height:55px; border-radius:50%; font-size:1.5rem; box-shadow:0 4px 10px rgba(0,0,0,0.1);">🎤</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="fcEvalLoader" class="loader" style="margin-top:10px;">Analysiere Aussprache...</div>
+        
+        <div id="fcFeedbackBox" style="display:none; background:rgba(255,255,255,0.8); padding:15px; border-radius:16px; border:1px solid var(--border-soft); margin-top:10px; margin-bottom:15px; text-align: left;">
+            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">DU HAST GESAGT:</div>
+            <div id="fcUserSaid" style="font-style:italic; color:var(--text); font-weight:600; margin-bottom:10px;">...</div>
+            <div style="font-weight:800; font-size:0.75rem; color:var(--text-light); margin-bottom:4px;">ERGEBNIS:</div>
+            <div id="fcFeedbackText" style="color:var(--primary); font-weight:600; font-size:0.95rem;">...</div>
+        </div>
+        
+        <div class="fc-btn-row" id="fcActions">
+            <button class="fc-btn fc-btn-red" onclick="handleFc('spaeter')">🔴 Später</button>
+            <button class="fc-btn fc-btn-orange" onclick="handleFc('nochmals')">🟠 Nochmals</button>
+            <button class="fc-btn fc-btn-green" onclick="handleFc('geuebt')">🟢 Geübt</button>
+        </div>
+    </div>
+    
+    <div id="fcDoneMessage" style="display:none; text-align:center; padding: 30px 0;">
+        <h3 style="color: var(--primary);">🎉 Alle Karten durch!</h3>
+        <button class="action-btn btn-secondary" onclick="document.getElementById('fcTopicInput').value=''; initFlashcards(false)">Stapel neu mischen (Alle)</button>
+    </div>
+
+    <div style="margin-top: 30px; border-top: 2px dashed var(--border-soft); padding-top: 15px;">
+        <p style="text-align:center; font-size:0.75rem; font-weight:800; color:var(--text-light); margin-top:0;">📂 ABLAGE (AKTUELLE SITZUNG)</p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <button class="icon-btn" style="flex:1; font-size:0.9rem;" onclick="showFcList('spaeter')">🔴 <span id="cntSpaeter">0</span></button>
+            <button class="icon-btn" style="flex:1; font-size:0.9rem;" onclick="showFcList('nochmals')">🟠 <span id="cntNochmals">0</span></button>
+            <button class="icon-btn" style="flex:1; font-size:0.9rem;" onclick="showFcList('geuebt')">🟢 <span id="cntGeuebt">0</span></button>
+        </div>
+        <div id="fcHistoryList" style="margin-top:15px; display:none; flex-direction:column; gap:8px; max-height:250px; overflow-y:auto; background: rgba(255,255,255,0.7); padding: 15px; border-radius: 16px; border: 1px solid var(--border-soft);"></div>
+    </div>
+</div>
+
+<div id="tabArcade" class="card" style="display:none">
+    <h2>🎮 Spiele-Center</h2>
+    <div id="arcadeMenu" class="arcade-grid">
+        <div class="arcade-card" onclick="openMiniGame('Rallye')"><div class="arcade-icon">💣</div><div class="arcade-title">Wort-Rallye</div></div>
+        <div class="arcade-card" onclick="openMiniGame('Hunt')"><div class="arcade-icon">📷</div><div class="arcade-title">Schatzsuche</div></div>
+        <div class="arcade-card" onclick="openMiniGame('Duel')"><div class="arcade-icon">⚔️</div><div class="arcade-title">Familien-Duell</div></div>
+        <div class="arcade-card" onclick="openMiniGame('Adventure')"><div class="arcade-icon">🗺️</div><div class="arcade-title">Abenteuer</div></div>
+    </div>
+    <div id="gameRallye" style="display:none; text-align:center;">
+        <h3 style="color: #EF4444;">💣 Hot-Potato Rallye</h3>
+        <div class="bomb-container"><div class="bomb-icon" id="rallyeBomb">💣</div><h2 id="rallyeCategory" style="margin: 15px 0; color: var(--primary);">Nenne ein Tier!</h2></div>
+        <button class="action-btn" id="btnRallyeMic" onclick="playRallyeRound()">🎤 Wort sagen</button><div id="rallyeLoader" class="loader">KI prüft...</div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Menü</button>
+    </div>
+    <div id="gameHunt" style="display:none;">
+        <h3>📷 Die Schatzsuche</h3>
+        <div class="mission-bubble" style="text-align:center;"><span style="color:var(--text-light);">Finde folgendes:</span><br><strong id="huntTargetWord" style="font-size:2rem; color:var(--primary);">---</strong></div>
+        <input type="file" id="huntInput" accept="image/*" capture="environment" style="display:none" onchange="checkHuntImage(this)">
+        <button class="action-btn btn-magic" onclick="document.getElementById('huntInput').click()">📸 Objekt fotografieren</button>
+        <div id="huntLoader" class="loader">KI prüft...</div><div id="huntResult" style="text-align:center; font-weight:bold; margin-top:10px;"></div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Menü</button>
+    </div>
+    <div id="gameDuel" style="display:none;">
+        <h3>⚔️ Split-Screen Duell</h3>
+        <button class="action-btn" onclick="startDuelRound()" id="btnStartDuel">Runde starten</button>
+        <div class="duel-container" id="duelArea" style="display:none; position:relative;"><div class="duel-word" id="duelWord">...</div><div class="duel-player duel-p1" onclick="duelTap('Rot')">ROT</div><div class="duel-player duel-p2" onclick="duelTap('Blau')">BLAU</div></div>
+        <div id="duelResult" style="text-align:center; font-weight:bold; margin-top:15px;"></div><button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Menü</button>
+    </div>
+    <div id="gameAdventure" style="display:none;">
+        <h3>🗺️ Abenteuer</h3>
+        <button class="action-btn" onclick="startAdventure()" id="btnStartAdv">Starten</button>
+        <div id="advArea" style="display:none; margin-top:15px;"><div class="chat-box" id="advHistory"></div><div id="advLoader" class="loader">KI denkt nach...</div><button class="action-btn" id="btnAdvMic" onclick="advTurn()">🎤 Was tust du?</button></div>
+        <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Menü</button>
+    </div>
+</div>
+
+<div id="tabStory" class="card" style="display:none">
+    <h2>📖 KI-Märchen</h2>
+    <button class="action-btn btn-magic" onclick="generateStory()">✨ Geschichte generieren</button>
+    <div id="loaderStory" class="loader">🧙‍♂️ KI schreibt...</div>
+    <div id="storyBox" class="story-box"><div id="storyContent" style="font-weight: 800; font-size: 1.2rem; color: var(--primary); margin-bottom: 15px;"></div><div id="storyTranslation" style="font-size: 0.9rem; color: var(--text-light); border-top: 1px solid #FCD34D; padding-top: 10px;"></div><button class="action-btn btn-secondary" onclick="speakStory()">🔊 Vorlesen</button></div>
+</div>
+
+<div id="tabAdd" class="card">
+    <h2 id="addTitle">➕ Neues Wort</h2>
+    <input type="hidden" id="editId">
+    
+    <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none" onchange="handleImageScan(this)">
+    <button class="action-btn btn-magic" id="scanBtn" onclick="document.getElementById('camInput').click()">📸 Foto-Scanner & Auto-Fill</button>
+    <div id="loader" class="loader">🤖 KI arbeitet...</div>
+    
+    <label id="lblL1">L1</label>
+    <div class="input-row">
+        <input type="text" id="inDe">
+        <button class="icon-btn" onclick="speakInput('inDe', 1)">🔊</button>
+        <button class="icon-btn" onclick="listen(1, 'inDe', this)">🎤</button>
+    </div>
+    
+    <label id="lblL2">L2</label>
+    <div class="input-row">
+        <input type="text" id="inEn">
+        <button class="icon-btn" onclick="speakInput('inEn', 2)">🔊</button>
+        <button class="icon-btn" onclick="listen(2, 'inEn', this)">🎤</button>
+    </div>
+    
+    <label id="lblL3">L3</label>
+    <div class="input-row">
+        <input type="text" id="inSv">
+        <button class="icon-btn" onclick="speakInput('inSv', 3)">🔊</button>
+        <button class="icon-btn" onclick="listen(3, 'inSv', this)">🎤</button>
+    </div>
+    
+    <button class="action-btn btn-secondary" onclick="toggleVerbSection()" style="margin-top: 15px; font-size: 0.9rem; background: transparent;">📝 Verb-Details (Optional) ▾</button>
+    
+    <div id="verbSection" class="verb-section">
+        <div id="vTitle1" class="verb-lang-title">L1</div>
+        <div class="input-row"><input type="text" id="inDePast" placeholder="Past"><input type="text" id="inDeFut" placeholder="Future"></div>
+        <div id="vTitle2" class="verb-lang-title">L2</div>
+        <div class="input-row"><input type="text" id="inEnPast" placeholder="Past"><input type="text" id="inEnFut" placeholder="Future"></div>
+        <div id="vTitle3" class="verb-lang-title">L3</div>
+        <div class="input-row"><input type="text" id="inSvPast" placeholder="Past"><input type="text" id="inSvFut" placeholder="Future"></div>
+        <button class="action-btn btn-magic" style="margin-bottom: 0;" onclick="fetchVerbForms()">⚡ Formen automatisch suchen</button>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-top: 25px;">
+        <button class="action-btn btn-secondary" id="autoFillBtn" onclick="handleSmartTranslate()">⚡ Auto-Fill</button>
+        <button class="action-btn" id="saveBtn" onclick="manualSave()">💾 Speichern</button>
+    </div>
+    
+    <button class="action-btn btn-secondary" id="btnSaveMode" onclick="toggleSaveMode()" style="margin-top: 15px; font-size: 0.85rem; padding: 12px; background: transparent;">
+        ⚡ Modus: Schnelleingabe (Hier bleiben)
+    </button>
+    
+    <button class="action-btn btn-danger" id="cancelBtn" onclick="resetAddForm()" style="display:none; margin-top:10px;">Abbrechen</button>
+</div>
+
+<div id="tabChat" class="card" style="display:none">
+    <h2>💬 Sprachtutor</h2>
+    <div class="input-row" style="margin-bottom: 15px;"><select id="chatSrcLang"></select><select id="chatTgtLang"></select></div>
+    <div class="chat-box" id="chatHistory"><div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns üben. 👋</div></div>
+    <div id="loaderChat" class="loader">👨‍🏫 Tutor denkt nach...</div>
+    <div class="input-row"><button id="btnChatRecord" class="action-btn" onclick="toggleChatRecord()" style="margin-top:0;">🎤 Chat Starten</button><button class="icon-btn danger" onclick="clearChat()">🗑️</button></div>
+</div>
+
+<div id="tabLive" class="card" style="display:none">
+    <h2>🎙️ Live Übersetzer</h2>
+    <div class="input-row"><select id="liveSrcLang"></select><span>➡️</span><select id="liveTgtLang"></select></div>
+    <button id="btnLiveRecord" class="action-btn" onclick="toggleLiveRecord()">🎤 Start</button>
+    <label>Gehört:</label><textarea id="liveSourceText" rows="2" readonly></textarea>
+    <div id="loaderLive" class="loader">🤖 KI übersetzt...</div><label>Übersetzung:</label><textarea id="liveResultText" rows="3" readonly style="color: var(--primary);"></textarea>
+    
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="icon-btn" style="flex:1;" onclick="speakLiveResult()">🔊 Vorlesen</button>
+        <button class="action-btn btn-magic" style="margin-top:0; flex:3;" onclick="saveLiveTranslation()">💾 Ins Wörterbuch</button>
+    </div>
+</div>
+
+<div id="tabStudy" class="card" style="display:none">
+    <div style="background: #FFFBEB; padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 2px dashed #FCD34D;">
+        <h3 style="margin-top:0; color: #D97706; font-size:1rem; margin-bottom:10px;">🏆 Tägliche Quests</h3>
+        <div id="questList">
+            <div class="quest-item" id="q1"><span>📚 Lerne 5 Vokabeln</span> <span style="font-weight:bold; color:var(--primary);">+20 XP</span></div>
+            <div class="quest-item" id="q2"><span>➕ Füge 2 neue Wörter hinzu</span> <span style="font-weight:bold; color:var(--primary);">+15 XP</span></div>
+        </div>
+    </div>
+    
+    <div style="text-align:center;"><h2>👀 Spaced Repetition</h2><p id="studyWordCount" style="font-weight:800; color:var(--primary);">0/0</p></div>
+    <div id="studyContainer"></div>
+    <div id="studyActions" style="display: flex; gap: 10px; margin-top:25px;">
+        <button class="action-btn btn-danger" style="margin-top:0;" onclick="markWord(false)">🔴 Falsch</button>
+        <button class="action-btn btn-success" style="margin-top:0;" onclick="markWord(true)">🟢 Wusste ich!</button>
+    </div>
+</div>
+
+<div id="tabList" class="card" style="display:none">
+    <h2>📚 Liste</h2>
+    <div style="text-align:center; margin-bottom: 15px;"><span style="background: var(--primary-gradient); color: white; padding: 6px 16px; border-radius: 20px; font-weight: 800;">📚 <span id="wordCount">0</span> Wörter</span></div>
+    <input type="text" id="listSearch" placeholder="🔍 Suchen..." oninput="debouncedFilterListWords()" style="margin-bottom: 20px;">
+    <div id="listCont"></div>
+</div>
+
+<div class="footer">
+    SprachTutor AI &bull; Version 30.0 (Ultimate Edition) &bull; 2026
+</div>
+
+<div id="toastContainer" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>
+
+<script src="app.js?v=30.0"></script>
 </body>
 </html>
