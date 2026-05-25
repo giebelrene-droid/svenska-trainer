@@ -1,4 +1,4 @@
-const APP_VERSION = "30.22";
+const APP_VERSION = "30.23";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -828,55 +828,77 @@ function switchUser() { currentCollIndex = parseInt(document.getElementById('sel
 // ==========================================
 // 5. GEMINI API ANBINDUNG
 // ==========================================
+// Preferred models in order. gemini-2.0-flash is primary; 1.5-flash is fallback.
+// "gemini-1.5-flash-latest" was decommissioned by Google — never use it.
+const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+
 async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
-    if(keys.length === 0) { showToast("⚠️ Bitte hinterlege mindestens einen API-Key in den Einstellungen.", "error"); return null; }
+    if (keys.length === 0) {
+        showToast("⚠️ Bitte hinterlege mindestens einen API-Key in den Einstellungen.", "error");
+        return null;
+    }
 
     const activeLoader = Array.from(document.querySelectorAll('.loader')).find(el => el.offsetWidth > 0);
     const originalLoaderText = activeLoader ? activeLoader.innerText : "";
 
-    if (!cachedGeminiModel) {
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keys[0]}`); const data = await res.json();
-            if (data.models) {
-                let m = data.models.find(mod => mod.name.includes("flash") && !mod.name.includes("latest") && mod.supportedGenerationMethods.includes("generateContent"));
-                if(!m) m = data.models.find(mod => mod.name.includes("gemini") && mod.supportedGenerationMethods.includes("generateContent"));
-                if (m) cachedGeminiModel = m.name.replace('models/', '');
-            }
-        } catch(e) { logCustomError("Model Fetch", e); }
-        if(!cachedGeminiModel) cachedGeminiModel = "gemini-1.5-flash-latest";
-    }
-
+    // Build request payload once
     let payload = { contents: [] };
-    if (systemPrompt) { payload.contents.push({ role: "user", parts: [{ text: "SYSTEM-ANWEISUNG: " + systemPrompt }] }); payload.contents.push({ role: "model", parts: [{ text: "Verstanden." }] }); }
+    if (systemPrompt) {
+        payload.contents.push({ role: "user",  parts: [{ text: "SYSTEM-ANWEISUNG: " + systemPrompt }] });
+        payload.contents.push({ role: "model", parts: [{ text: "Verstanden." }] });
+    }
     let userParts = [{ text: prompt }];
     if (imageBase64) {
-        let mime = "image/jpeg"; try { mime = imageBase64.match(/data:(.*?);/)[1]; } catch(e){}
-        let b64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+        let mime = "image/jpeg";
+        try { mime = imageBase64.match(/data:(.*?);/)[1]; } catch(e) {}
+        const b64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
         userParts.push({ inlineData: { mimeType: mime, data: b64 } });
     }
     payload.contents.push({ role: "user", parts: userParts });
 
-    const waitTimes = [0, 2000, 4000, 8000, 15000]; let lastErrorMsg = "";
-    for (let round = 0; round < waitTimes.length; round++) {
-        if (round > 0 && activeLoader) activeLoader.innerText = `Lade... Warte ${waitTimes[round]/1000}s...`;
-        if (round > 0) await new Promise(resolve => setTimeout(resolve, waitTimes[round]));
+    // Try every model × every key, show actual API error each time
+    let lastErrorMsg = "";
+    const modelsToTry = cachedGeminiModel
+        ? [cachedGeminiModel, ...GEMINI_MODELS.filter(m => m !== cachedGeminiModel)]
+        : GEMINI_MODELS;
+
+    for (const model of modelsToTry) {
         for (let i = 0; i < keys.length; i++) {
-            const currentKey = keys[currentApiKeyIndex % keys.length];
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${cachedGeminiModel}:generateContent?key=${currentKey}`;
+            const key = keys[currentApiKeyIndex % keys.length];
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
             try {
-                const resp = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+                if (activeLoader) activeLoader.innerText = `KI (${model})…`;
+                const resp = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
                 const d = await resp.json();
-                if (d.error) throw new Error(d.error.message);
+                if (d.error) {
+                    const msg = d.error.message || JSON.stringify(d.error);
+                    // Show exact API error so the user can see what went wrong
+                    showToast(`⚠️ API [${model}]: ${msg}`, 'error');
+                    throw new Error(msg);
+                }
+                const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) throw new Error("Leere Antwort vom Modell");
+                cachedGeminiModel = model; // remember the working model
                 if (activeLoader) activeLoader.innerText = originalLoaderText;
-                return d.candidates[0].content.parts[0].text.trim();
-            } catch(e) { lastErrorMsg = e.message; logCustomError(`API Key Failed`, e.message); currentApiKeyIndex++; }
+                return text.trim();
+            } catch(e) {
+                lastErrorMsg = e.message;
+                logCustomError(`callGemini [${model}]`, e.message);
+                currentApiKeyIndex++;
+            }
         }
     }
+
     if (activeLoader) activeLoader.innerText = originalLoaderText;
-    if (lastErrorMsg.toLowerCase().includes("overloaded")) showToast("⚠️ Die Google KI-Server sind im Moment überlastet.", "error");
-    else if (lastErrorMsg.toLowerCase().includes("quota")) showToast("⚠️ API-Limit erreicht! Kurze Pause machen.", "error");
-    else showToast("⚠️ Fehler bei der API-Abfrage.", "error");
+    // Show final error if no toast was shown yet (network error, not an API error object)
+    if (!lastErrorMsg.includes(': ')) {
+        showToast(`⚠️ API-Fehler: ${lastErrorMsg}`, 'error');
+    }
     return null;
 }
 
