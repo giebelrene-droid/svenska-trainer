@@ -1,4 +1,4 @@
-const APP_VERSION = "30.33";
+const APP_VERSION = "30.34";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -807,6 +807,36 @@ async function testApiKeys() {
     }
 
     box.innerHTML = html;
+}
+
+async function listGeminiModels() {
+    const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
+    const box = document.getElementById('apiKeyTestResults');
+    if (!box) return;
+    box.style.display = 'block';
+    if (!keys.length) { box.innerHTML = '<span style="color:#f87171;">Kein Gemini API-Key eingetragen.</span>'; return; }
+
+    box.innerHTML = '<span style="color:#94a3b8;">⏳ Rufe Modellliste ab…</span>';
+    const key = keys[0];
+    try {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+        const d = await resp.json();
+        if (d.error) {
+            box.innerHTML = `<span style="color:#f87171;">❌ API-Fehler ${resp.status}:</span><br><pre style="color:#fbbf24;white-space:pre-wrap;word-break:break-all;margin:4px 0 0;">${escapeHTML(JSON.stringify(d.error, null, 2))}</pre>`;
+            return;
+        }
+        const models = (d.models || []);
+        const generateModels = models.filter(m => (m.supportedGenerationMethods || []).includes('generateContent'));
+        let html = `<div style="color:#94a3b8;margin-bottom:8px;">Key: …${key.slice(-6)} &nbsp;|&nbsp; <b style="color:#e2e8f0;">${generateModels.length}</b> Modelle mit generateContent</div>`;
+        for (const m of generateModels) {
+            const name = m.name.replace('models/', '');
+            html += `<div style="color:#4ade80;padding:2px 0;">✓ ${escapeHTML(name)}</div>`;
+        }
+        if (generateModels.length === 0) html += '<div style="color:#fbbf24;">Keine generateContent-Modelle gefunden.</div>';
+        box.innerHTML = html;
+    } catch(e) {
+        box.innerHTML = `<span style="color:#f87171;">❌ Netzwerkfehler: ${escapeHTML(e.message)}</span>`;
+    }
 }
 
 function showTab(n) {
