@@ -1,4 +1,4 @@
-const APP_VERSION = "30.39";
+const APP_VERSION = "30.40";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -860,12 +860,9 @@ async function listGeminiModels() {
 }
 
 function alertGeminiModels() {
-    fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + geminiApiKey.split(',')[0].trim())
+    fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + document.querySelector('#inpGeminiKey').value.split(',')[0].trim())
         .then(r => r.json())
-        .then(d => {
-            const names = d.models ? d.models.map(m => m.name).join('\n') : JSON.stringify(d);
-            alert(names);
-        });
+        .then(d => alert(d.models ? d.models.map(m => m.name).join('\n') : JSON.stringify(d)));
 }
 
 function showTab(n) {
