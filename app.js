@@ -1,3 +1,5 @@
+const APP_VERSION = "30.3";
+
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
 // ==========================================
@@ -177,8 +179,16 @@ function removeBrokenServiceWorkers() {
     }
 }
 
-function init() { 
+function updateVersionDisplay() {
+    const badge = document.getElementById('versionBadge');
+    const footer = document.getElementById('footerVersion');
+    if (badge) badge.textContent = 'v' + APP_VERSION;
+    if (footer) footer.textContent = APP_VERSION;
+}
+
+function init() {
     removeBrokenServiceWorkers();
+    updateVersionDisplay();
     if(document.getElementById('inpGeminiKey')) document.getElementById('inpGeminiKey').value = geminiApiKey; 
     try { const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames); const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx); } catch(e){}
     const todayStr = new Date().toDateString(); if(statsToday.date !== todayStr) { statsToday = {learned:0, added:0, date:todayStr}; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); }
