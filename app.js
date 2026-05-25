@@ -1,4 +1,4 @@
-const APP_VERSION = "30.6";
+const APP_VERSION = "30.7";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -119,28 +119,19 @@ if (!('speechSynthesis' in window)) {
     });
 }
 
-// ── ANDROID CHROME UNLOCK ─────────────────────────────────────────────────
-// Android Chrome blockiert speechSynthesis bis zum ersten User-Gesture.
-// Beim ersten touchstart/click wird eine stille Utterance gespielt → entsperrt.
-let ttsUnlocked = false;
+// ── ANDROID CHROME FIX ───────────────────────────────────────────────────
+// 1) Beim ersten Klick irgendwo auf der Seite: leere Utterance → entsperrt Chrome
+document.addEventListener('click', function unlockTTS() {
+    if (!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance('');
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+}, { once: true });
 
-function unlockSpeechSynthesis() {
-    if (ttsUnlocked || !window.speechSynthesis) return;
-    try {
-        const u = new SpeechSynthesisUtterance(' ');
-        u.volume = 0;
-        u.rate = 10;
-        u.onend   = () => { ttsUnlocked = true; };
-        u.onerror = () => { ttsUnlocked = true; };
-        window.speechSynthesis.speak(u);
-        setTimeout(() => { if (!ttsUnlocked) ttsUnlocked = true; }, 800);
-    } catch(e) {
-        ttsUnlocked = true;
-    }
+// 2) Alle 5s resume() aufrufen — verhindert Chrome-Android-Pause-Bug
+if (window.speechSynthesis) {
+    setInterval(() => { window.speechSynthesis.resume(); }, 5000);
 }
-
-document.addEventListener('touchstart', unlockSpeechSynthesis, { once: true, passive: true });
-document.addEventListener('click',      unlockSpeechSynthesis, { once: true });
 // ─────────────────────────────────────────────────────────────────────────
 
 function loadVoices() {
@@ -206,16 +197,12 @@ function buildUtterance(text, langKey, rate) {
 
 function speak(text, langKey, rate = 1.0) {
     if (!window.speechSynthesis || !text || !text.trim()) return;
-
     const ss = window.speechSynthesis;
-    // cancel() NUR nach Unlock — auf Android Chrome bricht cancel() VOR dem ersten
-    // speak() den internen Gesture-Lock und verhindert alle weiteren Ausgaben.
-    if (ttsUnlocked && (ss.speaking || ss.pending)) ss.cancel();
-    if (ss.paused) ss.resume();
-
+    // 3) Vor jedem speak(): cancel() dann resume() — einziger bekannter Fix für Chrome Android
+    ss.cancel();
+    ss.resume();
     const msg = buildUtterance(text, langKey, rate);
     msg.onerror = (e) => { logCustomError('speak', (e.error || String(e))); };
-
     ss.speak(msg);
 }
 
@@ -410,7 +397,8 @@ function speakAsync(text, langKey, rate = 1.0) {
         const estMs = Math.max(2000, (charCount / (parseFloat(rate) * 14)) * 1000) + 2000;
         setTimeout(done, Math.min(estMs, 18000));
 
-        if (ss.paused) ss.resume();
+        ss.cancel();
+        ss.resume();
         ss.speak(currentUtterance);
     });
 }
@@ -658,7 +646,265 @@ function renderList() { const q = document.getElementById('listSearch') ? docume
 async function delWord(id) { if(!db) return; if(confirm("Löschen?")) { await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(id).delete(); refreshData(); } }
 function getNextReviewTimestamp(level) { const daysToWait = [0, 1, 3, 7, 14, 30]; const nextDate = new Date(); nextDate.setDate(nextDate.getDate() + (daysToWait[level] || 0)); return nextDate.getTime(); }
 function manualSave() { if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info"); const eid = document.getElementById('editId').value; const d = { [conf.l1]: document.getElementById('inDe').value, [conf.l2]: document.getElementById('inEn').value, [conf.l3]: document.getElementById('inSv').value }; if(!d[conf.l1]) return showToast("Bitte Feld 1 ausfüllen!", "error"); const ref = db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex); if(!eid) { d.ts = firebase.firestore.FieldValue.serverTimestamp(); d.level = 0; d.nextReview = getNextReviewTimestamp(0); } const promise = eid ? ref.doc(eid).update(d) : ref.add(d); promise.then(() => { if(!eid) { playSound('success'); addXP(10); statsToday.added++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); if(statsToday.added === 2) { addXP(15); fireConfetti(); } } resetAddForm(); refreshData(); if(!isFastInputMode) showTab('list'); else showToast("✅ Wort gespeichert!", "success"); }).catch(e => logCustomError("Wort speichern", e)); }
-async function refreshData() { if(!currentUser || !db) return; const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).orderBy("ts", "desc").get(); if(s) { allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderList(); } }
+const DEFAULT_WORDS = [
+  // Tiere
+  {de:"Hund",en:"Dog",sv:"Hund"},{de:"Katze",en:"Cat",sv:"Katt"},{de:"Vogel",en:"Bird",sv:"Fågel"},
+  {de:"Fisch",en:"Fish",sv:"Fisk"},{de:"Pferd",en:"Horse",sv:"Häst"},{de:"Kuh",en:"Cow",sv:"Ko"},
+  {de:"Schwein",en:"Pig",sv:"Gris"},{de:"Schaf",en:"Sheep",sv:"Får"},{de:"Ziege",en:"Goat",sv:"Get"},
+  {de:"Hase",en:"Hare",sv:"Hare"},{de:"Maus",en:"Mouse",sv:"Mus"},{de:"Bär",en:"Bear",sv:"Björn"},
+  {de:"Wolf",en:"Wolf",sv:"Varg"},{de:"Fuchs",en:"Fox",sv:"Räv"},{de:"Elch",en:"Moose",sv:"Älg"},
+  {de:"Hirsch",en:"Deer",sv:"Hjort"},{de:"Adler",en:"Eagle",sv:"Örn"},{de:"Ente",en:"Duck",sv:"Anka"},
+  {de:"Eule",en:"Owl",sv:"Uggla"},{de:"Schlange",en:"Snake",sv:"Orm"},{de:"Frosch",en:"Frog",sv:"Groda"},
+  {de:"Schildkröte",en:"Turtle",sv:"Sköldpadda"},{de:"Löwe",en:"Lion",sv:"Lejon"},{de:"Tiger",en:"Tiger",sv:"Tiger"},
+  {de:"Elefant",en:"Elephant",sv:"Elefant"},{de:"Affe",en:"Monkey",sv:"Apa"},{de:"Krokodil",en:"Crocodile",sv:"Krokodil"},
+  {de:"Delfin",en:"Dolphin",sv:"Delfin"},{de:"Hai",en:"Shark",sv:"Haj"},{de:"Spinne",en:"Spider",sv:"Spindel"},
+  // Lebensmittel
+  {de:"Brot",en:"Bread",sv:"Bröd"},{de:"Butter",en:"Butter",sv:"Smör"},{de:"Käse",en:"Cheese",sv:"Ost"},
+  {de:"Ei",en:"Egg",sv:"Ägg"},{de:"Milch",en:"Milk",sv:"Mjölk"},{de:"Fleisch",en:"Meat",sv:"Kött"},
+  {de:"Hühnchen",en:"Chicken",sv:"Kyckling"},{de:"Wurst",en:"Sausage",sv:"Korv"},{de:"Schinken",en:"Ham",sv:"Skinka"},
+  {de:"Kartoffel",en:"Potato",sv:"Potatis"},{de:"Tomate",en:"Tomato",sv:"Tomat"},{de:"Gurke",en:"Cucumber",sv:"Gurka"},
+  {de:"Karotte",en:"Carrot",sv:"Morot"},{de:"Zwiebel",en:"Onion",sv:"Lök"},{de:"Knoblauch",en:"Garlic",sv:"Vitlök"},
+  {de:"Apfel",en:"Apple",sv:"Äpple"},{de:"Banane",en:"Banana",sv:"Banan"},{de:"Orange",en:"Orange",sv:"Apelsin"},
+  {de:"Erdbeere",en:"Strawberry",sv:"Jordgubbe"},{de:"Reis",en:"Rice",sv:"Ris"},{de:"Nudeln",en:"Pasta",sv:"Pasta"},
+  {de:"Suppe",en:"Soup",sv:"Soppa"},{de:"Salat",en:"Salad",sv:"Sallad"},{de:"Zucker",en:"Sugar",sv:"Socker"},
+  {de:"Salz",en:"Salt",sv:"Salt"},{de:"Pfeffer",en:"Pepper",sv:"Peppar"},{de:"Mehl",en:"Flour",sv:"Mjöl"},
+  {de:"Öl",en:"Oil",sv:"Olja"},{de:"Honig",en:"Honey",sv:"Honung"},{de:"Schokolade",en:"Chocolate",sv:"Choklad"},
+  // Getränke
+  {de:"Wasser",en:"Water",sv:"Vatten"},{de:"Kaffee",en:"Coffee",sv:"Kaffe"},{de:"Tee",en:"Tea",sv:"Te"},
+  {de:"Saft",en:"Juice",sv:"Juice"},{de:"Bier",en:"Beer",sv:"Öl"},{de:"Wein",en:"Wine",sv:"Vin"},
+  {de:"Limonade",en:"Lemonade",sv:"Läsk"},{de:"Cola",en:"Cola",sv:"Cola"},{de:"Mineralwasser",en:"Mineral water",sv:"Mineralvatten"},
+  {de:"Smoothie",en:"Smoothie",sv:"Smoothie"},{de:"Kakao",en:"Hot chocolate",sv:"Varm choklad"},{de:"Tomatensaft",en:"Tomato juice",sv:"Tomatjuice"},
+  {de:"Apfelsaft",en:"Apple juice",sv:"Äppeljuice"},{de:"Orangensaft",en:"Orange juice",sv:"Apelsinjuice"},{de:"Champagner",en:"Champagne",sv:"Champagne"},
+  // Zahlen
+  {de:"null",en:"zero",sv:"noll"},{de:"eins",en:"one",sv:"ett"},{de:"zwei",en:"two",sv:"två"},
+  {de:"drei",en:"three",sv:"tre"},{de:"vier",en:"four",sv:"fyra"},{de:"fünf",en:"five",sv:"fem"},
+  {de:"sechs",en:"six",sv:"sex"},{de:"sieben",en:"seven",sv:"sju"},{de:"acht",en:"eight",sv:"åtta"},
+  {de:"neun",en:"nine",sv:"nio"},{de:"zehn",en:"ten",sv:"tio"},{de:"elf",en:"eleven",sv:"elva"},
+  {de:"zwölf",en:"twelve",sv:"tolv"},{de:"dreizehn",en:"thirteen",sv:"tretton"},{de:"vierzehn",en:"fourteen",sv:"fjorton"},
+  {de:"fünfzehn",en:"fifteen",sv:"femton"},{de:"sechzehn",en:"sixteen",sv:"sexton"},{de:"siebzehn",en:"seventeen",sv:"sjutton"},
+  {de:"achtzehn",en:"eighteen",sv:"arton"},{de:"neunzehn",en:"nineteen",sv:"nitton"},{de:"zwanzig",en:"twenty",sv:"tjugo"},
+  {de:"dreißig",en:"thirty",sv:"trettio"},{de:"vierzig",en:"forty",sv:"fyrtio"},{de:"fünfzig",en:"fifty",sv:"femtio"},
+  {de:"sechzig",en:"sixty",sv:"sextio"},{de:"siebzig",en:"seventy",sv:"sjuttio"},{de:"achtzig",en:"eighty",sv:"åttio"},
+  {de:"neunzig",en:"ninety",sv:"nittio"},{de:"hundert",en:"hundred",sv:"hundra"},{de:"tausend",en:"thousand",sv:"tusen"},
+  // Farben
+  {de:"rot",en:"red",sv:"röd"},{de:"blau",en:"blue",sv:"blå"},{de:"grün",en:"green",sv:"grön"},
+  {de:"gelb",en:"yellow",sv:"gul"},{de:"orange",en:"orange",sv:"orange"},{de:"lila",en:"purple",sv:"lila"},
+  {de:"rosa",en:"pink",sv:"rosa"},{de:"weiß",en:"white",sv:"vit"},{de:"schwarz",en:"black",sv:"svart"},
+  {de:"grau",en:"grey",sv:"grå"},{de:"braun",en:"brown",sv:"brun"},{de:"türkis",en:"turquoise",sv:"turkos"},
+  {de:"silber",en:"silver",sv:"silver"},{de:"gold",en:"gold",sv:"guld"},{de:"beige",en:"beige",sv:"beige"},
+  // Familie
+  {de:"Mutter",en:"Mother",sv:"Mamma"},{de:"Vater",en:"Father",sv:"Pappa"},{de:"Bruder",en:"Brother",sv:"Bror"},
+  {de:"Schwester",en:"Sister",sv:"Syster"},{de:"Oma",en:"Grandmother",sv:"Mormor"},{de:"Opa",en:"Grandfather",sv:"Morfar"},
+  {de:"Onkel",en:"Uncle",sv:"Farbror"},{de:"Tante",en:"Aunt",sv:"Faster"},{de:"Cousin",en:"Cousin",sv:"Kusin"},
+  {de:"Kind",en:"Child",sv:"Barn"},{de:"Baby",en:"Baby",sv:"Baby"},{de:"Ehemann",en:"Husband",sv:"Make"},
+  {de:"Ehefrau",en:"Wife",sv:"Maka"},{de:"Eltern",en:"Parents",sv:"Föräldrar"},{de:"Geschwister",en:"Siblings",sv:"Syskon"},
+  // Körperteile
+  {de:"Kopf",en:"Head",sv:"Huvud"},{de:"Haare",en:"Hair",sv:"Hår"},{de:"Auge",en:"Eye",sv:"Öga"},
+  {de:"Ohr",en:"Ear",sv:"Öra"},{de:"Nase",en:"Nose",sv:"Näsa"},{de:"Mund",en:"Mouth",sv:"Mun"},
+  {de:"Zahn",en:"Tooth",sv:"Tand"},{de:"Hals",en:"Neck",sv:"Hals"},{de:"Schulter",en:"Shoulder",sv:"Axel"},
+  {de:"Arm",en:"Arm",sv:"Arm"},{de:"Hand",en:"Hand",sv:"Hand"},{de:"Finger",en:"Finger",sv:"Finger"},
+  {de:"Bauch",en:"Belly",sv:"Mage"},{de:"Rücken",en:"Back",sv:"Rygg"},{de:"Bein",en:"Leg",sv:"Ben"},
+  {de:"Knie",en:"Knee",sv:"Knä"},{de:"Fuß",en:"Foot",sv:"Fot"},{de:"Zeh",en:"Toe",sv:"Tå"},
+  {de:"Herz",en:"Heart",sv:"Hjärta"},{de:"Lunge",en:"Lung",sv:"Lunga"},
+  // Kleidung
+  {de:"T-Shirt",en:"T-shirt",sv:"T-shirt"},{de:"Hemd",en:"Shirt",sv:"Skjorta"},{de:"Hose",en:"Trousers",sv:"Byxor"},
+  {de:"Jeans",en:"Jeans",sv:"Jeans"},{de:"Rock",en:"Skirt",sv:"Kjol"},{de:"Kleid",en:"Dress",sv:"Klänning"},
+  {de:"Jacke",en:"Jacket",sv:"Jacka"},{de:"Mantel",en:"Coat",sv:"Kappa"},{de:"Pullover",en:"Sweater",sv:"Tröja"},
+  {de:"Schuhe",en:"Shoes",sv:"Skor"},{de:"Socken",en:"Socks",sv:"Strumpor"},{de:"Stiefel",en:"Boots",sv:"Stövlar"},
+  {de:"Mütze",en:"Hat",sv:"Mössa"},{de:"Schal",en:"Scarf",sv:"Halsduk"},{de:"Handschuhe",en:"Gloves",sv:"Handskar"},
+  {de:"Gürtel",en:"Belt",sv:"Bälte"},{de:"Krawatte",en:"Tie",sv:"Slips"},{de:"Shorts",en:"Shorts",sv:"Shorts"},
+  {de:"Unterwäsche",en:"Underwear",sv:"Underkläder"},{de:"Pyjama",en:"Pyjamas",sv:"Pyjamas"},
+  // Wetter
+  {de:"Sonne",en:"Sun",sv:"Sol"},{de:"Regen",en:"Rain",sv:"Regn"},{de:"Schnee",en:"Snow",sv:"Snö"},
+  {de:"Wind",en:"Wind",sv:"Vind"},{de:"Wolke",en:"Cloud",sv:"Moln"},{de:"Gewitter",en:"Thunderstorm",sv:"Åska"},
+  {de:"Nebel",en:"Fog",sv:"Dimma"},{de:"Eis",en:"Ice",sv:"Is"},{de:"warm",en:"warm",sv:"varm"},
+  {de:"kalt",en:"cold",sv:"kall"},{de:"windig",en:"windy",sv:"blåsig"},{de:"bewölkt",en:"cloudy",sv:"molnig"},
+  {de:"sonnig",en:"sunny",sv:"solig"},{de:"regnerisch",en:"rainy",sv:"regnig"},{de:"Frost",en:"Frost",sv:"Frost"},
+  // Jahreszeiten
+  {de:"Frühling",en:"Spring",sv:"Vår"},{de:"Sommer",en:"Summer",sv:"Sommar"},
+  {de:"Herbst",en:"Autumn",sv:"Höst"},{de:"Winter",en:"Winter",sv:"Vinter"},
+  // Monate
+  {de:"Januar",en:"January",sv:"Januari"},{de:"Februar",en:"February",sv:"Februari"},{de:"März",en:"March",sv:"Mars"},
+  {de:"April",en:"April",sv:"April"},{de:"Mai",en:"May",sv:"Maj"},{de:"Juni",en:"June",sv:"Juni"},
+  {de:"Juli",en:"July",sv:"Juli"},{de:"August",en:"August",sv:"Augusti"},{de:"September",en:"September",sv:"September"},
+  {de:"Oktober",en:"October",sv:"Oktober"},{de:"November",en:"November",sv:"November"},{de:"Dezember",en:"December",sv:"December"},
+  // Wochentage
+  {de:"Montag",en:"Monday",sv:"Måndag"},{de:"Dienstag",en:"Tuesday",sv:"Tisdag"},{de:"Mittwoch",en:"Wednesday",sv:"Onsdag"},
+  {de:"Donnerstag",en:"Thursday",sv:"Torsdag"},{de:"Freitag",en:"Friday",sv:"Fredag"},
+  {de:"Samstag",en:"Saturday",sv:"Lördag"},{de:"Sonntag",en:"Sunday",sv:"Söndag"},
+  // Möbel
+  {de:"Stuhl",en:"Chair",sv:"Stol"},{de:"Tisch",en:"Table",sv:"Bord"},{de:"Sofa",en:"Sofa",sv:"Soffa"},
+  {de:"Bett",en:"Bed",sv:"Säng"},{de:"Schrank",en:"Wardrobe",sv:"Skåp"},{de:"Regal",en:"Shelf",sv:"Hylla"},
+  {de:"Lampe",en:"Lamp",sv:"Lampa"},{de:"Teppich",en:"Carpet",sv:"Matta"},{de:"Vorhang",en:"Curtain",sv:"Gardin"},
+  {de:"Spiegel",en:"Mirror",sv:"Spegel"},{de:"Schreibtisch",en:"Desk",sv:"Skrivbord"},{de:"Kommode",en:"Dresser",sv:"Byrå"},
+  {de:"Bücherregal",en:"Bookshelf",sv:"Bokhylla"},{de:"Sessel",en:"Armchair",sv:"Fåtölj"},{de:"Couchtisch",en:"Coffee table",sv:"Soffbord"},
+  // Haus
+  {de:"Haus",en:"House",sv:"Hus"},{de:"Wohnung",en:"Apartment",sv:"Lägenheit"},{de:"Zimmer",en:"Room",sv:"Rum"},
+  {de:"Küche",en:"Kitchen",sv:"Kök"},{de:"Badezimmer",en:"Bathroom",sv:"Badrum"},{de:"Schlafzimmer",en:"Bedroom",sv:"Sovrum"},
+  {de:"Wohnzimmer",en:"Living room",sv:"Vardagsrum"},{de:"Flur",en:"Hallway",sv:"Hall"},{de:"Keller",en:"Basement",sv:"Källare"},
+  {de:"Garten",en:"Garden",sv:"Trädgård"},{de:"Fenster",en:"Window",sv:"Fönster"},{de:"Tür",en:"Door",sv:"Dörr"},
+  {de:"Treppe",en:"Stairs",sv:"Trappa"},{de:"Balkon",en:"Balcony",sv:"Balkong"},{de:"Dach",en:"Roof",sv:"Tak"},
+  // Küche
+  {de:"Topf",en:"Pot",sv:"Gryta"},{de:"Pfanne",en:"Pan",sv:"Stekpanna"},{de:"Messer",en:"Knife",sv:"Kniv"},
+  {de:"Gabel",en:"Fork",sv:"Gaffel"},{de:"Löffel",en:"Spoon",sv:"Sked"},{de:"Teller",en:"Plate",sv:"Tallrik"},
+  {de:"Glas",en:"Glass",sv:"Glas"},{de:"Tasse",en:"Cup",sv:"Kopp"},{de:"Schüssel",en:"Bowl",sv:"Skål"},
+  {de:"Herd",en:"Stove",sv:"Spis"},{de:"Backofen",en:"Oven",sv:"Ugn"},{de:"Mikrowelle",en:"Microwave",sv:"Mikrovågsugn"},
+  {de:"Kühlschrank",en:"Fridge",sv:"Kylskåp"},{de:"Wasserkocher",en:"Kettle",sv:"Vattenkokare"},{de:"Geschirrspüler",en:"Dishwasher",sv:"Diskmaskin"},
+  // Badezimmer
+  {de:"Dusche",en:"Shower",sv:"Dusch"},{de:"Badewanne",en:"Bathtub",sv:"Badkar"},{de:"Toilette",en:"Toilet",sv:"Toalett"},
+  {de:"Waschbecken",en:"Sink",sv:"Handfat"},{de:"Seife",en:"Soap",sv:"Tvål"},{de:"Handtuch",en:"Towel",sv:"Handduk"},
+  {de:"Shampoo",en:"Shampoo",sv:"Schampo"},{de:"Zahnbürste",en:"Toothbrush",sv:"Tandborste"},
+  {de:"Zahnpasta",en:"Toothpaste",sv:"Tandkräm"},{de:"Rasierer",en:"Razor",sv:"Rakapparat"},
+  // Schule
+  {de:"Schule",en:"School",sv:"Skola"},{de:"Lehrer",en:"Teacher",sv:"Lärare"},{de:"Schüler",en:"Pupil",sv:"Elev"},
+  {de:"Klasse",en:"Class",sv:"Klass"},{de:"Unterricht",en:"Lesson",sv:"Lektion"},{de:"Hausaufgaben",en:"Homework",sv:"Läxa"},
+  {de:"Prüfung",en:"Exam",sv:"Prov"},{de:"Note",en:"Grade",sv:"Betyg"},{de:"Buch",en:"Book",sv:"Bok"},
+  {de:"Heft",en:"Notebook",sv:"Häfte"},{de:"Stift",en:"Pen",sv:"Penna"},{de:"Bleistift",en:"Pencil",sv:"Blyertspenna"},
+  {de:"Lineal",en:"Ruler",sv:"Linjal"},{de:"Rucksack",en:"Backpack",sv:"Ryggsäck"},{de:"Tafel",en:"Blackboard",sv:"Tavla"},
+  {de:"Bibliothek",en:"Library",sv:"Bibliotek"},{de:"Mathematik",en:"Mathematics",sv:"Matematik"},{de:"Geschichte",en:"History",sv:"Historia"},
+  {de:"Biologie",en:"Biology",sv:"Biologi"},{de:"Chemie",en:"Chemistry",sv:"Kemi"},
+  // Arbeit & Berufe
+  {de:"Arbeit",en:"Work",sv:"Arbete"},{de:"Büro",en:"Office",sv:"Kontor"},{de:"Chef",en:"Boss",sv:"Chef"},
+  {de:"Kollege",en:"Colleague",sv:"Kollega"},{de:"Gehalt",en:"Salary",sv:"Lön"},{de:"Arzt",en:"Doctor",sv:"Läkare"},
+  {de:"Krankenschwester",en:"Nurse",sv:"Sjuksköterska"},{de:"Ingenieur",en:"Engineer",sv:"Ingenjör"},{de:"Anwalt",en:"Lawyer",sv:"Advokat"},
+  {de:"Polizist",en:"Police officer",sv:"Polis"},{de:"Feuerwehrmann",en:"Firefighter",sv:"Brandman"},{de:"Koch",en:"Cook",sv:"Kock"},
+  {de:"Architekt",en:"Architect",sv:"Arkitekt"},{de:"Programmierer",en:"Programmer",sv:"Programmerare"},{de:"Journalist",en:"Journalist",sv:"Journalist"},
+  {de:"Bäcker",en:"Baker",sv:"Bagare"},{de:"Mechaniker",en:"Mechanic",sv:"Mekaniker"},{de:"Pilot",en:"Pilot",sv:"Pilot"},
+  {de:"Buchhalter",en:"Accountant",sv:"Revisor"},{de:"Verkäufer",en:"Salesperson",sv:"Säljare"},
+  // Transport
+  {de:"Auto",en:"Car",sv:"Bil"},{de:"Bus",en:"Bus",sv:"Buss"},{de:"Zug",en:"Train",sv:"Tåg"},
+  {de:"U-Bahn",en:"Subway",sv:"Tunnelbana"},{de:"Flugzeug",en:"Airplane",sv:"Flygplan"},{de:"Fahrrad",en:"Bicycle",sv:"Cykel"},
+  {de:"Motorrad",en:"Motorcycle",sv:"Motorcykel"},{de:"Schiff",en:"Ship",sv:"Skepp"},{de:"Taxi",en:"Taxi",sv:"Taxi"},
+  {de:"Straßenbahn",en:"Tram",sv:"Spårvagn"},{de:"Hubschrauber",en:"Helicopter",sv:"Helikopter"},{de:"Tankstelle",en:"Gas station",sv:"Bensinstation"},
+  {de:"Bahnhof",en:"Train station",sv:"Tågstation"},{de:"Flughafen",en:"Airport",sv:"Flygplats"},{de:"Hafen",en:"Port",sv:"Hamn"},
+  // Stadt
+  {de:"Straße",en:"Street",sv:"Gata"},{de:"Platz",en:"Square",sv:"Torg"},{de:"Park",en:"Park",sv:"Park"},
+  {de:"Markt",en:"Market",sv:"Marknad"},{de:"Supermarkt",en:"Supermarket",sv:"Stormarknad"},{de:"Apotheke",en:"Pharmacy",sv:"Apotek"},
+  {de:"Krankenhaus",en:"Hospital",sv:"Sjukhus"},{de:"Kirche",en:"Church",sv:"Kyrka"},{de:"Museum",en:"Museum",sv:"Museum"},
+  {de:"Theater",en:"Theater",sv:"Teater"},{de:"Kino",en:"Cinema",sv:"Bio"},{de:"Restaurant",en:"Restaurant",sv:"Restaurang"},
+  {de:"Café",en:"Café",sv:"Kafé"},{de:"Hotel",en:"Hotel",sv:"Hotell"},{de:"Rathaus",en:"Town hall",sv:"Stadshus"},
+  // Natur
+  {de:"Berg",en:"Mountain",sv:"Berg"},{de:"Meer",en:"Sea",sv:"Hav"},{de:"See",en:"Lake",sv:"Sjö"},
+  {de:"Fluss",en:"River",sv:"Flod"},{de:"Wald",en:"Forest",sv:"Skog"},{de:"Wiese",en:"Meadow",sv:"Äng"},
+  {de:"Blume",en:"Flower",sv:"Blomma"},{de:"Baum",en:"Tree",sv:"Träd"},{de:"Gras",en:"Grass",sv:"Gräs"},
+  {de:"Stein",en:"Stone",sv:"Sten"},{de:"Himmel",en:"Sky",sv:"Himmel"},{de:"Stern",en:"Star",sv:"Stjärna"},
+  {de:"Mond",en:"Moon",sv:"Måne"},{de:"Insel",en:"Island",sv:"Ö"},{de:"Wüste",en:"Desert",sv:"Öken"},
+  // Sport
+  {de:"Fußball",en:"Football",sv:"Fotboll"},{de:"Basketball",en:"Basketball",sv:"Basket"},{de:"Tennis",en:"Tennis",sv:"Tennis"},
+  {de:"Schwimmen",en:"Swimming",sv:"Simning"},{de:"Laufen",en:"Running",sv:"Löpning"},{de:"Radfahren",en:"Cycling",sv:"Cykling"},
+  {de:"Volleyball",en:"Volleyball",sv:"Volleyboll"},{de:"Handball",en:"Handball",sv:"Handboll"},{de:"Skifahren",en:"Skiing",sv:"Skidåkning"},
+  {de:"Yoga",en:"Yoga",sv:"Yoga"},{de:"Boxen",en:"Boxing",sv:"Boxning"},{de:"Klettern",en:"Climbing",sv:"Klättring"},
+  {de:"Golf",en:"Golf",sv:"Golf"},{de:"Hockey",en:"Hockey",sv:"Hockey"},{de:"Tanzen",en:"Dancing",sv:"Dans"},
+  // Hobbys
+  {de:"Lesen",en:"Reading",sv:"Läsning"},{de:"Musik",en:"Music",sv:"Musik"},{de:"Malen",en:"Painting",sv:"Målning"},
+  {de:"Kochen",en:"Cooking",sv:"Matlagning"},{de:"Fotografie",en:"Photography",sv:"Fotografi"},{de:"Gärtnern",en:"Gardening",sv:"Trädgårdsarbete"},
+  {de:"Backen",en:"Baking",sv:"Bakning"},{de:"Zeichnen",en:"Drawing",sv:"Teckning"},{de:"Spielen",en:"Gaming",sv:"Spelande"},
+  {de:"Singen",en:"Singing",sv:"Sång"},{de:"Schreiben",en:"Writing",sv:"Skrivande"},{de:"Wandern",en:"Hiking",sv:"Vandring"},
+  {de:"Sammeln",en:"Collecting",sv:"Samling"},{de:"Handarbeit",en:"Handicraft",sv:"Hantverk"},{de:"Reisen",en:"Traveling",sv:"Resande"},
+  // Gefühle
+  {de:"glücklich",en:"happy",sv:"glad"},{de:"traurig",en:"sad",sv:"ledsen"},{de:"wütend",en:"angry",sv:"arg"},
+  {de:"ängstlich",en:"anxious",sv:"orolig"},{de:"überrascht",en:"surprised",sv:"förvånad"},{de:"aufgeregt",en:"excited",sv:"upprymd"},
+  {de:"müde",en:"tired",sv:"trött"},{de:"hungrig",en:"hungry",sv:"hungrig"},{de:"verliebt",en:"in love",sv:"förälskad"},
+  {de:"stolz",en:"proud",sv:"stolt"},{de:"eifersüchtig",en:"jealous",sv:"svartsjuk"},{de:"entspannt",en:"relaxed",sv:"avslappnad"},
+  {de:"einsam",en:"lonely",sv:"ensam"},{de:"nervös",en:"nervous",sv:"nervös"},{de:"dankbar",en:"grateful",sv:"tacksam"},
+  // Adjektive
+  {de:"groß",en:"big",sv:"stor"},{de:"klein",en:"small",sv:"liten"},{de:"lang",en:"long",sv:"lång"},
+  {de:"kurz",en:"short",sv:"kort"},{de:"schnell",en:"fast",sv:"snabb"},{de:"langsam",en:"slow",sv:"långsam"},
+  {de:"neu",en:"new",sv:"ny"},{de:"alt",en:"old",sv:"gammal"},{de:"schön",en:"beautiful",sv:"vacker"},
+  {de:"hässlich",en:"ugly",sv:"ful"},{de:"teuer",en:"expensive",sv:"dyr"},{de:"günstig",en:"cheap",sv:"billig"},
+  {de:"schwer",en:"heavy",sv:"tung"},{de:"leicht",en:"light",sv:"lätt"},{de:"stark",en:"strong",sv:"stark"},
+  {de:"schwach",en:"weak",sv:"svag"},{de:"laut",en:"loud",sv:"hög"},{de:"leise",en:"quiet",sv:"tyst"},
+  {de:"nass",en:"wet",sv:"våt"},{de:"trocken",en:"dry",sv:"torr"},{de:"sauber",en:"clean",sv:"ren"},
+  {de:"schmutzig",en:"dirty",sv:"smutsig"},{de:"offen",en:"open",sv:"öppen"},{de:"geschlossen",en:"closed",sv:"stängd"},
+  {de:"voll",en:"full",sv:"full"},{de:"leer",en:"empty",sv:"tom"},{de:"rund",en:"round",sv:"rund"},
+  {de:"gefährlich",en:"dangerous",sv:"farlig"},{de:"sicher",en:"safe",sv:"säker"},{de:"wichtig",en:"important",sv:"viktig"},
+  // Verben
+  {de:"gehen",en:"to go",sv:"att gå"},{de:"kommen",en:"to come",sv:"att komma"},{de:"laufen",en:"to run",sv:"att springa"},
+  {de:"stehen",en:"to stand",sv:"att stå"},{de:"sitzen",en:"to sit",sv:"att sitta"},{de:"schlafen",en:"to sleep",sv:"att sova"},
+  {de:"essen",en:"to eat",sv:"att äta"},{de:"trinken",en:"to drink",sv:"att dricka"},{de:"sprechen",en:"to speak",sv:"att tala"},
+  {de:"hören",en:"to hear",sv:"att höra"},{de:"sehen",en:"to see",sv:"att se"},{de:"kaufen",en:"to buy",sv:"att köpa"},
+  {de:"lesen",en:"to read",sv:"att läsa"},{de:"schreiben",en:"to write",sv:"att skriva"},{de:"spielen",en:"to play",sv:"att spela"},
+  {de:"arbeiten",en:"to work",sv:"att arbeta"},{de:"lernen",en:"to learn",sv:"att lära sig"},{de:"helfen",en:"to help",sv:"att hjälpa"},
+  {de:"lieben",en:"to love",sv:"att älska"},{de:"mögen",en:"to like",sv:"att gilla"},{de:"öffnen",en:"to open",sv:"att öppna"},
+  {de:"schließen",en:"to close",sv:"att stänga"},{de:"geben",en:"to give",sv:"att ge"},{de:"nehmen",en:"to take",sv:"att ta"},
+  {de:"machen",en:"to do",sv:"att göra"},{de:"finden",en:"to find",sv:"att hitta"},{de:"verlieren",en:"to lose",sv:"att förlora"},
+  {de:"wissen",en:"to know",sv:"att veta"},{de:"denken",en:"to think",sv:"att tänka"},{de:"fragen",en:"to ask",sv:"att fråga"},
+  // Zeitwörter
+  {de:"heute",en:"today",sv:"idag"},{de:"morgen",en:"tomorrow",sv:"imorgon"},{de:"gestern",en:"yesterday",sv:"igår"},
+  {de:"jetzt",en:"now",sv:"nu"},{de:"später",en:"later",sv:"senare"},{de:"früher",en:"earlier",sv:"tidigare"},
+  {de:"immer",en:"always",sv:"alltid"},{de:"nie",en:"never",sv:"aldrig"},{de:"manchmal",en:"sometimes",sv:"ibland"},
+  {de:"oft",en:"often",sv:"ofta"},{de:"selten",en:"rarely",sv:"sällan"},{de:"bald",en:"soon",sv:"snart"},
+  {de:"schon",en:"already",sv:"redan"},{de:"noch",en:"still",sv:"fortfarande"},{de:"heute Abend",en:"tonight",sv:"ikväll"},
+  // Länder
+  {de:"Deutschland",en:"Germany",sv:"Tyskland"},{de:"Schweden",en:"Sweden",sv:"Sverige"},{de:"Frankreich",en:"France",sv:"Frankrike"},
+  {de:"Spanien",en:"Spain",sv:"Spanien"},{de:"Italien",en:"Italy",sv:"Italien"},{de:"England",en:"England",sv:"England"},
+  {de:"USA",en:"USA",sv:"USA"},{de:"Österreich",en:"Austria",sv:"Österrike"},{de:"Schweiz",en:"Switzerland",sv:"Schweiz"},
+  {de:"Niederlande",en:"Netherlands",sv:"Nederländerna"},{de:"Norwegen",en:"Norway",sv:"Norge"},{de:"Dänemark",en:"Denmark",sv:"Danmark"},
+  {de:"Finnland",en:"Finland",sv:"Finland"},{de:"Polen",en:"Poland",sv:"Polen"},{de:"Russland",en:"Russia",sv:"Ryssland"},
+  {de:"China",en:"China",sv:"Kina"},{de:"Japan",en:"Japan",sv:"Japan"},{de:"Australien",en:"Australia",sv:"Australien"},
+  {de:"Kanada",en:"Canada",sv:"Kanada"},{de:"Brasilien",en:"Brazil",sv:"Brasilien"},
+  // Einkaufen
+  {de:"Laden",en:"Shop",sv:"Butik"},{de:"Kasse",en:"Checkout",sv:"Kassa"},{de:"Preis",en:"Price",sv:"Pris"},
+  {de:"Rabatt",en:"Discount",sv:"Rabatt"},{de:"Quittung",en:"Receipt",sv:"Kvitto"},{de:"Tüte",en:"Bag",sv:"Påse"},
+  {de:"Einkaufswagen",en:"Shopping cart",sv:"Kundvagn"},{de:"Angebot",en:"Special offer",sv:"Erbjudande"},
+  {de:"Rückgabe",en:"Return",sv:"Retur"},{de:"Öffnungszeiten",en:"Opening hours",sv:"Öppettider"},
+  // Restaurant
+  {de:"Speisekarte",en:"Menu",sv:"Meny"},{de:"Kellner",en:"Waiter",sv:"Servitör"},{de:"Bestellung",en:"Order",sv:"Beställning"},
+  {de:"Vorspeise",en:"Starter",sv:"Förrätt"},{de:"Hauptgericht",en:"Main course",sv:"Huvudrätt"},{de:"Dessert",en:"Dessert",sv:"Dessert"},
+  {de:"Rechnung",en:"Bill",sv:"Nota"},{de:"Trinkgeld",en:"Tip",sv:"Dricks"},{de:"Tisch",en:"Table",sv:"Bord"},
+  {de:"Reservierung",en:"Reservation",sv:"Reservation"},
+  // Arzt
+  {de:"Arztpraxis",en:"Doctor's office",sv:"Läkarmottagning"},{de:"Rezept",en:"Prescription",sv:"Recept"},
+  {de:"Tablette",en:"Tablet",sv:"Tablett"},{de:"Schmerz",en:"Pain",sv:"Smärta"},{de:"Fieber",en:"Fever",sv:"Feber"},
+  {de:"Erkältung",en:"Cold",sv:"Förkylning"},{de:"Allergie",en:"Allergy",sv:"Allergi"},{de:"Blutdruck",en:"Blood pressure",sv:"Blodtryck"},
+  {de:"Operation",en:"Surgery",sv:"Operation"},{de:"Notaufnahme",en:"Emergency room",sv:"Akuten"},
+  // Bank
+  {de:"Konto",en:"Account",sv:"Konto"},{de:"Geld",en:"Money",sv:"Pengar"},{de:"Überweisung",en:"Transfer",sv:"Överföring"},
+  {de:"Zinsen",en:"Interest",sv:"Ränta"},{de:"Bargeld",en:"Cash",sv:"Kontanter"},{de:"Geldautomat",en:"ATM",sv:"Bankomat"},
+  {de:"Währung",en:"Currency",sv:"Valuta"},{de:"Sparkonto",en:"Savings account",sv:"Sparkonto"},
+  {de:"Kredit",en:"Credit",sv:"Kredit"},{de:"Wechselkurs",en:"Exchange rate",sv:"Växelkurs"},
+  // Post
+  {de:"Brief",en:"Letter",sv:"Brev"},{de:"Paket",en:"Package",sv:"Paket"},{de:"Briefmarke",en:"Stamp",sv:"Frimärke"},
+  {de:"Postfach",en:"PO box",sv:"Postbox"},{de:"Postleitzahl",en:"ZIP code",sv:"Postnummer"},
+  // Hotel
+  {de:"Einzelzimmer",en:"Single room",sv:"Enkelrum"},{de:"Doppelzimmer",en:"Double room",sv:"Dubbelrum"},
+  {de:"Frühstück",en:"Breakfast",sv:"Frukost"},{de:"Rezeption",en:"Reception",sv:"Reception"},
+  {de:"Check-in",en:"Check-in",sv:"Incheckning"},{de:"Check-out",en:"Check-out",sv:"Utcheckning"},
+  {de:"Schlüssel",en:"Key",sv:"Nyckel"},{de:"Minibar",en:"Minibar",sv:"Minibar"},
+  {de:"Zimmerservice",en:"Room service",sv:"Rumsservice"},{de:"Schwimmbad",en:"Swimming pool",sv:"Swimmingpool"},
+  // Reisen
+  {de:"Reise",en:"Trip",sv:"Resa"},{de:"Urlaub",en:"Holiday",sv:"Semester"},{de:"Pass",en:"Passport",sv:"Pass"},
+  {de:"Visum",en:"Visa",sv:"Visum"},{de:"Koffer",en:"Suitcase",sv:"Resväska"},{de:"Ticket",en:"Ticket",sv:"Biljett"},
+  {de:"Abflug",en:"Departure",sv:"Avgång"},{de:"Ankunft",en:"Arrival",sv:"Ankomst"},{de:"Gepäck",en:"Luggage",sv:"Bagage"},
+  {de:"Reiseführer",en:"Travel guide",sv:"Reseguide"},{de:"Karte",en:"Map",sv:"Karta"},{de:"Tourist",en:"Tourist",sv:"Turist"},
+  {de:"Sehenswürdigkeit",en:"Attraction",sv:"Sevärdhet"},{de:"Strand",en:"Beach",sv:"Strand"},{de:"Camping",en:"Camping",sv:"Camping"},
+];
+
+async function importDefaultWords() {
+    if (!currentUser || !db) return;
+    const flagKey = 'defaultImported_' + currentUser.uid + '_' + currentCollIndex;
+    if (localStorage.getItem(flagKey)) return;
+    try {
+        const now = getNextReviewTimestamp(0);
+        const ref = db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex);
+        for (let i = 0; i < DEFAULT_WORDS.length; i += 490) {
+            const batch = db.batch();
+            DEFAULT_WORDS.slice(i, i + 490).forEach(w => {
+                batch.set(ref.doc(), {
+                    [conf.l1]: w.de, [conf.l2]: w.en, [conf.l3]: w.sv,
+                    ts: firebase.firestore.FieldValue.serverTimestamp(),
+                    level: 0, nextReview: now
+                });
+            });
+            await batch.commit();
+        }
+        localStorage.setItem(flagKey, '1');
+        showToast('✅ ' + DEFAULT_WORDS.length + ' Standardwörter importiert!', 'success');
+        refreshData();
+    } catch(e) { logCustomError('importDefaultWords', e); }
+}
+
+async function refreshData() { if(!currentUser || !db) return; const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).orderBy("ts", "desc").get(); if(s) { allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderList(); if (allWords.length === 0) importDefaultWords(); } }
 function generateStudyList() { if(!allWords.length) { document.getElementById('studyContainer').innerHTML = "<p style='text-align:center;'>Füge zuerst Wörter hinzu!</p>"; document.getElementById('studyActions').style.display = 'none'; return; } const now = Date.now(); let dueWords = allWords.filter(w => !w.nextReview || w.nextReview <= now); if(dueWords.length === 0) { document.getElementById('studyContainer').innerHTML = "<p style='text-align:center; font-size:1.2rem;'>🎉 Alle aktuellen Vokabeln gelernt!<br>Komm morgen wieder.</p>"; document.getElementById('studyWordCount').innerText="Fertig"; document.getElementById('studyActions').style.display = 'none'; return; } document.getElementById('studyActions').style.display = 'flex'; studyWords = dueWords.sort(() => 0.5 - Math.random()).slice(0, 15); studyIndex = 0; renderStudyWord(); }
 function renderStudyWord() { if(!studyWords.length) return; const w = studyWords[studyIndex]; document.getElementById('studyWordCount').innerText = `${studyIndex+1}/${studyWords.length}`; document.getElementById('studyContainer').innerHTML = `<div style="text-align:center; margin-bottom:10px;"><span class="level-dot lvl-${w.level||0}"></span><span style="font-size:0.8rem; color:var(--text-light); font-weight:bold;">Level ${w.level||0}</span></div><div style="font-size:2.2rem; font-weight:800; color:var(--primary); text-align:center; margin:10px 0;">${escapeHTML(w[conf.l1])}</div><div style="text-align:center; margin-bottom:15px;"><div style="font-size:1.5rem;">${ALL_LANGS[conf.l3].flag} ${escapeHTML(w[conf.l3])} <button class="icon-btn" style="display:inline-flex; border:none; background:transparent;" onclick="speak('${safeJS(w[conf.l3])}','${conf.l3}')">🔊</button></div></div><div style="text-align:center;"><div style="font-size:1.2rem; color:var(--text-light);">${ALL_LANGS[conf.l2].flag} ${escapeHTML(w[conf.l2])}</div></div>`; }
 async function markWord(correct) { if(!studyWords.length || !currentUser || !db) return; const w = studyWords[studyIndex]; let lvl = w.level || 0; if(correct) { lvl = Math.min(5, lvl + 1); playSound('success'); addXP(5); statsToday.learned++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); if(statsToday.learned === 5) { addXP(20); fireConfetti(); } } else { lvl = Math.max(0, lvl - 1); playSound('error'); } w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl); db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}); setTimeout(nextStudyWord, 300); }
