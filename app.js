@@ -1,4 +1,4 @@
-const APP_VERSION = "30.4";
+const APP_VERSION = "30.5";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -108,13 +108,46 @@ let availableVoices = [];
 // ==========================================
 // 3. SPRACHAUSGABE & STIMMEN (STABIL FÜR MOBIL)
 // ==========================================
+
+// Sichtbare Diagnose-Box die bei Problemen eingeblendet wird
+function showSpeechDiag(msg) {
+    let box = document.getElementById('speechDiagBox');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'speechDiagBox';
+        box.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;font-size:0.78rem;font-weight:700;padding:10px 14px;z-index:99999;word-break:break-all;white-space:pre-wrap;max-height:40vh;overflow-y:auto;';
+        document.body.prepend(box);
+    }
+    const line = document.createElement('div');
+    line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+    box.prepend(line);
+    console.warn('SPEECH-DIAG:', msg);
+}
+
+// Prüfe speechSynthesis-Verfügbarkeit und zeige Fehler sofort an
+(function checkSpeechSupport() {
+    if (!('speechSynthesis' in window)) {
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#7c3aed;color:#fff;font-size:0.9rem;font-weight:800;padding:14px;z-index:99999;text-align:center;';
+        banner.textContent = '⚠️ Dein Browser unterstützt Text-to-Speech (speechSynthesis) nicht. Lautsprecher-Buttons funktionieren nicht.';
+        document.addEventListener('DOMContentLoaded', () => document.body.prepend(banner));
+        console.error('speechSynthesis nicht verfügbar!');
+    } else {
+        console.log('[TTS] speechSynthesis vorhanden ✓');
+    }
+})();
+
 function loadVoices() {
     const voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) { availableVoices = voices; updateVoiceDropdown(); }
+    console.log('[TTS] loadVoices() → ' + voices.length + ' Stimmen gefunden');
+    if (voices.length > 0) {
+        availableVoices = voices;
+        updateVoiceDropdown();
+        showSpeechDiag('Stimmen geladen: ' + voices.length + ' | Erste: ' + voices[0].name + ' (' + voices[0].lang + ')');
+    }
 }
 if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = loadVoices;
-    // Mehrere Versuche: Stimmen kommen auf mobilen Geräten oft verzögert
     loadVoices();
     [100, 500, 1000, 2000].forEach(t => setTimeout(loadVoices, t));
 }
@@ -147,6 +180,7 @@ function stopSynthKeepAlive() {
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && window.speechSynthesis) {
         window.speechSynthesis.resume();
+        console.log('[TTS] visibilitychange → resume() aufgerufen');
     }
 });
 
@@ -167,15 +201,36 @@ function buildUtterance(text, langKey, rate) {
 }
 
 function speak(text, langKey, rate = 1.0) {
-    if (!('speechSynthesis' in window) || !text || !text.trim()) return;
     const ss = window.speechSynthesis;
-    // Synchrones cancel() + speak() ohne setTimeout — kein setTimeout!
-    // setTimeout bricht die User-Gesture-Kette auf Android Chrome (speak wird stumm ignoriert).
+    const diagPrefix = `speak("${(text||'').slice(0,30)}", lang=${langKey}, rate=${rate})`;
+
+    if (!('speechSynthesis' in window)) {
+        showSpeechDiag(diagPrefix + ' → FEHLER: speechSynthesis nicht in window!');
+        return;
+    }
+    if (!text || !text.trim()) {
+        console.log('[TTS]', diagPrefix, '→ abgebrochen: leerer Text');
+        return;
+    }
+
+    console.log('[TTS]', diagPrefix, '| speaking=' + ss.speaking + ' pending=' + ss.pending + ' paused=' + ss.paused + ' voices=' + availableVoices.length);
+    showSpeechDiag(diagPrefix + ' | speaking=' + ss.speaking + ' paused=' + ss.paused + ' voices=' + availableVoices.length);
+
     ss.cancel();
     if (ss.paused) ss.resume();
+
     const msg = buildUtterance(text, langKey, rate);
-    msg.onerror = (e) => logCustomError(`speak [${langKey}]`, e.error || String(e));
+    msg.onstart = () => { console.log('[TTS] onstart → Sprache beginnt:', langKey); showSpeechDiag('✅ onstart: spricht jetzt [' + langKey + ']'); };
+    msg.onend   = () => { console.log('[TTS] onend → Sprache beendet:', langKey); };
+    msg.onerror = (e) => {
+        const errMsg = diagPrefix + ' → onerror: ' + (e.error || String(e));
+        showSpeechDiag('❌ ' + errMsg);
+        logCustomError('speak', errMsg);
+    };
+
     ss.speak(msg);
+    console.log('[TTS] ss.speak() aufgerufen. Danach: speaking=' + ss.speaking + ' pending=' + ss.pending);
+    showSpeechDiag('ss.speak() aufgerufen → speaking=' + ss.speaking + ' pending=' + ss.pending);
 }
 
 // ==========================================
@@ -346,27 +401,37 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
 // ==========================================
 function speakAsync(text, langKey, rate = 1.0) {
     return new Promise((resolve) => {
-        if (!('speechSynthesis' in window) || cancelAudio || !text || !text.trim()) return resolve();
+        const diagPrefix = `speakAsync("${(text||'').slice(0,25)}", ${langKey}, ${rate})`;
+        if (!('speechSynthesis' in window) || cancelAudio || !text || !text.trim()) {
+            console.log('[TTS]', diagPrefix, '→ übersprungen (kein SS / cancelAudio / leerer Text)');
+            return resolve();
+        }
+
+        const ss = window.speechSynthesis;
+        console.log('[TTS]', diagPrefix, '| speaking=' + ss.speaking + ' paused=' + ss.paused);
 
         currentUtterance = buildUtterance(text, langKey, rate);
 
         let resolved = false;
         const done = () => { if (!resolved) { resolved = true; currentUtterance = null; resolve(); } };
 
-        currentUtterance.onend = done;
+        currentUtterance.onstart = () => console.log('[TTS] speakAsync onstart →', langKey);
+        currentUtterance.onend = () => { console.log('[TTS] speakAsync onend →', langKey); done(); };
         currentUtterance.onerror = (e) => {
-            logCustomError(`speakAsync [${langKey}]`, e.error || String(e));
+            const errMsg = diagPrefix + ' onerror: ' + (e.error || String(e));
+            showSpeechDiag('❌ ' + errMsg);
+            logCustomError('speakAsync', errMsg);
             done();
         };
 
-        // Timeout-Fallback: iOS feuert onend manchmal nie → Audio-Trainer würde sonst hängen
+        // Timeout-Fallback: iOS/Android feuern onend manchmal nie
         const charCount = text.trim().length;
         const estMs = Math.max(2000, (charCount / (parseFloat(rate) * 14)) * 1000) + 2000;
         setTimeout(done, Math.min(estMs, 18000));
 
-        const ss = window.speechSynthesis;
         if (ss.paused) ss.resume();
         ss.speak(currentUtterance);
+        console.log('[TTS] speakAsync ss.speak() aufgerufen → speaking=' + ss.speaking);
     });
 }
 const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
