@@ -1,4 +1,4 @@
-const APP_VERSION = "30.19";
+const APP_VERSION = "30.20";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -847,35 +847,52 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
 // ==========================================
 const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Strict serialized TTS: each call awaits onend OR timeout before resolving.
-// Android Chrome needs cancel→resume→100ms gap before every speak().
-async function speakAsync(text, langKey, rate = 1.0) {
+// ── ROBUSTE TTS-ENGINE FÜR AUDIO-TRAINER ────────────────────────────────────
+// speakAndWait() guarantees strict serialization: resolves only when onend
+// fires OR the calculated timeout expires — whichever comes first.
+// Pre-speak sequence: cancel → wait (400ms Android / 300ms desktop) →
+// resume → 100ms → speak(). This prevents Chrome Android from swallowing
+// utterances when synthesis is in an undefined state after cancel().
+
+async function speakAndWait(text, langKey, rate) {
     if (!('speechSynthesis' in window) || cancelAudio || !text || !text.trim()) return;
     const ss = window.speechSynthesis;
+    const r = parseFloat(rate) || 1.0;
 
-    // Cancel any previous utterance, resume in case Chrome paused synthesis
+    // Step 1: hard-cancel any running utterance
     ss.cancel();
+    // Step 2: wait for Chrome to fully reset (longer on Android Chrome)
+    await sleepAsync(isAndroidChrome ? 400 : 300);
+    if (cancelAudio) return;
+    // Step 3: resume in case synthesis was paused
     ss.resume();
-    // Android Chrome: brief gap after cancel() prevents the new utterance from being swallowed
-    if (isAndroidChrome) await sleepAsync(100);
+    // Step 4: brief gap so Chrome registers the resume before speak()
+    await sleepAsync(100);
     if (cancelAudio) return;
 
     await new Promise((resolve) => {
-        currentUtterance = buildUtterance(text, langKey, rate);
+        currentUtterance = buildUtterance(text, langKey, r);
 
-        let resolved = false;
-        const done = () => { if (!resolved) { resolved = true; currentUtterance = null; resolve(); } };
+        let done = false;
+        const finish = () => { if (!done) { done = true; currentUtterance = null; resolve(); } };
 
-        currentUtterance.onend = done;
-        currentUtterance.onerror = (e) => { logCustomError('speakAsync', e.error || String(e)); done(); };
+        currentUtterance.onend   = finish;
+        currentUtterance.onerror = (e) => {
+            if (e.error !== 'interrupted') logCustomError('speakAndWait', e.error || String(e));
+            finish();
+        };
 
-        // Timeout fallback: ~85ms per character at rate 1.0, adjusted for rate, +1500ms buffer.
-        // onend is unreliable on Android Chrome — this guarantees progress.
-        const estMs = Math.min(28000, Math.ceil(text.trim().length * 85 / (parseFloat(rate) || 1.0)) + 1500);
-        setTimeout(done, estMs);
+        // Timeout: (chars / rate) * 80ms + 1500ms safety buffer, hard cap 30s
+        const timeoutMs = Math.min(30000, Math.ceil((text.trim().length / r) * 80) + 1500);
+        setTimeout(finish, timeoutMs);
 
         ss.speak(currentUtterance);
     });
+}
+
+function setAudioStep(text) {
+    const el = document.getElementById('audioStep');
+    if (el) el.textContent = text;
 }
 
 async function toggleAudioTrainer() {
@@ -885,34 +902,32 @@ async function toggleAudioTrainer() {
         window.speechSynthesis.cancel();
         stopSynthKeepAlive();
         btn.innerHTML = "▶️ Audio-Trainer starten"; btn.style.background = "linear-gradient(135deg, #a855f7, #ec4899)";
-        document.getElementById('audioDisplayL1').innerText = "Pausiert."; document.getElementById('audioDisplayL3').innerText = "";
+        document.getElementById('audioDisplayL1').innerText = "Pausiert.";
+        document.getElementById('audioDisplayL3').innerText = "";
+        setAudioStep('');
         return;
     }
     isAudioRunning = true; cancelAudio = false;
-    startSynthKeepAlive(); // Chrome/Android: verhindert Abbruch nach ~15s
+    startSynthKeepAlive();
     btn.innerHTML = "⏹️ Audio-Trainer stoppen"; btn.style.background = "#EF4444";
     audioTrainerLoop();
 }
 
-function setAudioStep(text) {
-    const el = document.getElementById('audioStep');
-    if (el) el.textContent = text;
-}
-
 async function audioTrainerLoop() {
     while (isAudioRunning && !cancelAudio) {
+        // ── Satz generieren ───────────────────────────────────────────
         setAudioStep('⏳ Generiere Satz...');
         document.getElementById('audioLoader').style.display = 'block';
-        const diff = document.getElementById('selAudioDiff').value;
-        const tgtLangName = ALL_LANGS[conf.l3].name;
 
+        const diff       = document.getElementById('selAudioDiff').value;
+        const tgtLangName = ALL_LANGS[conf.l3].name;
         const now = Date.now();
         audioHistory = audioHistory.filter(item => (now - item.ts) < 1800000);
-        const avoidList = audioHistory.map(i => i.text).join('", "');
+        const avoidList   = audioHistory.map(i => i.text).join('", "');
         const avoidPrompt = avoidList ? `Verwende AUF KEINEN FALL diese Sätze oder ähnliche: ["${avoidList}"]. ` : "";
         const topics = ["Einkaufen", "Reisen", "Arbeit", "Freizeit", "Essen und Trinken", "Wetter", "Familie", "Sport", "Gesundheit", "Verkehrsmittel", "Gefühle", "Technik", "Natur", "Wohnen"];
         const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-        const randomSeed = Math.floor(Math.random() * 10000);
+        const randomSeed  = Math.floor(Math.random() * 10000);
         const prompt = `Du bist ein Sprachtrainer. Erstelle EINEN realistischen Satz auf Niveau ${diff} zum Thema "${randomTopic}" (ID: ${randomSeed}). ${avoidPrompt}Gib ihn auf Deutsch und auf ${tgtLangName} zurück. JSON-Format: {"l1": "Deutscher Satz", "l3": "Übersetzung in ${tgtLangName}"}`;
 
         const res = await callGemini(prompt);
@@ -929,47 +944,49 @@ async function audioTrainerLoop() {
 
         const l1Text = sentenceObj.l1;
         const l3Text = sentenceObj.l3;
+        if (!l1Text || !l3Text) continue;
+
         audioHistory.push({ text: l1Text, ts: Date.now() });
         currentAudioSentence = { l1: l1Text, l3: l3Text };
         document.getElementById('audioDisplayL1').innerText = l1Text;
         document.getElementById('audioDisplayL3').innerText = "";
 
         const slowRate = parseFloat(document.getElementById('selAudioSlow').value);
-        const pauseMs = parseInt(document.getElementById('selAudioPause').value) * 1000;
-        const reps = parseInt(document.getElementById('selAudioReps').value) || 1;
-        const l1Flag = ALL_LANGS[conf.l1] ? ALL_LANGS[conf.l1].flag : '🌍';
-        const l3Flag = ALL_LANGS[conf.l3] ? ALL_LANGS[conf.l3].flag : '🌍';
+        const pauseMs  = parseInt(document.getElementById('selAudioPause').value) * 1000;
+        const reps     = parseInt(document.getElementById('selAudioReps').value) || 1;
+        const l1Name   = ALL_LANGS[conf.l1] ? ALL_LANGS[conf.l1].name : 'Deutsch';
+        const l3Name   = ALL_LANGS[conf.l3] ? ALL_LANGS[conf.l3].name : tgtLangName;
 
-        // ── STEP 1: Deutsch ───────────────────────────────────────────
+        // ── SCHRITT 1: Deutsch ────────────────────────────────────────
         if (cancelAudio) break;
-        setAudioStep(`${l1Flag} Schritt 1 / ${2 + reps + 1}: Deutsch`);
-        await speakAsync(l1Text, conf.l1, 1.0);
+        setAudioStep(`🔊 ${l1Name}...`);
+        await speakAndWait(l1Text, conf.l1, 1.0);
 
         if (cancelAudio) break;
         await sleepAsync(pauseMs);
         document.getElementById('audioDisplayL3').innerText = l3Text;
 
-        // ── STEP 2: Fremdsprache normal ───────────────────────────────
+        // ── SCHRITT 2: Fremdsprache normal ────────────────────────────
         if (cancelAudio) break;
-        setAudioStep(`${l3Flag} Schritt 2 / ${2 + reps + 1}: Normal`);
-        await speakAsync(l3Text, conf.l3, 1.0);
+        setAudioStep(`🔊 ${l3Name} normal...`);
+        await speakAndWait(l3Text, conf.l3, 1.0);
 
         if (cancelAudio) break;
         await sleepAsync(pauseMs);
 
-        // ── STEPS 3…(2+reps): Fremdsprache langsam ───────────────────
+        // ── SCHRITTE 3…(2+reps): Fremdsprache langsam ────────────────
         for (let i = 0; i < reps; i++) {
             if (cancelAudio) break;
-            setAudioStep(`${l3Flag} Schritt ${3 + i} / ${2 + reps + 1}: Langsam (${i + 1}/${reps})`);
-            await speakAsync(l3Text, conf.l3, slowRate);
+            setAudioStep(`🐢 ${l3Name} langsam ${i + 1}/${reps}...`);
+            await speakAndWait(l3Text, conf.l3, slowRate);
             if (cancelAudio) break;
             await sleepAsync(pauseMs);
         }
 
-        // ── FINAL STEP: Fremdsprache normal zum Abschluss ─────────────
+        // ── ABSCHLUSS: Fremdsprache normal ────────────────────────────
         if (cancelAudio) break;
-        setAudioStep(`${l3Flag} Schritt ${2 + reps + 1} / ${2 + reps + 1}: Abschluss Normal`);
-        await speakAsync(l3Text, conf.l3, 1.0);
+        setAudioStep(`🔊 ${l3Name} normal...`);
+        await speakAndWait(l3Text, conf.l3, 1.0);
 
         if (cancelAudio) break;
         setAudioStep('✅ Nächster Satz...');
