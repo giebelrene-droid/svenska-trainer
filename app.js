@@ -1,4 +1,4 @@
-const APP_VERSION = "30.30";
+const APP_VERSION = "30.31";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -973,7 +973,7 @@ async function translateAllWithDeepL(text, sourceLangKey) {
 // ==========================================
 // 5b. GEMINI API ANBINDUNG
 // ==========================================
-const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+const GEMINI_MODELS = ['gemini-2.0-flash-lite', 'gemini-1.5-flash-8b', 'gemini-2.5-flash-preview-05-20'];
 
 function showApiError(html) {
     let box = document.getElementById('apiErrorBox');
