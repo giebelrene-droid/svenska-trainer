@@ -106,34 +106,61 @@ let availableVoices = [];
 // ==========================================
 // 3. SPRACHAUSGABE & STIMMEN (STABIL FÜR MOBIL)
 // ==========================================
-function loadVoices() { availableVoices = window.speechSynthesis.getVoices(); updateVoiceDropdown(); }
-if(window.speechSynthesis) { window.speechSynthesis.onvoiceschanged = loadVoices; setTimeout(loadVoices, 500); }
+function loadVoices() {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) { availableVoices = voices; updateVoiceDropdown(); }
+}
+if (window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    // Mehrere Versuche: Stimmen kommen auf mobilen Geräten oft verzögert
+    loadVoices();
+    [100, 500, 1000, 2000].forEach(t => setTimeout(loadVoices, t));
+}
 
 function updateVoiceDropdown() {
     const voiceSelect = document.getElementById('selAudioVoice'); if(!voiceSelect) return;
-    const currentLangCode = ALL_LANGS[conf.l3].tts.split('-')[0]; 
+    const currentLangCode = ALL_LANGS[conf.l3].tts.split('-')[0];
     const matchingVoices = availableVoices.filter(v => v.lang.startsWith(currentLangCode));
     let html = '<option value="">🤖 Standard-Stimme</option>';
-    matchingVoices.forEach(v => { html += `<option value="${v.name}">${v.name}</option>`; });
+    matchingVoices.forEach(v => { html += `<option value="${escapeHTML(v.name)}">${escapeHTML(v.name)}</option>`; });
     voiceSelect.innerHTML = html;
 }
 
-function speak(text, langKey, rate = 1.0) {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel(); 
-    setTimeout(() => {
-        const msg = new SpeechSynthesisUtterance(text);
-        msg.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
-        msg.rate = rate;
-        if (langKey === conf.l3) {
-            const voiceSelect = document.getElementById('selAudioVoice');
-            if (voiceSelect && voiceSelect.value) {
-                const selectedVoice = availableVoices.find(v => v.name === voiceSelect.value);
-                if (selectedVoice) msg.voice = selectedVoice;
-            }
+function buildUtterance(text, langKey, rate) {
+    const msg = new SpeechSynthesisUtterance(text.trim());
+    msg.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
+    msg.rate = parseFloat(rate) || 1.0;
+    msg.volume = 1.0;
+    msg.pitch = 1.0;
+    if (langKey === conf.l3 && availableVoices.length > 0) {
+        const voiceSelect = document.getElementById('selAudioVoice');
+        if (voiceSelect && voiceSelect.value) {
+            const selectedVoice = availableVoices.find(v => v.name === voiceSelect.value);
+            if (selectedVoice) msg.voice = selectedVoice;
         }
-        window.speechSynthesis.speak(msg);
-    }, 50);
+    }
+    return msg;
+}
+
+function speak(text, langKey, rate = 1.0) {
+    if (!('speechSynthesis' in window) || !text || !text.trim()) return;
+    const ss = window.speechSynthesis;
+
+    const doSpeak = () => {
+        if (ss.paused) ss.resume();
+        const msg = buildUtterance(text, langKey, rate);
+        msg.onerror = (e) => logCustomError(`speak [${langKey}]`, e.error || String(e));
+        ss.speak(msg);
+    };
+
+    // Wenn gerade etwas spricht: abbrechen und kurz warten (iOS braucht ~150ms)
+    // Wenn nichts spricht: SOFORT sprechen, User-Gesture-Kette bleibt erhalten (iOS-Fix!)
+    if (ss.speaking || ss.pending) {
+        ss.cancel();
+        setTimeout(doSpeak, 150);
+    } else {
+        doSpeak();
+    }
 }
 
 // ==========================================
@@ -296,22 +323,27 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
 // ==========================================
 function speakAsync(text, langKey, rate = 1.0) {
     return new Promise((resolve) => {
-        if (!('speechSynthesis' in window) || cancelAudio) return resolve();
-        
-        currentUtterance = new SpeechSynthesisUtterance(text);
-        currentUtterance.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
-        currentUtterance.rate = rate;
-        
-        if (langKey === conf.l3) {
-            const voiceSelect = document.getElementById('selAudioVoice');
-            if (voiceSelect && voiceSelect.value) {
-                const selectedVoice = availableVoices.find(v => v.name === voiceSelect.value);
-                if (selectedVoice) currentUtterance.voice = selectedVoice;
-            }
-        }
-        currentUtterance.onend = () => { currentUtterance = null; resolve(); };
-        currentUtterance.onerror = () => { currentUtterance = null; resolve(); };
-        window.speechSynthesis.speak(currentUtterance);
+        if (!('speechSynthesis' in window) || cancelAudio || !text || !text.trim()) return resolve();
+
+        currentUtterance = buildUtterance(text, langKey, rate);
+
+        let resolved = false;
+        const done = () => { if (!resolved) { resolved = true; currentUtterance = null; resolve(); } };
+
+        currentUtterance.onend = done;
+        currentUtterance.onerror = (e) => {
+            logCustomError(`speakAsync [${langKey}]`, e.error || String(e));
+            done();
+        };
+
+        // Timeout-Fallback: iOS feuert onend manchmal nie → Audio-Trainer würde sonst hängen
+        const charCount = text.trim().length;
+        const estMs = Math.max(2000, (charCount / (parseFloat(rate) * 14)) * 1000) + 2000;
+        setTimeout(done, Math.min(estMs, 18000));
+
+        const ss = window.speechSynthesis;
+        if (ss.paused) ss.resume();
+        ss.speak(currentUtterance);
     });
 }
 const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
