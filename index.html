@@ -15,7 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-    <link rel="stylesheet" href="style.css?v=30.35">
+    <link rel="stylesheet" href="style.css?v=30.36">
 </head>
 <body>
 
@@ -89,7 +89,7 @@
         
         <div style="display:flex;gap:8px;margin-top:15px;">
             <button class="action-btn btn-secondary" onclick="testApiKeys()" style="flex:1;">🔑 API Keys testen</button>
-            <button class="action-btn btn-secondary" onclick="listGeminiModels()" style="flex:1;">📋 Modelle abrufen</button>
+            <button class="action-btn btn-secondary" onclick="listGeminiModels()" style="flex:1;">🔍 Verfügbare Modelle anzeigen</button>
         </div>
         <div id="apiKeyTestResults" style="display:none; margin-top:10px; background:#0f172a; border-radius:12px; padding:12px; font-family:monospace; font-size:0.78rem; line-height:1.7;"></div>
 
@@ -117,7 +117,7 @@
 <div class="top-bar">
     <div class="app-title-wrap">
         <div class="app-title">SprachTutor AI</div>
-        <span class="version-badge" id="versionBadge">v30.35</span>
+        <span class="version-badge" id="versionBadge">v30.36</span>
     </div>
     <div class="top-stats">
         <div class="stats-badge" style="color: var(--primary);">👑 <span id="uiLevel">1</span></div>
@@ -588,7 +588,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version <span id="footerVersion">30.35</span> (Ultimate Edition) &bull; 2026
+    SprachTutor AI &bull; Version <span id="footerVersion">30.36</span> (Ultimate Edition) &bull; 2026
 </div>
 
 <!-- BOTTOM NAV -->
@@ -612,6 +612,6 @@
 
 <div id="toastContainer" style="position: fixed; bottom: 95px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>
 
-<script src="app.js?v=30.35"></script>
+<script src="app.js?v=30.36"></script>
 </body>
 </html>

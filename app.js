@@ -1,4 +1,4 @@
-const APP_VERSION = "30.35";
+const APP_VERSION = "30.36";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -819,20 +819,22 @@ async function listGeminiModels() {
     box.innerHTML = '<span style="color:#94a3b8;">⏳ Rufe Modellliste ab…</span>';
     const key = keys[0];
     try {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${key}`);
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
         const d = await resp.json();
         if (d.error) {
             box.innerHTML = `<span style="color:#f87171;">❌ API-Fehler ${resp.status}:</span><br><pre style="color:#fbbf24;white-space:pre-wrap;word-break:break-all;margin:4px 0 0;">${escapeHTML(JSON.stringify(d.error, null, 2))}</pre>`;
             return;
         }
         const models = (d.models || []);
-        const generateModels = models.filter(m => (m.supportedGenerationMethods || []).includes('generateContent'));
-        let html = `<div style="color:#94a3b8;margin-bottom:8px;">Key: …${key.slice(-6)} &nbsp;|&nbsp; <b style="color:#e2e8f0;">${generateModels.length}</b> Modelle mit generateContent</div>`;
-        for (const m of generateModels) {
+        let html = `<div style="color:#94a3b8;margin-bottom:8px;">Key: …${escapeHTML(key.slice(-6))} &nbsp;|&nbsp; <b style="color:#e2e8f0;">${models.length}</b> Modelle total</div>`;
+        for (const m of models) {
             const name = m.name.replace('models/', '');
-            html += `<div style="color:#4ade80;padding:2px 0;">✓ ${escapeHTML(name)}</div>`;
+            const canGenerate = (m.supportedGenerationMethods || []).includes('generateContent');
+            const color = canGenerate ? '#4ade80' : '#64748b';
+            const tag = canGenerate ? ' <span style="color:#818cf8;font-size:0.68rem;">[generateContent]</span>' : '';
+            html += `<div style="color:${color};padding:1px 0;">${escapeHTML(name)}${tag}</div>`;
         }
-        if (generateModels.length === 0) html += '<div style="color:#fbbf24;">Keine generateContent-Modelle gefunden.</div>';
+        if (models.length === 0) html += '<div style="color:#fbbf24;">Keine Modelle zurückgegeben.</div>';
         box.innerHTML = html;
     } catch(e) {
         box.innerHTML = `<span style="color:#f87171;">❌ Netzwerkfehler: ${escapeHTML(e.message)}</span>`;
