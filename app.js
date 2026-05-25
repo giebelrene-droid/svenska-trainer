@@ -1,4 +1,4 @@
-const APP_VERSION = "30.25";
+const APP_VERSION = "30.26";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -828,8 +828,18 @@ function switchUser() { currentCollIndex = parseInt(document.getElementById('sel
 // ==========================================
 // 5. GEMINI API ANBINDUNG
 // ==========================================
-// Fixed model list — no auto-discovery. Try in order until one responds.
-const GEMINI_MODELS = ['gemini-2.0-flash-exp', 'gemini-2.0-flash', 'gemini-1.5-flash-002'];
+const GEMINI_MODEL = 'gemini-2.0-flash';
+
+function showApiError(html) {
+    let box = document.getElementById('apiErrorBox');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'apiErrorBox';
+        box.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);width:92%;max-width:560px;background:#1e293b;color:#f8fafc;font-family:monospace;font-size:0.78rem;padding:14px 16px;border-radius:14px;border:2px solid #EF4444;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-height:60vh;overflow-y:auto;line-height:1.5;';
+        document.body.appendChild(box);
+    }
+    box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><strong style="color:#EF4444;font-size:0.85rem;">⚠️ API-Fehler</strong><button onclick="document.getElementById('apiErrorBox').remove()" style="background:#EF4444;color:white;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:800;">✕ Schließen</button></div>${html}`;
+}
 
 async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
@@ -840,8 +850,9 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
 
     const activeLoader = Array.from(document.querySelectorAll('.loader')).find(el => el.offsetWidth > 0);
     const originalLoaderText = activeLoader ? activeLoader.innerText : "";
+    if (activeLoader) activeLoader.innerText = `KI (${GEMINI_MODEL})…`;
 
-    // Build payload once
+    // Build payload
     let payload = { contents: [] };
     if (systemPrompt) {
         payload.contents.push({ role: "user",  parts: [{ text: "SYSTEM-ANWEISUNG: " + systemPrompt }] });
@@ -856,45 +867,40 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     }
     payload.contents.push({ role: "user", parts: userParts });
 
-    // Try cached model first, then full list
-    const modelsToTry = cachedGeminiModel
-        ? [cachedGeminiModel, ...GEMINI_MODELS.filter(m => m !== cachedGeminiModel)]
-        : GEMINI_MODELS;
-
-    let lastErrorMsg = "";
-    for (const model of modelsToTry) {
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[currentApiKeyIndex % keys.length];
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-            try {
-                if (activeLoader) activeLoader.innerText = `KI (${model})…`;
-                const resp = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-                const d = await resp.json();
-                if (d.error) throw new Error(d.error.message || JSON.stringify(d.error));
-                const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!text) throw new Error("Leere Antwort");
-                // First success: remember model and confirm to user if it changed
-                if (model !== cachedGeminiModel) {
-                    showToast(`✅ KI-Modell: ${model}`, 'success');
-                    cachedGeminiModel = model;
-                }
-                if (activeLoader) activeLoader.innerText = originalLoaderText;
-                return text.trim();
-            } catch(e) {
-                lastErrorMsg = e.message;
-                logCustomError(`callGemini [${model}]`, e.message);
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[currentApiKeyIndex % keys.length];
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+        try {
+            const resp = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const d = await resp.json();
+            if (d.error) {
+                const errJson = JSON.stringify(d.error, null, 2);
+                logCustomError(`callGemini`, errJson);
+                showApiError(`<b>Modell:</b> ${GEMINI_MODEL}<br><b>Key (Ende):</b> …${key.slice(-6)}<br><b>HTTP-Status:</b> ${resp.status}<br><pre style="margin:6px 0 0;white-space:pre-wrap;word-break:break-all;">${escapeHTML(errJson)}</pre>`);
                 currentApiKeyIndex++;
+                continue;
             }
+            const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) {
+                const raw = JSON.stringify(d, null, 2);
+                showApiError(`<b>Leere Antwort vom Modell</b><br><pre style="margin:6px 0 0;white-space:pre-wrap;word-break:break-all;">${escapeHTML(raw)}</pre>`);
+                currentApiKeyIndex++;
+                continue;
+            }
+            if (activeLoader) activeLoader.innerText = originalLoaderText;
+            return text.trim();
+        } catch(e) {
+            logCustomError(`callGemini network`, e.message);
+            showApiError(`<b>Netzwerkfehler</b><br><pre style="margin:6px 0 0;">${escapeHTML(e.message)}</pre>`);
+            currentApiKeyIndex++;
         }
     }
 
     if (activeLoader) activeLoader.innerText = originalLoaderText;
-    showToast(`⚠️ Alle Modelle fehlgeschlagen: ${lastErrorMsg}`, 'error');
-    logCustomError('callGemini failed', lastErrorMsg);
     return null;
 }
 
