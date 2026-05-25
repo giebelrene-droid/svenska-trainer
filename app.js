@@ -1,4 +1,4 @@
-const APP_VERSION = "30.21";
+const APP_VERSION = "30.22";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -265,6 +265,33 @@ function removeBrokenServiceWorkers() {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
             for(let registration of registrations) { registration.unregister(); }
         }).catch(()=>{});
+    }
+}
+
+async function clearAppCache() {
+    showToast('🔄 Cache wird geleert…', 'info');
+    try {
+        // 1) Deregister all service workers
+        if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r => r.unregister()));
+        }
+        // 2) Clear all Cache Storage entries
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        showToast('✅ Cache geleert — Seite wird neu geladen…', 'success');
+        // 3) Force hard reload, bypassing any browser cache
+        setTimeout(() => {
+            window.location.href = window.location.pathname + '?nocache=' + Date.now();
+        }, 1000);
+    } catch(e) {
+        logCustomError('clearAppCache', e);
+        showToast('⚠️ Fehler beim Leeren. Seite wird trotzdem neu geladen…', 'error');
+        setTimeout(() => {
+            window.location.href = window.location.pathname + '?nocache=' + Date.now();
+        }, 1500);
     }
 }
 

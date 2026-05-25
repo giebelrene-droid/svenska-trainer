@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>SprachTutor AI</title>
-    
+
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234F46E5%22 rx=%2220%22/><text x=%2250%22 y=%2268%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%23ffffff%22>🌍</text></svg>">
     <link id="manifestLink" rel="manifest" href="">
-    
+
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    
-    <link rel="stylesheet" href="style.css?v=30.0">
+
+    <link rel="stylesheet" href="style.css?v=30.22">
 </head>
 <body>
 
@@ -82,7 +85,8 @@
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
         
         <button class="action-btn btn-secondary" onclick="openErrorLog()" style="margin-top: 15px; border-style: dashed;">🐛 Fehlerprotokoll anzeigen</button>
-        
+        <button class="action-btn btn-secondary" onclick="clearAppCache()" style="margin-top: 8px; border-style: dashed;">🔄 App aktualisieren (Cache leeren)</button>
+
         <button class="action-btn" onclick="closeSettings()" style="margin-top: 30px;">Fertig</button>
     </div>
 </div>
@@ -104,7 +108,7 @@
 <div class="top-bar">
     <div class="app-title-wrap">
         <div class="app-title">SprachTutor AI</div>
-        <span class="version-badge" id="versionBadge">v30.21</span>
+        <span class="version-badge" id="versionBadge">v30.22</span>
     </div>
     <div class="top-stats">
         <div class="stats-badge" style="color: var(--primary);">👑 <span id="uiLevel">1</span></div>
@@ -574,7 +578,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version <span id="footerVersion">30.21</span> (Ultimate Edition) &bull; 2026
+    SprachTutor AI &bull; Version <span id="footerVersion">30.22</span> (Ultimate Edition) &bull; 2026
 </div>
 
 <!-- BOTTOM NAV -->
@@ -598,6 +602,6 @@
 
 <div id="toastContainer" style="position: fixed; bottom: 95px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>
 
-<script src="app.js?v=30.0"></script>
+<script src="app.js?v=30.22"></script>
 </body>
 </html>
