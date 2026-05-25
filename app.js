@@ -1,4 +1,4 @@
-const APP_VERSION = "30.3";
+const APP_VERSION = "30.4";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -128,6 +128,28 @@ function updateVoiceDropdown() {
     voiceSelect.innerHTML = html;
 }
 
+// Chrome/Android: Synthesis bricht nach ~15s ab — Keepalive verhindert das
+let synthKeepAliveTimer = null;
+function startSynthKeepAlive() {
+    stopSynthKeepAlive();
+    synthKeepAliveTimer = setInterval(() => {
+        if (window.speechSynthesis && window.speechSynthesis.speaking) {
+            window.speechSynthesis.pause();
+            window.speechSynthesis.resume();
+        }
+    }, 10000);
+}
+function stopSynthKeepAlive() {
+    if (synthKeepAliveTimer) { clearInterval(synthKeepAliveTimer); synthKeepAliveTimer = null; }
+}
+
+// Wenn Tab wieder sichtbar wird: Synthesis aus Pause-State holen
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && window.speechSynthesis) {
+        window.speechSynthesis.resume();
+    }
+});
+
 function buildUtterance(text, langKey, rate) {
     const msg = new SpeechSynthesisUtterance(text.trim());
     msg.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
@@ -147,22 +169,13 @@ function buildUtterance(text, langKey, rate) {
 function speak(text, langKey, rate = 1.0) {
     if (!('speechSynthesis' in window) || !text || !text.trim()) return;
     const ss = window.speechSynthesis;
-
-    const doSpeak = () => {
-        if (ss.paused) ss.resume();
-        const msg = buildUtterance(text, langKey, rate);
-        msg.onerror = (e) => logCustomError(`speak [${langKey}]`, e.error || String(e));
-        ss.speak(msg);
-    };
-
-    // Wenn gerade etwas spricht: abbrechen und kurz warten (iOS braucht ~150ms)
-    // Wenn nichts spricht: SOFORT sprechen, User-Gesture-Kette bleibt erhalten (iOS-Fix!)
-    if (ss.speaking || ss.pending) {
-        ss.cancel();
-        setTimeout(doSpeak, 150);
-    } else {
-        doSpeak();
-    }
+    // Synchrones cancel() + speak() ohne setTimeout — kein setTimeout!
+    // setTimeout bricht die User-Gesture-Kette auf Android Chrome (speak wird stumm ignoriert).
+    ss.cancel();
+    if (ss.paused) ss.resume();
+    const msg = buildUtterance(text, langKey, rate);
+    msg.onerror = (e) => logCustomError(`speak [${langKey}]`, e.error || String(e));
+    ss.speak(msg);
 }
 
 // ==========================================
@@ -361,12 +374,16 @@ const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 async function toggleAudioTrainer() {
     const btn = document.getElementById('btnStartAudio');
     if (isAudioRunning) {
-        isAudioRunning = false; cancelAudio = true; window.speechSynthesis.cancel(); 
+        isAudioRunning = false; cancelAudio = true;
+        window.speechSynthesis.cancel();
+        stopSynthKeepAlive();
         btn.innerHTML = "▶️ Audio-Trainer starten"; btn.style.background = "linear-gradient(135deg, #a855f7, #ec4899)";
         document.getElementById('audioDisplayL1').innerText = "Pausiert."; document.getElementById('audioDisplayL3').innerText = "";
         return;
     }
-    isAudioRunning = true; cancelAudio = false; btn.innerHTML = "⏹️ Audio-Trainer stoppen"; btn.style.background = "#EF4444";
+    isAudioRunning = true; cancelAudio = false;
+    startSynthKeepAlive(); // Chrome/Android: verhindert Abbruch nach ~15s
+    btn.innerHTML = "⏹️ Audio-Trainer stoppen"; btn.style.background = "#EF4444";
     audioTrainerLoop();
 }
 
