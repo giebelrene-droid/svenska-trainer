@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=30.0">
 </head>
 <body>
 
@@ -137,9 +137,7 @@
     </div>
 
     <div style="background: rgba(255,255,255,0.7); padding: 20px; border-radius: 16px; border: 1px solid var(--border-soft); text-align: center; margin-bottom: 20px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; position: relative;">
-        
         <button class="icon-btn" onclick="saveAudioSentence()" style="position: absolute; right: 10px; top: 10px; font-size: 1.2rem; border: none; background: rgba(255,255,255,0.9); box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 45px; height: 45px;" title="Satz in Karteikarten speichern">💾</button>
-
         <div id="audioDisplayL1" style="font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 10px; padding-right: 35px;">Bereit zum Starten...</div>
         <div id="audioDisplayL3" style="font-weight: 600; font-size: 1.2rem; color: var(--primary); padding-right: 35px;"></div>
         <div id="audioLoader" class="loader" style="display:none; margin-top: 10px;">KI generiert Satz...</div>
@@ -287,9 +285,7 @@
             <button class="icon-btn" style="flex:1; font-size:0.9rem;" onclick="showFcList('nochmals')">🟠 <span id="cntNochmals">0</span></button>
             <button class="icon-btn" style="flex:1; font-size:0.9rem;" onclick="showFcList('geuebt')">🟢 <span id="cntGeuebt">0</span></button>
         </div>
-        
-        <div id="fcHistoryList" style="margin-top:15px; display:none; flex-direction:column; gap:8px; max-height:250px; overflow-y:auto; background: rgba(255,255,255,0.7); padding: 15px; border-radius: 16px; border: 1px solid var(--border-soft);">
-        </div>
+        <div id="fcHistoryList" style="margin-top:15px; display:none; flex-direction:column; gap:8px; max-height:250px; overflow-y:auto; background: rgba(255,255,255,0.7); padding: 15px; border-radius: 16px; border: 1px solid var(--border-soft);"></div>
     </div>
 </div>
 
@@ -433,11 +429,11 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version 29.2 (Audio Pro) &bull; 2026
+    SprachTutor AI &bull; Version 30.0 (Ultimate Edition) &bull; 2026
 </div>
 
 <div id="toastContainer" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>
 
-<script src="app.js"></script>
+<script src="app.js?v=30.0"></script>
 </body>
 </html>
