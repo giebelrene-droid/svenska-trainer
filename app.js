@@ -1,4 +1,4 @@
-const APP_VERSION = "30.26";
+const APP_VERSION = "30.27";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -93,6 +93,7 @@ let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; let currentCollIndex = 0; 
 let studyWords = []; let studyIndex = 0; let fcPool = []; let fcIndex = 0; let fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] }; let currentFcListType = '';
 let activeRpSentenceForFeedback = ""; let rpOptionsBuffer = null; let rpFetchPromise = null; let rpMicTimer = null; let rpCurrentTranscript = "";
 let geminiApiKey = localStorage.getItem('trainerGeminiKey') || ""; let currentApiKeyIndex = 0; let cachedGeminiModel = null;
+let deeplApiKey = localStorage.getItem('trainerDeeplKey') || "";
 let isLiveRecording = false; let liveRecObj = null; let isChatSessionActive = false; let chatRec = null; let duelWordObj = null; let duelCanTap = false; let huntTarget = ""; let listDebounceTimer;
 const RALLYE_CATEGORIES = [ { prompt: "ein Tier", label: "Nenne ein Tier! 🐾" }, { prompt: "eine Farbe", label: "Nenne eine Farbe! 🎨" }, { prompt: "eine Sportart", label: "Nenne eine Sportart! ⚽" }, { prompt: "ein Lebensmittel", label: "Nenne ein Lebensmittel! 🍎" }, { prompt: "ein Land", label: "Nenne ein Land! 🌍" }, { prompt: "ein Fahrzeug", label: "Nenne ein Fahrzeug! 🚗" }, { prompt: "ein Körperteil", label: "Nenne einen Körperteil! 💪" }, { prompt: "ein Möbelstück", label: "Nenne ein Möbelstück! 🛋️" } ];
 let currentRallyeCategory = RALLYE_CATEGORIES[0];
@@ -307,6 +308,7 @@ function init() {
     updateVersionDisplay();
     applyDarkMode();
     if(document.getElementById('inpGeminiKey')) document.getElementById('inpGeminiKey').value = geminiApiKey;
+    if(document.getElementById('inpDeeplKey')) document.getElementById('inpDeeplKey').value = deeplApiKey;
     try { const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames); const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx); } catch(e){}
     const todayStr = new Date().toDateString(); if(statsToday.date !== todayStr) { statsToday = {learned:0, added:0, date:todayStr}; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); }
     loadUserLangs(); renderRenameInputs(); updateUserDropdown(); populateLangSelects(); checkStreak(); updateQuests(); updateSaveModeUI();
@@ -726,6 +728,7 @@ function activateTTS() {
     }
 }
 function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); cachedGeminiModel = null; }
+function saveDeeplKey() { deeplApiKey = document.getElementById('inpDeeplKey').value.trim(); localStorage.setItem('trainerDeeplKey', deeplApiKey); }
 
 function showTab(n) {
     try {
@@ -826,7 +829,70 @@ function saveName(idx) { const val = document.getElementById('name'+idx).value.t
 function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
 // ==========================================
-// 5. GEMINI API ANBINDUNG
+// 5. DEEPL ÜBERSETZUNGS-ENGINE
+// ==========================================
+
+// Maps internal lang keys to DeepL language codes
+const DEEPL_LANG_MAP = {
+    de: 'DE', en: 'EN', sv: 'SV', fr: 'FR',
+    es: 'ES', it: 'IT', no: 'NB'
+};
+
+function getDeeplLang(key) {
+    return DEEPL_LANG_MAP[key] || key.toUpperCase();
+}
+
+// Returns the correct DeepL API base URL — free keys end with :fx
+function getDeeplUrl() {
+    return deeplApiKey.trim().endsWith(':fx')
+        ? 'https://api-free.deepl.com/v2/translate'
+        : 'https://api.deepl.com/v2/translate';
+}
+
+// Translates a single text with DeepL. Returns the translated string or null.
+async function translateWithDeepL(text, sourceLangKey, targetLangKey) {
+    if (!deeplApiKey.trim() || !text || !text.trim()) return null;
+    try {
+        const body = new URLSearchParams({
+            auth_key: deeplApiKey.trim(),
+            text: text.trim(),
+            source_lang: getDeeplLang(sourceLangKey),
+            target_lang: getDeeplLang(targetLangKey)
+        });
+        const resp = await fetch(getDeeplUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+        });
+        const d = await resp.json();
+        if (d.message || d.error_code) {
+            logCustomError('DeepL', `${d.error_code || ''} ${d.message || ''}`);
+            return null;
+        }
+        return d.translations?.[0]?.text || null;
+    } catch(e) {
+        logCustomError('DeepL network', e.message);
+        return null;
+    }
+}
+
+// Translates text into ALL configured languages at once using DeepL.
+// sourceLangKey is the language of the input text.
+// Returns { [conf.l1]: '...', [conf.l2]: '...', [conf.l3]: '...' } or null.
+async function translateAllWithDeepL(text, sourceLangKey) {
+    if (!deeplApiKey.trim()) return null;
+    const targets = [conf.l1, conf.l2, conf.l3].filter(l => l !== sourceLangKey);
+    const results = { [sourceLangKey]: text };
+    for (const tgt of targets) {
+        const t = await translateWithDeepL(text, sourceLangKey, tgt);
+        if (t === null) return null; // any failure → fall back to Gemini
+        results[tgt] = t;
+    }
+    return results;
+}
+
+// ==========================================
+// 5b. GEMINI API ANBINDUNG
 // ==========================================
 const GEMINI_MODEL = 'gemini-2.0-flash';
 
@@ -1234,9 +1300,56 @@ function toggleChatRecord() { if(isChatSessionActive) { isChatSessionActive = fa
 function clearChat() { document.getElementById('chatHistory').innerHTML = `<div class="chat-bubble bubble-ai" id="chatWelcomeMsg">Hej! Lass uns üben. 👋</div>`; }
 async function generateStory() { if(allWords.length < 3) return showToast("Min. 3 Wörter im Wörterbuch nötig!", "error"); const words = allWords.sort(()=>0.5-Math.random()).slice(0,4).map(w=>w[conf.l3]).join(", "); document.getElementById('loaderStory').style.display='block'; const r = await callGemini(`Schreibe ein kurzes, absurdes Märchen (max 3 Sätze) auf ${ALL_LANGS[conf.l3].name}. Nutze diese Wörter: ${words}. Das Format MUSS sein: Geschichte --- Übersetzung auf Deutsch.`); document.getElementById('loaderStory').style.display='none'; if(r) { const p = r.split('---'); document.getElementById('storyContent').innerText = p[0]; document.getElementById('storyTranslation').innerText = p[1] || ""; document.getElementById('storyBox').style.display='block'; speak(p[0], conf.l3); } }
 function speakStory() { const t = document.getElementById('storyContent').innerText; if(t) speak(t, conf.l3); }
-async function toggleLiveRecord() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SpeechRecognition) return; if(isLiveRecording) { isLiveRecording = false; document.getElementById('btnLiveRecord').innerText = "🎤 Start"; document.getElementById('btnLiveRecord').style.background = "var(--primary-gradient)"; if(liveRecObj) liveRecObj.stop(); return; } isLiveRecording = true; document.getElementById('btnLiveRecord').innerText = "⏹️ Stopp"; document.getElementById('btnLiveRecord').style.background = "#EF4444"; liveRecObj = new SpeechRecognition(); liveRecObj.lang = ALL_LANGS[document.getElementById('liveSrcLang').value].tts; liveRecObj.continuous = true; liveRecObj.interimResults = true; liveRecObj.onresult = async (e) => { let text = ""; for(let i = e.resultIndex; i < e.results.length; i++) text += e.results[i][0].transcript; document.getElementById('liveSourceText').value = text; if(e.results[e.results.length - 1].isFinal) { document.getElementById('loaderLive').style.display = 'block'; const res = await callGemini(`Übersetze den Text streng in die Sprache ${ALL_LANGS[document.getElementById('liveTgtLang').value].name}. Gib NUR die Übersetzung zurück: "${text}"`); document.getElementById('loaderLive').style.display = 'none'; if(res) document.getElementById('liveResultText').value = res; } }; liveRecObj.onerror = (e) => logCustomError("Live Übersetzung Mikrofon", e.error); liveRecObj.onend = () => { if(isLiveRecording) liveRecObj.start(); }; liveRecObj.start(); }
-function handleImageScan(input) { const file = input.files[0]; if(!file) return; document.getElementById('loader').style.display = 'block'; const reader = new FileReader(); reader.onload = (e) => { const img = new Image(); img.onload = async () => { let finalImageBase64 = e.target.result; try { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 800; if(w > h && w > max) { h = Math.round(h * max / w); w = max; } else if(h > max) { w = Math.round(w * max / h); h = max; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); finalImageBase64 = canvas.toDataURL('image/jpeg', 0.7); } catch(err) {} const prompt = `Look at this image. Identify the single main everyday object in it. Translate its name into these exact language codes: ${conf.l1}, ${conf.l2}, ${conf.l3}. Respond ONLY with a valid JSON object. Example format: {"${conf.l1}":"Apfel", "${conf.l2}":"Apple", "${conf.l3}":"Äpple"}`; const res = await callGemini(prompt, finalImageBase64); document.getElementById('loader').style.display = 'none'; if(res) { try { let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const sIdx = cleanStr.indexOf('{'); const eIdx = cleanStr.lastIndexOf('}'); if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1); const obj = JSON.parse(cleanStr); document.getElementById('inDe').value = obj[conf.l1] || ""; document.getElementById('inEn').value = obj[conf.l2] || ""; document.getElementById('inSv').value = obj[conf.l3] || ""; } catch(err) { showToast("⚠️ JSON Parsing Fehler.", "error"); } } input.value = ""; }; img.src = e.target.result; }; reader.readAsDataURL(file); }
-async function handleSmartTranslate() { const txt = document.getElementById('inDe').value || document.getElementById('inEn').value || document.getElementById('inSv').value; if(!txt) return; document.getElementById('loader').style.display = "block"; try { const res = await callGemini(`Übersetze das Wort "${txt}". Antworte NUR mit einem validen JSON Objekt: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`); let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const sIdx = cleanStr.indexOf('{'); const eIdx = cleanStr.lastIndexOf('}'); if(sIdx !== -1 && eIdx !== -1) { cleanStr = cleanStr.substring(sIdx, eIdx + 1); } const obj = JSON.parse(cleanStr); document.getElementById('inDe').value = obj[conf.l1] || ""; document.getElementById('inEn').value = obj[conf.l2] || ""; document.getElementById('inSv').value = obj[conf.l3] || ""; } catch(e) { showToast("Übersetzung fehlgeschlagen.", "error"); } document.getElementById('loader').style.display = "none"; }
+async function toggleLiveRecord() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SpeechRecognition) return; if(isLiveRecording) { isLiveRecording = false; document.getElementById('btnLiveRecord').innerText = "🎤 Start"; document.getElementById('btnLiveRecord').style.background = "var(--primary-gradient)"; if(liveRecObj) liveRecObj.stop(); return; } isLiveRecording = true; document.getElementById('btnLiveRecord').innerText = "⏹️ Stopp"; document.getElementById('btnLiveRecord').style.background = "#EF4444"; liveRecObj = new SpeechRecognition(); liveRecObj.lang = ALL_LANGS[document.getElementById('liveSrcLang').value].tts; liveRecObj.continuous = true; liveRecObj.interimResults = true; liveRecObj.onresult = async (e) => { let text = ""; for(let i = e.resultIndex; i < e.results.length; i++) text += e.results[i][0].transcript; document.getElementById('liveSourceText').value = text; if(e.results[e.results.length - 1].isFinal) { document.getElementById('loaderLive').style.display = 'block'; const srcLang = document.getElementById('liveSrcLang').value; const tgtLang = document.getElementById('liveTgtLang').value; let res = null; if (deeplApiKey.trim()) res = await translateWithDeepL(text, srcLang, tgtLang); if (!res) res = await callGemini(`Übersetze den Text streng in die Sprache ${ALL_LANGS[tgtLang].name}. Gib NUR die Übersetzung zurück: "${text}"`); document.getElementById('loaderLive').style.display = 'none'; if(res) document.getElementById('liveResultText').value = res; } }; liveRecObj.onerror = (e) => logCustomError("Live Übersetzung Mikrofon", e.error); liveRecObj.onend = () => { if(isLiveRecording) liveRecObj.start(); }; liveRecObj.start(); }
+function handleImageScan(input) { const file = input.files[0]; if(!file) return; document.getElementById('loader').style.display = 'block'; const reader = new FileReader(); reader.onload = (e) => { const img = new Image(); img.onload = async () => { let finalImageBase64 = e.target.result; try { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 800; if(w > h && w > max) { h = Math.round(h * max / w); w = max; } else if(h > max) { w = Math.round(w * max / h); h = max; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); finalImageBase64 = canvas.toDataURL('image/jpeg', 0.7); } catch(err) {} // Step 1: Gemini identifies the object (always — it needs vision)
+const prompt = `Look at this image. Identify the single main everyday object in it. Give its name in ${ALL_LANGS[conf.l1].name}. Respond with ONLY the word, nothing else.`;
+const identified = await callGemini(prompt, finalImageBase64);
+document.getElementById('loader').style.display = 'none';
+if (identified) {
+    const word = identified.trim();
+    let obj = null;
+    // Step 2: translate into all languages — DeepL first, Gemini fallback
+    if (deeplApiKey.trim()) obj = await translateAllWithDeepL(word, conf.l1);
+    if (!obj) {
+        try {
+            const res2 = await callGemini(`Translate the word "${word}". Respond ONLY with a valid JSON object: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`);
+            if (res2) { let c = res2.replace(/`{3}json/gi,'').replace(/`{3}/g,'').trim(); const s=c.indexOf('{'),e2=c.lastIndexOf('}'); if(s!==-1&&e2!==-1)c=c.substring(s,e2+1); obj=JSON.parse(c); }
+        } catch(err) { showToast("⚠️ Übersetzung fehlgeschlagen.", "error"); }
+    }
+    if (obj) { document.getElementById('inDe').value = obj[conf.l1]||word; document.getElementById('inEn').value = obj[conf.l2]||""; document.getElementById('inSv').value = obj[conf.l3]||""; }
+}
+input.value = ""; }; img.src = e.target.result; }; reader.readAsDataURL(file); }
+async function handleSmartTranslate() {
+    const txt = document.getElementById('inDe').value || document.getElementById('inEn').value || document.getElementById('inSv').value;
+    if (!txt) return;
+    // Detect which field is filled to know the source language
+    const srcKey = document.getElementById('inDe').value ? conf.l1 : (document.getElementById('inEn').value ? conf.l2 : conf.l3);
+    document.getElementById('loader').style.display = "block";
+    let obj = null;
+    // Try DeepL first
+    if (deeplApiKey.trim()) {
+        obj = await translateAllWithDeepL(txt, srcKey);
+        if (obj) showToast('🔵 DeepL', 'success');
+    }
+    // Gemini fallback
+    if (!obj) {
+        try {
+            const res = await callGemini(`Übersetze das Wort "${txt}". Antworte NUR mit einem validen JSON Objekt: {"${conf.l1}":"...", "${conf.l2}":"...", "${conf.l3}":"..."}`);
+            if (res) {
+                let clean = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim();
+                const s = clean.indexOf('{'), e2 = clean.lastIndexOf('}');
+                if (s !== -1 && e2 !== -1) clean = clean.substring(s, e2 + 1);
+                obj = JSON.parse(clean);
+            }
+        } catch(e) { showToast("Übersetzung fehlgeschlagen.", "error"); }
+    }
+    if (obj) {
+        document.getElementById('inDe').value = obj[conf.l1] || "";
+        document.getElementById('inEn').value = obj[conf.l2] || "";
+        document.getElementById('inSv').value = obj[conf.l3] || "";
+    }
+    document.getElementById('loader').style.display = "none";
+}
 function toggleVerbSection() { const vs = document.getElementById('verbSection'); vs.style.display = vs.style.display === 'block' ? 'none' : 'block'; }
 async function fetchVerbForms() { const b = document.getElementById('inDe').value || document.getElementById('inEn').value; if(!b) return; document.getElementById('loader').style.display = "block"; const prompt = `Verb "${b}". JSON: {"l1P":"...", "l1F":"...", "l2P":"...", "l2F":"...", "l3P":"...", "l3F":"..."} for ${conf.l1}, ${conf.l2}, ${conf.l3}`; const res = await callGemini(prompt); document.getElementById('loader').style.display = "none"; if(res) { try { const cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const o = JSON.parse(cleanStr); document.getElementById('inDePast').value = o.l1P||""; document.getElementById('inDeFut').value = o.l1F||""; document.getElementById('inEnPast').value = o.l2P||""; document.getElementById('inEnFut').value = o.l2F||""; document.getElementById('inSvPast').value = o.l3P||""; document.getElementById('inSvFut').value = o.l3F||""} catch(e) {} } }
 function listen(slot, targetId, btn) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return showToast("⚠️ Browser unterstützt die integrierte Spracherkennung nicht.", "error"); try { const rec = new SpeechRecognition(); const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3); rec.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE'; btn.classList.add('mic-active'); rec.onresult = (e) => { document.getElementById(targetId).value = e.results[0][0].transcript; }; rec.onerror = (e) => { btn.classList.remove('mic-active'); if (e.error === 'not-allowed') showToast("⚠️ Mikrofon-Zugriff verweigert.", "error"); }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); } catch(err) { btn.classList.remove('mic-active'); } }
