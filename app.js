@@ -1,190 +1,112 @@
-// --- Das Toast-Benachrichtigungssystem ---
+// ==========================================
+// 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
+// ==========================================
 function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
     if (!container) return;
-
     const toast = document.createElement('div');
     const bgColors = { 'success': 'var(--secondary)', 'error': '#EF4444', 'info': 'var(--primary)' };
-
     toast.style.backgroundColor = bgColors[type] || bgColors['info'];
-    toast.style.color = 'white';
-    toast.style.padding = '12px 24px';
-    toast.style.borderRadius = '12px';
-    toast.style.fontWeight = '600';
-    toast.style.fontSize = '0.9rem';
-    toast.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.2)';
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(20px)';
-    toast.style.transition = 'all 0.3s ease-out';
-    toast.innerText = message;
-
+    toast.style.color = 'white'; toast.style.padding = '12px 24px'; toast.style.borderRadius = '12px'; toast.style.fontWeight = '600'; toast.style.fontSize = '0.9rem'; toast.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.2)'; toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; toast.style.transition = 'all 0.3s ease-out'; toast.innerText = message;
     container.appendChild(toast);
-
     setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; }, 10);
     setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
-let db = null;
-let currentUser = null;
 let errorLog = JSON.parse(localStorage.getItem('trainerErrorLog') || '[]');
-
 function logCustomError(context, error) {
-    const time = new Date().toLocaleTimeString();
-    const msg = error instanceof Error ? error.message : String(error);
-    const entry = `[${time}] ${context}: ${msg}`;
-    
-    errorLog.unshift(entry);
-    if (errorLog.length > 50) errorLog.pop(); 
-    localStorage.setItem('trainerErrorLog', JSON.stringify(errorLog));
-    
+    const entry = `[${new Date().toLocaleTimeString()}] ${context}: ${error instanceof Error ? error.message : String(error)}`;
+    errorLog.unshift(entry); if (errorLog.length > 50) errorLog.pop(); localStorage.setItem('trainerErrorLog', JSON.stringify(errorLog));
     console.error("Custom Log:", entry);
-    if(document.getElementById('errorLogOverlay') && document.getElementById('errorLogOverlay').style.display === 'flex') {
-        renderErrorLog();
-    }
+    if(document.getElementById('errorLogOverlay') && document.getElementById('errorLogOverlay').style.display === 'flex') renderErrorLog();
 }
-
-window.onerror = function(message, source, lineno, colno, error) { logCustomError("Global Error", `${message} (Zeile ${lineno})`); };
+window.onerror = function(msg, src, line) { logCustomError("Global Error", `${msg} (Zeile ${line})`); };
 window.addEventListener('unhandledrejection', function(event) { logCustomError("Unhandled Promise", event.reason); });
 
 function openErrorLog() { document.getElementById('settingsOverlay').style.display = 'none'; document.getElementById('errorLogOverlay').style.display = 'flex'; renderErrorLog(); }
 function closeErrorLog() { document.getElementById('errorLogOverlay').style.display = 'none'; }
 function clearErrorLog() { errorLog = []; localStorage.setItem('trainerErrorLog', JSON.stringify(errorLog)); renderErrorLog(); }
+function renderErrorLog() { const el = document.getElementById('errorLogList'); if(!el) return; if(errorLog.length === 0) el.innerHTML = "Alles läuft reibungslos!"; else el.innerHTML = errorLog.map(e => `<div>${escapeHTML(e)}</div>`).join('<hr style="border-color:#374151; margin:5px 0;">'); }
 
-function renderErrorLog() {
-    const el = document.getElementById('errorLogList');
-    if (!el) return;
-    if (errorLog.length === 0) el.innerHTML = "Alles läuft reibungslos. Keine Fehler aufgezeichnet!";
-    else el.innerHTML = errorLog.map(e => `<div>${escapeHTML(e)}</div>`).join('<hr style="border-color:#374151; margin:5px 0;">');
-}
-
+// ==========================================
+// 2. KERN-VARIABLEN & FIREBASE INITIALISIERUNG
+// ==========================================
+let db = null; let currentUser = null;
 try {
-    const firebaseConfig = { apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" };
-    firebase.initializeApp(firebaseConfig); 
-    db = firebase.firestore();
-    db.enablePersistence().catch((e)=>{ logCustomError("Firebase Offline Cache", e); });
-} catch(err) {
-    console.error("Firebase konnte nicht geladen werden:", err); logCustomError("Firebase Init", err);
-    if(document.getElementById('offlineBanner')) document.getElementById('offlineBanner').style.display = 'block';
-}
+    firebase.initializeApp({ apiKey: "AIzaSyB4ViTtin8mGcayWbXX-UtpTpPF5E4u68Q", authDomain: "uebersetzer-d-eng-swe.firebaseapp.com", projectId: "uebersetzer-d-eng-swe" }); 
+    db = firebase.firestore(); db.enablePersistence().catch(()=>{});
+} catch(err) { logCustomError("Firebase Init", err); if(document.getElementById('offlineBanner')) document.getElementById('offlineBanner').style.display = 'block'; }
 
-const ALL_LANGS = { 
-    'de':{name:'Deutsch',tts:'de-DE',flag:'🇩🇪'}, 'en':{name:'Englisch',tts:'en-US',flag:'🇬🇧'}, 
-    'sv':{name:'Schwedisch',tts:'sv-SE',flag:'🇸🇪'}, 'fr':{name:'Französisch',tts:'fr-FR',flag:'🇫🇷'}, 
-    'no':{name:'Norwegisch',tts:'nb-NO',flag:'🇳🇴'}, 'es':{name:'Spanisch',tts:'es-ES',flag:'🇪🇸'}, 
-    'it':{name:'Italienisch',tts:'it-IT',flag:'🇮🇹'} 
-};
-
-let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; 
-let currentCollIndex = 0;
-let conf = { l1: 'de', l2: 'en', l3: 'sv' }; 
-let allWords = [];
-let studyWords = [];
-let studyIndex = 0;
-let fcPool = [];
-let fcIndex = 0;
-let fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] };
-let currentFcListType = '';
-let activeRpSentenceForFeedback = "";
-let rpOptionsBuffer = null;
-let rpFetchPromise = null;
-let rpMicTimer = null;
-let rpCurrentTranscript = "";
-let geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
-let currentApiKeyIndex = 0;
-let cachedGeminiModel = null;
-let isLiveRecording = false;
-let liveRecObj = null;
-let isChatSessionActive = false;
-let chatRec = null;
-let duelWordObj = null;
-let duelCanTap = false;
-let huntTarget = "";
-let listDebounceTimer;
+const ALL_LANGS = { 'de':{name:'Deutsch',tts:'de-DE',flag:'🇩🇪'}, 'en':{name:'Englisch',tts:'en-US',flag:'🇬🇧'}, 'sv':{name:'Schwedisch',tts:'sv-SE',flag:'🇸🇪'}, 'fr':{name:'Französisch',tts:'fr-FR',flag:'🇫🇷'}, 'no':{name:'Norwegisch',tts:'nb-NO',flag:'🇳🇴'}, 'es':{name:'Spanisch',tts:'es-ES',flag:'🇪🇸'}, 'it':{name:'Italienisch',tts:'it-IT',flag:'🇮🇹'} };
+let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; let currentCollIndex = 0; let conf = { l1: 'de', l2: 'en', l3: 'sv' }; let allWords = [];
+let studyWords = []; let studyIndex = 0; let fcPool = []; let fcIndex = 0; let fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] }; let currentFcListType = '';
+let activeRpSentenceForFeedback = ""; let rpOptionsBuffer = null; let rpFetchPromise = null; let rpMicTimer = null; let rpCurrentTranscript = "";
+let geminiApiKey = localStorage.getItem('trainerGeminiKey') || ""; let currentApiKeyIndex = 0; let cachedGeminiModel = null;
+let isLiveRecording = false; let liveRecObj = null; let isChatSessionActive = false; let chatRec = null; let duelWordObj = null; let duelCanTap = false; let huntTarget = ""; let listDebounceTimer;
 let isFastInputMode = localStorage.getItem('trainerFastInput') !== 'false';
-let userXP = parseInt(localStorage.getItem('trainerXP') || '0');
-let userStreak = parseInt(localStorage.getItem('trainerStreak') || '0');
-let lastActiveDate = localStorage.getItem('trainerLastDate') || '';
-
+let userXP = parseInt(localStorage.getItem('trainerXP') || '0'); let userStreak = parseInt(localStorage.getItem('trainerStreak') || '0'); let lastActiveDate = localStorage.getItem('trainerLastDate') || '';
 let statsToday = {learned:0, added:0, date:""};
-try { 
-    const rawStats = localStorage.getItem('trainerStatsToday');
-    if(rawStats && rawStats !== "undefined") statsToday = JSON.parse(rawStats); 
-} catch(e) {}
+try { const rawStats = localStorage.getItem('trainerStatsToday'); if(rawStats && rawStats !== "undefined") statsToday = JSON.parse(rawStats); } catch(e) {}
 
-// --- Audio-Trainer Variablen ---
-let isAudioRunning = false;
-let cancelAudio = false;
-let audioHistory = []; 
-let currentAudioSentence = { l1: "", l3: "" };
-let currentUtterance = null; // GANZ WICHTIG GEGEN ABBRÜCHE
-
-// --- Stimmen laden ---
+// Audio-Trainer Variablen
+let isAudioRunning = false; let cancelAudio = false; let audioHistory = []; let currentAudioSentence = { l1: "", l3: "" }; let currentUtterance = null;
 let availableVoices = [];
-function loadVoices() {
-    availableVoices = window.speechSynthesis.getVoices();
-    updateVoiceDropdown();
-}
-if(window.speechSynthesis) {
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-    setTimeout(loadVoices, 500); 
-}
+
+// ==========================================
+// 3. SPRACHAUSGABE & STIMMEN (STABIL FÜR MOBIL)
+// ==========================================
+function loadVoices() { availableVoices = window.speechSynthesis.getVoices(); updateVoiceDropdown(); }
+if(window.speechSynthesis) { window.speechSynthesis.onvoiceschanged = loadVoices; setTimeout(loadVoices, 500); }
 
 function updateVoiceDropdown() {
-    const voiceSelect = document.getElementById('selAudioVoice');
-    if(!voiceSelect) return;
-    
+    const voiceSelect = document.getElementById('selAudioVoice'); if(!voiceSelect) return;
     const currentLangCode = ALL_LANGS[conf.l3].tts.split('-')[0]; 
     const matchingVoices = availableVoices.filter(v => v.lang.startsWith(currentLangCode));
-    
     let html = '<option value="">🤖 Standard-Stimme</option>';
     matchingVoices.forEach(v => { html += `<option value="${v.name}">${v.name}</option>`; });
     voiceSelect.innerHTML = html;
 }
 
+// Normale Sprachausgabe (repariert für Handys)
+function speak(text, langKey, rate = 1.0) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel(); 
+    // Der 50ms Trick verhindert das Verschlucken auf iOS/Android
+    setTimeout(() => {
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
+        msg.rate = rate;
+        if (langKey === conf.l3) {
+            const voiceSelect = document.getElementById('selAudioVoice');
+            if (voiceSelect && voiceSelect.value) {
+                const selectedVoice = availableVoices.find(v => v.name === voiceSelect.value);
+                if (selectedVoice) msg.voice = selectedVoice;
+            }
+        }
+        window.speechSynthesis.speak(msg);
+    }, 50);
+}
+
+// ==========================================
+// 4. APP-INITIALISIERUNG & UI HILFSFUNKTIONEN
+// ==========================================
 function escapeHTML(str) { return !str ? "" : String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[m]); }
 function safeJS(str) { return !str ? "" : String(str).replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
 
-function removeBrokenServiceWorkers() {
-    if('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for(let registration of registrations) { registration.unregister(); }
-        }).catch(()=>{});
-    }
-}
-
 function init() { 
-    removeBrokenServiceWorkers(); 
     if(document.getElementById('inpGeminiKey')) document.getElementById('inpGeminiKey').value = geminiApiKey; 
-    
-    try {
-        const storedNames = localStorage.getItem('trainerUserNames'); 
-        if(storedNames) userNames = JSON.parse(storedNames);
-        const savedIdx = localStorage.getItem('trainerUserIdx'); 
-        if(savedIdx) currentCollIndex = parseInt(savedIdx);
-    } catch(e){}
-    
-    const todayStr = new Date().toDateString();
-    if(statsToday.date !== todayStr) { 
-        statsToday = {learned:0, added:0, date:todayStr}; 
-        localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); 
-    }
-    
+    try { const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames); const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx); } catch(e){}
+    const todayStr = new Date().toDateString(); if(statsToday.date !== todayStr) { statsToday = {learned:0, added:0, date:todayStr}; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); }
     loadUserLangs(); renderRenameInputs(); updateUserDropdown(); populateLangSelects(); checkStreak(); updateQuests(); updateSaveModeUI(); 
     showTab('add'); 
-    
-    if(typeof firebase !== 'undefined') {
-        firebase.auth().signInAnonymously().catch((e)=>{ logCustomError("Firebase Auth", e); });
-        firebase.auth().onAuthStateChanged((user) => { if (user) { currentUser = user; refreshData(); } });
-    }
+    if(typeof firebase !== 'undefined') { firebase.auth().signInAnonymously().catch((e)=>{}); firebase.auth().onAuthStateChanged((user) => { if (user) { currentUser = user; refreshData(); } }); }
 }
 
 function updateSaveModeUI() {
-    const btn = document.getElementById('btnSaveMode');
-    if(!btn) return;
+    const btn = document.getElementById('btnSaveMode'); if(!btn) return;
     if(isFastInputMode) { btn.innerHTML = "⚡ Modus: Schnelleingabe (Hier bleiben)"; btn.style.borderColor = "var(--secondary)"; btn.style.color = "var(--secondary)"; } 
     else { btn.innerHTML = "🔀 Modus: Normal (Zur Liste springen)"; btn.style.borderColor = "var(--border-soft)"; btn.style.color = "var(--text-light)"; }
 }
-
 function toggleSaveMode() { isFastInputMode = !isFastInputMode; localStorage.setItem('trainerFastInput', isFastInputMode); updateSaveModeUI(); }
 function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
 function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
@@ -194,7 +116,7 @@ function showTab(n) {
     try {
         if(isLiveRecording) toggleLiveRecord(); 
         if(isChatSessionActive) toggleChatRecord();
-        if(isAudioRunning && n !== 'audio') toggleAudioTrainer();
+        if(isAudioRunning && n !== 'audio') toggleAudioTrainer(); // Audio stoppt, wenn man den Tab verlässt
         
         document.querySelectorAll('.nav-scroll button').forEach(b=>b.classList.remove('active')); 
         const btnMap = { 'add':'btn1', 'flashcards':'btnFlash', 'chat':'btn8', 'live':'btn7', 'study':'btn5', 'list':'btn3', 'arcade':'btnArcade', 'story':'btnStory', 'roleplay':'btnRoleplay', 'audio':'btnAudio' };
@@ -202,7 +124,6 @@ function showTab(n) {
         
         const tabs = ['tabAdd', 'tabFlashcards', 'tabChat','tabLive','tabStudy','tabList','tabArcade','tabStory','tabRoleplay', 'tabAudio'];
         tabs.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
-        
         const activeTab = document.getElementById('tab' + n.charAt(0).toUpperCase() + n.slice(1));
         if(activeTab) activeTab.style.display = 'block';
         
@@ -215,10 +136,8 @@ function showTab(n) {
 
 function playSound(type) {
     try {
-        const windowAudio = window.AudioContext || window.webkitAudioContext;
-        if(!windowAudio) return;
-        const ctx = new windowAudio(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
+        const windowAudio = window.AudioContext || window.webkitAudioContext; if(!windowAudio) return;
+        const ctx = new windowAudio(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination);
         if(type === 'success') { osc.type = 'sine'; osc.frequency.setValueAtTime(600, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1); gain.gain.setValueAtTime(0.1, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.15); } 
         else if(type === 'error') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.2); gain.gain.setValueAtTime(0.1, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.25); } 
     } catch(e){}
@@ -227,22 +146,10 @@ function playSound(type) {
 function fireConfetti() {
     const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#3B82F6'];
     for(let i=0; i<50; i++) { 
-        const c = document.createElement('div'); c.className = 'confetti'; 
-        c.style.left = Math.random() * 100 + 'vw'; c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]; 
-        c.style.top = '-10px'; c.style.animationDuration = (Math.random() * 2 + 2) + 's'; 
+        const c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random() * 100 + 'vw'; c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]; c.style.top = '-10px'; c.style.animationDuration = (Math.random() * 2 + 2) + 's'; 
         document.body.appendChild(c); setTimeout(() => c.remove(), 4000); 
     }
     playSound('success');
-}
-
-function speak(text, langKey, rate = 1.0) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); 
-        const msg = new SpeechSynthesisUtterance(text);
-        msg.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
-        msg.rate = rate;
-        window.speechSynthesis.speak(msg);
-    }
 }
 
 function speakInput(inputId, slot) { const text = document.getElementById(inputId).value; if(!text) return; const langKey = slot === 1 ? conf.l1 : (slot === 2 ? conf.l2 : conf.l3); speak(text, langKey); }
@@ -255,14 +162,9 @@ function loadUserLangs() { try { const saved = localStorage.getItem('trainerLang
 
 function populateLangSelects() { 
     const opts = Object.keys(ALL_LANGS).map(k => `<option value="${k}">${ALL_LANGS[k].flag} ${ALL_LANGS[k].name}</option>`).join(''); 
-    ['selL1','selL2','selL3','liveSrcLang','liveTgtLang','chatSrcLang','chatTgtLang'].forEach(id => { 
-        const el = document.getElementById(id); if(!el) return; el.innerHTML = opts; 
-        if(id === 'selL1') el.value = conf.l1; if(id === 'selL2') el.value = conf.l2; if(id === 'selL3') el.value = conf.l3; if(id === 'chatTgtLang') el.value = conf.l3; 
-    }); 
+    ['selL1','selL2','selL3','liveSrcLang','liveTgtLang','chatSrcLang','chatTgtLang'].forEach(id => { const el = document.getElementById(id); if(!el) return; el.innerHTML = opts; if(id === 'selL1') el.value = conf.l1; if(id === 'selL2') el.value = conf.l2; if(id === 'selL3') el.value = conf.l3; if(id === 'chatTgtLang') el.value = conf.l3; }); 
 }
-
 function langChanged() { conf.l1 = document.getElementById('selL1').value; conf.l2 = document.getElementById('selL2').value; conf.l3 = document.getElementById('selL3').value; localStorage.setItem('trainerLangs_' + currentCollIndex, JSON.stringify(conf)); updateUIForLangs(); populateLangSelects(); refreshData(); updateVoiceDropdown(); }
-
 function updateUIForLangs() { 
     if(document.getElementById('lblL1')) document.getElementById('lblL1').innerText = ALL_LANGS[conf.l1].name; 
     if(document.getElementById('lblL2')) document.getElementById('lblL2').innerText = ALL_LANGS[conf.l2].name; 
@@ -271,12 +173,14 @@ function updateUIForLangs() {
     const fcL1 = document.getElementById('fcLabelL1'); if(fcL1) fcL1.innerText = ALL_LANGS[conf.l1].name;
     const fcL3 = document.getElementById('fcLabelL3'); if(fcL3) fcL3.innerText = ALL_LANGS[conf.l3].name;
 }
-
 function renderRenameInputs() { if(!document.getElementById('renameContainer')) return; document.getElementById('renameContainer').innerHTML = userNames.map((n, i) => `<div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;"><span style="font-weight:bold; color:var(--primary); width:20px;">${i+1}.</span><input type="text" id="name${i}" value="${escapeHTML(n)}" onchange="saveName(${i})" style="padding: 10px;"></div>`).join(''); }
 function updateUserDropdown() { if(!document.getElementById('selUser')) return; document.getElementById('selUser').innerHTML = userNames.map((n, i) => `<option value="${i}" ${i===currentCollIndex?'selected':''}>👤 ${escapeHTML(n)}</option>`).join(''); }
 function saveName(idx) { const val = document.getElementById('name'+idx).value.trim(); if(val) { userNames[idx] = val; localStorage.setItem('trainerUserNames', JSON.stringify(userNames)); updateUserDropdown(); } }
 function switchUser() { currentCollIndex = parseInt(document.getElementById('selUser').value); localStorage.setItem('trainerUserIdx', currentCollIndex); loadUserLangs(); populateLangSelects(); refreshData(); }
 
+// ==========================================
+// 5. GEMINI API ANBINDUNG
+// ==========================================
 async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
     if(keys.length === 0) { showToast("⚠️ Bitte hinterlege mindestens einen API-Key in den Einstellungen.", "error"); return null; }
@@ -286,8 +190,7 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
 
     if (!cachedGeminiModel) {
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keys[0]}`);
-            const data = await res.json();
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keys[0]}`); const data = await res.json();
             if (data.models) {
                 let m = data.models.find(mod => mod.name.includes("flash") && !mod.name.includes("latest") && mod.supportedGenerationMethods.includes("generateContent"));
                 if(!m) m = data.models.find(mod => mod.name.includes("gemini") && mod.supportedGenerationMethods.includes("generateContent"));
@@ -299,7 +202,6 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
 
     let payload = { contents: [] };
     if (systemPrompt) { payload.contents.push({ role: "user", parts: [{ text: "SYSTEM-ANWEISUNG: " + systemPrompt }] }); payload.contents.push({ role: "model", parts: [{ text: "Verstanden." }] }); }
-    
     let userParts = [{ text: prompt }];
     if (imageBase64) {
         let mime = "image/jpeg"; try { mime = imageBase64.match(/data:(.*?);/)[1]; } catch(e){}
@@ -308,174 +210,175 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     }
     payload.contents.push({ role: "user", parts: userParts });
 
-    const waitTimes = [0, 2000, 4000, 8000, 15000]; 
-    let lastErrorMsg = "";
-    
+    const waitTimes = [0, 2000, 4000, 8000, 15000]; let lastErrorMsg = "";
     for (let round = 0; round < waitTimes.length; round++) {
         if (round > 0 && activeLoader) activeLoader.innerText = `Lade... Warte ${waitTimes[round]/1000}s...`;
         if (round > 0) await new Promise(resolve => setTimeout(resolve, waitTimes[round]));
-
         for (let i = 0; i < keys.length; i++) {
             const currentKey = keys[currentApiKeyIndex % keys.length];
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${cachedGeminiModel}:generateContent?key=${currentKey}`;
-
             try {
                 const resp = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
                 const d = await resp.json();
                 if (d.error) throw new Error(d.error.message);
                 if (activeLoader) activeLoader.innerText = originalLoaderText;
                 return d.candidates[0].content.parts[0].text.trim();
-            } catch(e) {
-                lastErrorMsg = e.message; logCustomError(`API Key Failed`, e.message); currentApiKeyIndex++;
-            }
+            } catch(e) { lastErrorMsg = e.message; logCustomError(`API Key Failed`, e.message); currentApiKeyIndex++; }
         }
     }
-
     if (activeLoader) activeLoader.innerText = originalLoaderText;
-    if (lastErrorMsg.toLowerCase().includes("overloaded")) showToast("⚠️ Die Google KI-Server sind im Moment überlastet. Bitte warte kurz!", "error");
+    if (lastErrorMsg.toLowerCase().includes("overloaded")) showToast("⚠️ Die Google KI-Server sind im Moment überlastet.", "error");
     else if (lastErrorMsg.toLowerCase().includes("quota")) showToast("⚠️ API-Limit erreicht! Kurze Pause machen.", "error");
-    else showToast("⚠️ Fehler bei der API-Abfrage: " + lastErrorMsg, "error");
+    else showToast("⚠️ Fehler bei der API-Abfrage.", "error");
     return null;
 }
 
+// ==========================================
+// 6. AUDIO-TRAINER (DIE NEUE LERN-FUNKTION)
+// ==========================================
+function speakAsync(text, langKey, rate = 1.0) {
+    return new Promise((resolve) => {
+        if (!('speechSynthesis' in window) || cancelAudio) return resolve();
+        
+        currentUtterance = new SpeechSynthesisUtterance(text);
+        currentUtterance.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
+        currentUtterance.rate = rate;
+        
+        if (langKey === conf.l3) {
+            const voiceSelect = document.getElementById('selAudioVoice');
+            if (voiceSelect && voiceSelect.value) {
+                const selectedVoice = availableVoices.find(v => v.name === voiceSelect.value);
+                if (selectedVoice) currentUtterance.voice = selectedVoice;
+            }
+        }
+        currentUtterance.onend = () => { currentUtterance = null; resolve(); };
+        currentUtterance.onerror = () => { currentUtterance = null; resolve(); };
+        window.speechSynthesis.speak(currentUtterance);
+    });
+}
+const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function toggleAudioTrainer() {
+    const btn = document.getElementById('btnStartAudio');
+    if (isAudioRunning) {
+        isAudioRunning = false; cancelAudio = true; window.speechSynthesis.cancel(); 
+        btn.innerHTML = "▶️ Audio-Trainer starten"; btn.style.background = "linear-gradient(135deg, #a855f7, #ec4899)";
+        document.getElementById('audioDisplayL1').innerText = "Pausiert."; document.getElementById('audioDisplayL3').innerText = "";
+        return;
+    }
+    isAudioRunning = true; cancelAudio = false; btn.innerHTML = "⏹️ Audio-Trainer stoppen"; btn.style.background = "#EF4444";
+    audioTrainerLoop();
+}
+
+async function audioTrainerLoop() {
+    while (isAudioRunning && !cancelAudio) {
+        document.getElementById('audioLoader').style.display = 'block';
+        const diff = document.getElementById('selAudioDiff').value; const tgtLangName = ALL_LANGS[conf.l3].name;
+        
+        const now = Date.now(); audioHistory = audioHistory.filter(item => (now - item.ts) < 1800000); 
+        const avoidList = audioHistory.map(i => i.text).join('", "'); const avoidPrompt = avoidList ? `Verwende AUF KEINEN FALL diese Sätze oder ähnliche: ["${avoidList}"]. ` : "";
+        const topics = ["Einkaufen", "Reisen", "Arbeit", "Freizeit", "Essen und Trinken", "Wetter", "Familie", "Sport", "Gesundheit", "Verkehrsmittel", "Gefühle", "Technik", "Natur", "Wohnen"];
+        const randomTopic = topics[Math.floor(Math.random() * topics.length)]; const randomSeed = Math.floor(Math.random() * 10000); 
+        
+        const prompt = `Du bist ein Sprachtrainer. Erstelle EINEN realistischen Satz auf Niveau ${diff} zum Thema "${randomTopic}" (ID: ${randomSeed}). ${avoidPrompt}Gib ihn auf Deutsch und auf ${tgtLangName} zurück. JSON-Format: {"l1": "Deutscher Satz", "l3": "Übersetzung in ${tgtLangName}"}`;
+        
+        const res = await callGemini(prompt);
+        document.getElementById('audioLoader').style.display = 'none';
+        if (!res || cancelAudio) { if(!cancelAudio) await sleepAsync(3000); continue; }
+
+        let sentenceObj;
+        try {
+            let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim();
+            const sIdx = cleanStr.indexOf('{'); const eIdx = cleanStr.lastIndexOf('}'); if (sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1);
+            sentenceObj = JSON.parse(cleanStr);
+        } catch (e) { await sleepAsync(2000); continue; }
+
+        const l1Text = sentenceObj.l1; const l3Text = sentenceObj.l3;
+        audioHistory.push({text: l1Text, ts: Date.now()}); currentAudioSentence = { l1: l1Text, l3: l3Text }; 
+        document.getElementById('audioDisplayL1').innerText = l1Text; document.getElementById('audioDisplayL3').innerText = "";
+
+        const slowRate = parseFloat(document.getElementById('selAudioSlow').value);
+        const pauseMs = parseInt(document.getElementById('selAudioPause').value) * 1000;
+        const reps = parseInt(document.getElementById('selAudioReps').value) || 1;
+
+        if (cancelAudio) break; await speakAsync(l1Text, conf.l1, 1.0);
+        if (cancelAudio) break; await sleepAsync(600);
+        document.getElementById('audioDisplayL3').innerText = l3Text;
+
+        if (cancelAudio) break; await speakAsync(l3Text, conf.l3, 1.0);
+        if (cancelAudio) break; await sleepAsync(pauseMs);
+
+        for (let i = 0; i < reps; i++) {
+            if (cancelAudio) break; await speakAsync(l3Text, conf.l3, slowRate);
+            if (cancelAudio) break; await sleepAsync(pauseMs);
+        }
+
+        if (cancelAudio) break; await speakAsync(l3Text, conf.l3, 1.0);
+        if (cancelAudio) break; await sleepAsync(2000);
+    }
+}
+
+function saveAudioSentence() {
+    if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info");
+    if(!currentAudioSentence.l1 || !currentAudioSentence.l3) return showToast("Kein Satz zum Speichern da!", "error");
+    
+    let d = { [conf.l1]: currentAudioSentence.l1, [conf.l2]: "", [conf.l3]: currentAudioSentence.l3, ts: firebase.firestore.FieldValue.serverTimestamp(), level: 0, nextReview: getNextReviewTimestamp(0) };
+    db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).add(d).then(() => { playSound('success'); showToast("✅ Satz in Karteikarten gespeichert!", "success"); refreshData(); }).catch(e => logCustomError("Speichern Audio-Satz", e));
+}
+
+// ==========================================
+// 7. RESTLICHE FUNKTIONEN (SPIELE, KARTEN, LISTEN)
+// ==========================================
 function invalidateRpBuffer() { rpOptionsBuffer = null; }
 function checkCustomTopic() { const sel = document.getElementById('selRpTopic').value; document.getElementById('customTopicRow').style.display = sel === 'custom' ? 'flex' : 'none'; invalidateRpBuffer(); }
-
 async function fetchRpSentencesFromGemini() {
-    const selTopic = document.getElementById('selRpTopic').value;
-    let topic = selTopic === 'custom' ? document.getElementById('inpCustomTopic').value.trim() || "Allgemeines Gespräch" : selTopic;
-    const tgtLangName = ALL_LANGS[conf.l3].name;
-    const diffSelect = document.getElementById('selRpDifficulty');
-    const diffText = diffSelect.options[diffSelect.selectedIndex].text;
-    const intentions = ["eine höfliche Formulierung", "eine zielgerichtete Frage", "eine typische Antwort", "eine Bitte", "eine kurze Feststellung", "eine alltägliche Interaktion"];
-    const intention = intentions[Math.floor(Math.random()*intentions.length)];
-    const randomSeed = Math.floor(Math.random() * 10000);
-    
+    const selTopic = document.getElementById('selRpTopic').value; let topic = selTopic === 'custom' ? document.getElementById('inpCustomTopic').value.trim() || "Allgemeines Gespräch" : selTopic; const tgtLangName = ALL_LANGS[conf.l3].name; const diffSelect = document.getElementById('selRpDifficulty'); const diffText = diffSelect.options[diffSelect.selectedIndex].text; const intentions = ["eine höfliche Formulierung", "eine zielgerichtete Frage", "eine typische Antwort", "eine Bitte", "eine kurze Feststellung", "eine alltägliche Interaktion"]; const intention = intentions[Math.floor(Math.random()*intentions.length)]; const randomSeed = Math.floor(Math.random() * 10000);
     const prompt = `Du bist ein professioneller Sprachtrainer. Erstelle für das Szenario/Thema "${topic}" exakt DREI völlig unterschiedliche, aber absolut realistische Antwortmöglichkeiten in ${tgtLangName}. Niveau: ${diffText}. Satz 1: Höflich. Satz 2: Kurz/informell. Satz 3: Frage. Aspekt: ${intention} (ID: ${randomSeed}). Antworte AUSSCHLIESSLICH im folgenden JSON-Format: [{"l3": "...", "l1": "..."}, {"l3": "...", "l1": "..."}, {"l3": "...", "l1": "..."}]`;
-    
     const res = await callGemini(prompt);
-    if(res) {
-        try {
-            let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); 
-            const sIdx = cleanStr.indexOf('['); const eIdx = cleanStr.lastIndexOf(']'); 
-            if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1); 
-            return JSON.parse(cleanStr);
-        } catch(e) { logCustomError("JSON Parsing Szenarien", e); return null; }
-    }
-    return null;
+    if(res) { try { let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const sIdx = cleanStr.indexOf('['); const eIdx = cleanStr.lastIndexOf(']'); if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1); return JSON.parse(cleanStr); } catch(e) { logCustomError("JSON Parsing Szenarien", e); return null; } } return null;
 }
-
-function prefetchRpSentences() { if (!rpFetchPromise) { rpFetchPromise = fetchRpSentencesFromGemini().then(options => { if (options) { rpOptionsBuffer = options; } rpFetchPromise = null; }); } }
-
-async function startRoleplay() {
-    document.getElementById('rpArea').style.display = 'block'; document.getElementById('rpFeedbackBox').style.display = 'none';
-    let topic = document.getElementById('selRpTopic').value;
-    if(topic === 'custom') topic = document.getElementById('inpCustomTopic').value.trim() || "Allgemeines Gespräch";
-    document.getElementById('rpTopicDisplay').innerText = topic.toUpperCase();
-    await generateRpSentence();
-}
-
+function prefetchRpSentences() { if (!rpFetchPromise) { rpFetchPromise = fetchRpSentencesFromGemini().then(options => { if (options) rpOptionsBuffer = options; rpFetchPromise = null; }); } }
+async function startRoleplay() { document.getElementById('rpArea').style.display = 'block'; document.getElementById('rpFeedbackBox').style.display = 'none'; let topic = document.getElementById('selRpTopic').value; if(topic === 'custom') topic = document.getElementById('inpCustomTopic').value.trim() || "Allgemeines Gespräch"; document.getElementById('rpTopicDisplay').innerText = topic.toUpperCase(); await generateRpSentence(); }
 async function generateRpSentence() {
     document.getElementById('rpFeedbackBox').style.display = 'none'; document.getElementById('rpOptionsContainer').innerHTML = ""; document.getElementById('btnRpRefresh').style.display = 'none'; document.getElementById('rpLoader').style.display = 'block';
     let options = null;
-    if (rpOptionsBuffer) { options = rpOptionsBuffer; rpOptionsBuffer = null; } 
-    else if (rpFetchPromise) { await rpFetchPromise; options = rpOptionsBuffer; rpOptionsBuffer = null; } 
-    else { options = await fetchRpSentencesFromGemini(); }
-
+    if (rpOptionsBuffer) { options = rpOptionsBuffer; rpOptionsBuffer = null; } else if (rpFetchPromise) { await rpFetchPromise; options = rpOptionsBuffer; rpOptionsBuffer = null; } else { options = await fetchRpSentencesFromGemini(); }
     document.getElementById('rpLoader').style.display = 'none'; document.getElementById('btnRpRefresh').style.display = 'inline-block';
-    if(options) { renderRpOptions(options); prefetchRpSentences(); } 
-    else { document.getElementById('rpOptionsContainer').innerHTML = `<div style="text-align:center; color:#EF4444; font-weight:bold;">⚠️ Konnte Sätze nicht laden.</div>`; }
+    if(options) { renderRpOptions(options); prefetchRpSentences(); } else { document.getElementById('rpOptionsContainer').innerHTML = `<div style="text-align:center; color:#EF4444; font-weight:bold;">⚠️ Konnte Sätze nicht laden. Bitte versuche es erneut.</div>`; }
 }
-
 function renderRpOptions(options) {
-    let html = '';
-    options.forEach((opt, idx) => {
-        const jsSafeL3 = safeJS(opt.l3);
-        html += `<div class="rp-option"><div class="rp-option-text">${escapeHTML(opt.l3)}</div><div class="rp-option-trans">${escapeHTML(opt.l1)}</div><div class="rp-option-actions"><button class="icon-btn" onclick="speakRpSentence('${jsSafeL3}')" style="font-size: 1rem;">🔊 Hören</button><button class="icon-btn" id="rpMicBtn_${idx}" onclick="recordRpSpeech('${jsSafeL3}', 'rpMicBtn_${idx}')" style="border-color:var(--primary); color:var(--primary); font-weight:800; font-size:1rem;">🎤 Üben</button></div></div>`;
-    });
+    let html = ''; options.forEach((opt, idx) => { const jsSafeL3 = safeJS(opt.l3); html += `<div class="rp-option"><div class="rp-option-text">${escapeHTML(opt.l3)}</div><div class="rp-option-trans">${escapeHTML(opt.l1)}</div><div class="rp-option-actions"><button class="icon-btn" onclick="speakRpSentence('${jsSafeL3}')" style="font-size: 1rem;">🔊 Hören</button><button class="icon-btn" id="rpMicBtn_${idx}" onclick="recordRpSpeech('${jsSafeL3}', 'rpMicBtn_${idx}')" style="border-color:var(--primary); color:var(--primary); font-weight:800; font-size:1rem;">🎤 Üben</button></div></div>`; });
     document.getElementById('rpOptionsContainer').innerHTML = html;
 }
-
 function speakRpSentence(text) { const speed = parseFloat(document.getElementById('selRpSpeed').value); speak(text, conf.l3, speed); }
-
 function recordRpSpeech(targetSentence, btnId) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; 
-    if (!SpeechRecognition) return showToast("⚠️ Dein Browser unterstützt das Mikrofon leider nicht.", "error");
-    
-    try {
-        const rec = new SpeechRecognition(); rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE'; rec.continuous = true; rec.interimResults = true; 
-        const btn = document.getElementById(btnId); if(btn) btn.classList.add('mic-active');
-        activeRpSentenceForFeedback = targetSentence; rpCurrentTranscript = ""; document.getElementById('rpUserSaid').innerText = "...";
-        
-        const waitTimeMs = parseInt(document.getElementById('selRpMicPatience').value) * 1000;
-        const resetTimer = () => { clearTimeout(rpMicTimer); rpMicTimer = setTimeout(() => { rec.stop(); }, waitTimeMs); };
-
-        rec.onstart = () => { resetTimer(); };
-        rec.onresult = (e) => { let text = ""; for(let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript; rpCurrentTranscript = text; document.getElementById('rpUserSaid').innerText = rpCurrentTranscript; resetTimer(); };
-        rec.onerror = (e) => { clearTimeout(rpMicTimer); if(btn) btn.classList.remove('mic-active'); if (e.error === 'not-allowed') showToast("⚠️ Mikrofon-Zugriff blockiert.", "error"); };
-        rec.onend = async () => { clearTimeout(rpMicTimer); if(btn) btn.classList.remove('mic-active'); if (rpCurrentTranscript.trim().length > 0) { const textToEval = rpCurrentTranscript; rpCurrentTranscript = ""; fastEvaluateSpeech(textToEval, activeRpSentenceForFeedback, 'rpFeedbackBox', 'rpFeedbackText'); } else { document.getElementById('rpUserSaid').innerText = "Nichts gehört."; } };
-        rec.start();
-    } catch(err) { if(document.getElementById(btnId)) document.getElementById(btnId).classList.remove('mic-active'); }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return showToast("⚠️ Dein Browser unterstützt das Mikrofon leider nicht.", "error");
+    try { const rec = new SpeechRecognition(); rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE'; rec.continuous = true; rec.interimResults = true; const btn = document.getElementById(btnId); if(btn) btn.classList.add('mic-active'); activeRpSentenceForFeedback = targetSentence; rpCurrentTranscript = ""; document.getElementById('rpUserSaid').innerText = "..."; const waitTimeMs = parseInt(document.getElementById('selRpMicPatience').value) * 1000; const resetTimer = () => { clearTimeout(rpMicTimer); rpMicTimer = setTimeout(() => { rec.stop(); }, waitTimeMs); }; rec.onstart = () => { resetTimer(); }; rec.onresult = (e) => { let text = ""; for(let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript; rpCurrentTranscript = text; document.getElementById('rpUserSaid').innerText = rpCurrentTranscript; resetTimer(); }; rec.onerror = (e) => { clearTimeout(rpMicTimer); if(btn) btn.classList.remove('mic-active'); if (e.error === 'not-allowed') showToast("⚠️ Mikrofon-Zugriff blockiert.", "error"); logCustomError("Szenarien Mikrofon", e.error); }; rec.onend = async () => { clearTimeout(rpMicTimer); if(btn) btn.classList.remove('mic-active'); if (rpCurrentTranscript.trim().length > 0) { const textToEval = rpCurrentTranscript; rpCurrentTranscript = ""; fastEvaluateSpeech(textToEval, activeRpSentenceForFeedback, 'rpFeedbackBox', 'rpFeedbackText'); } else { document.getElementById('rpUserSaid').innerText = "Nichts gehört."; } }; rec.start(); } catch(err) { const btn = document.getElementById(btnId); if(btn) btn.classList.remove('mic-active'); logCustomError("Start recordRpSpeech", err); }
 }
-
 function fastEvaluateSpeech(spokenText, targetText, boxId, textId) {
-    document.getElementById(boxId).style.display = 'none';
-    const cleanSpoken = spokenText.toLowerCase().replace(/[.,!?;:]/g, '').trim();
-    const cleanTarget = targetText.toLowerCase().replace(/[.,!?;:]/g, '').trim();
-    let feedback = "";
-    
-    if(cleanSpoken === cleanTarget || cleanTarget.includes(cleanSpoken) || cleanSpoken.includes(cleanTarget)) {
-        feedback = "Perfekt! Sehr gut ausgesprochen. 🌟"; addXP(5); playSound('success');
-    } else {
-        const targetWords = cleanTarget.split(' '); const spokenWords = cleanSpoken.split(' '); let matches = 0;
-        targetWords.forEach(w => { if(spokenWords.includes(w)) matches++; });
-        const matchPercentage = matches / targetWords.length;
-        if(matchPercentage > 0.6) { feedback = "Gute Arbeit! Die meisten Wörter waren richtig."; addXP(3); playSound('success'); } 
-        else if (matchPercentage > 0.3) { feedback = "Ich habe einige Wörter erkannt, aber der Satz war noch nicht ganz richtig."; playSound('error'); } 
-        else { feedback = "Das habe ich leider nicht verstanden. Bitte sprich etwas lauter."; playSound('error'); }
-    }
-    document.getElementById(textId).innerText = feedback; document.getElementById(boxId).style.display = 'block';
-    setTimeout(() => { document.getElementById(boxId).scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
+    document.getElementById(boxId).style.display = 'none'; const cleanSpoken = spokenText.toLowerCase().replace(/[.,!?;:]/g, '').trim(); const cleanTarget = targetText.toLowerCase().replace(/[.,!?;:]/g, '').trim(); let feedback = "";
+    if(cleanSpoken === cleanTarget || cleanTarget.includes(cleanSpoken) || cleanSpoken.includes(cleanTarget)) { feedback = "Perfekt! Sehr gut ausgesprochen. 🌟"; addXP(5); playSound('success'); } else { const targetWords = cleanTarget.split(' '); const spokenWords = cleanSpoken.split(' '); let matches = 0; targetWords.forEach(w => { if(spokenWords.includes(w)) matches++; }); const matchPercentage = matches / targetWords.length; if(matchPercentage > 0.6) { feedback = "Gute Arbeit! Die meisten Wörter waren richtig."; addXP(3); playSound('success'); } else if (matchPercentage > 0.3) { feedback = "Ich habe einige Wörter erkannt, aber der Satz war noch nicht ganz richtig."; playSound('error'); } else { feedback = "Das habe ich leider nicht verstanden. Bitte sprich etwas lauter."; playSound('error'); } }
+    document.getElementById(textId).innerText = feedback; document.getElementById(boxId).style.display = 'block'; setTimeout(() => { document.getElementById(boxId).scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
 }
-
 function speakLiveResult() { const text = document.getElementById('liveResultText').value; const lang = document.getElementById('liveTgtLang').value; if(text) speak(text, lang); }
 function saveLiveTranslation() {
-    const srcLang = document.getElementById('liveSrcLang').value; const tgtLang = document.getElementById('liveTgtLang').value;
-    const srcText = document.getElementById('liveSourceText').value.trim(); const tgtText = document.getElementById('liveResultText').value.trim();
-    if(!srcText || !tgtText) return showToast("Bitte erst etwas übersetzen!", "error");
-    if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info");
-    
-    let d = { [conf.l1]: "", [conf.l2]: "", [conf.l3]: "" };
-    if(srcLang === conf.l1) d[conf.l1] = srcText; else if(srcLang === conf.l2) d[conf.l2] = srcText; else if(srcLang === conf.l3) d[conf.l3] = srcText;
-    if(tgtLang === conf.l1) d[conf.l1] = tgtText; else if(tgtLang === conf.l2) d[conf.l2] = tgtText; else if(tgtLang === conf.l3) d[conf.l3] = tgtText;
-    if(!d[conf.l1]) d[conf.l1] = srcText; if(!d[conf.l3]) d[conf.l3] = tgtText;
-    
+    const srcLang = document.getElementById('liveSrcLang').value; const tgtLang = document.getElementById('liveTgtLang').value; const srcText = document.getElementById('liveSourceText').value.trim(); const tgtText = document.getElementById('liveResultText').value.trim();
+    if(!srcText || !tgtText) return showToast("Bitte erst etwas übersetzen!", "error"); if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info");
+    let d = { [conf.l1]: "", [conf.l2]: "", [conf.l3]: "" }; if(srcLang === conf.l1) d[conf.l1] = srcText; else if(srcLang === conf.l2) d[conf.l2] = srcText; else if(srcLang === conf.l3) d[conf.l3] = srcText; if(tgtLang === conf.l1) d[conf.l1] = tgtText; else if(tgtLang === conf.l2) d[conf.l2] = tgtText; else if(tgtLang === conf.l3) d[conf.l3] = tgtText; if(!d[conf.l1]) d[conf.l1] = srcText; if(!d[conf.l3]) d[conf.l3] = tgtText;
     d.ts = firebase.firestore.FieldValue.serverTimestamp(); d.level = 0; d.nextReview = getNextReviewTimestamp(0);
     db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).add(d).then(() => { playSound('success'); showToast("✅ Vokabel gespeichert!", "success"); refreshData(); statsToday.added++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); if(statsToday.added === 2) { addXP(15); fireConfetti(); } }).catch(e => logCustomError("Speichern Live-Translation", e));
 }
-
 async function initFlashcards(useFilter = false) {
     if(allWords.length === 0) { document.getElementById('fcCardArea').style.display = 'none'; document.getElementById('fcDoneMessage').style.display = 'block'; document.getElementById('fcDoneMessage').innerHTML = "<p>Füge erst Wörter hinzu!</p>"; return; }
     let filteredWords = [...allWords]; const topicInput = document.getElementById('fcTopicInput'); const topic = useFilter && topicInput ? topicInput.value.trim() : "";
-
     if (topic) {
-        document.getElementById('fcCardArea').style.display = 'none'; document.getElementById('fcDoneMessage').style.display = 'none'; document.getElementById('fcLoader').style.display = 'block';
-        const wordListL1 = allWords.map(w => w[conf.l1]).join(', ');
+        document.getElementById('fcCardArea').style.display = 'none'; document.getElementById('fcDoneMessage').style.display = 'none'; document.getElementById('fcLoader').style.display = 'block'; const wordListL1 = allWords.map(w => w[conf.l1]).join(', ');
         const prompt = `Du bist ein intelligenter Filter. Hier ist eine Liste von Wörtern: [${wordListL1}]. Finde ALLE Wörter in dieser Liste, die thematisch in die Kategorie "${topic}" passen. Antworte AUSSCHLIESSLICH mit einem validen JSON-Array. Beispiel: ["Wort1"]`;
         const res = await callGemini(prompt); document.getElementById('fcLoader').style.display = 'none';
-
-        if (res) {
-            try {
-                let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const sIdx = cleanStr.indexOf('['); const eIdx = cleanStr.lastIndexOf(']'); if (sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1);
-                const matchedWords = JSON.parse(cleanStr); filteredWords = allWords.filter(w => matchedWords.includes(w[conf.l1]));
-                if (filteredWords.length === 0) { showToast("Keine passenden Wörter zum Thema gefunden.", "info"); filteredWords = [...allWords]; topicInput.value = ""; }
-            } catch(e) { showToast("⚠️ Fehler beim KI-Filtern.", "error"); filteredWords = [...allWords]; }
-        } else { filteredWords = [...allWords]; }
+        if (res) { try { let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const sIdx = cleanStr.indexOf('['); const eIdx = cleanStr.lastIndexOf(']'); if (sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1); const matchedWords = JSON.parse(cleanStr); filteredWords = allWords.filter(w => matchedWords.includes(w[conf.l1])); if (filteredWords.length === 0) { showToast("Keine passenden Wörter zum Thema gefunden.", "info"); filteredWords = [...allWords]; topicInput.value = ""; } } catch(e) { showToast("⚠️ Fehler beim KI-Filtern.", "error"); filteredWords = [...allWords]; } } else { filteredWords = [...allWords]; }
     }
-    
     fcPool = filteredWords.sort(() => 0.5 - Math.random()); fcIndex = 0; fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] }; updateFcHistoryCounts(); document.getElementById('fcHistoryList').style.display = 'none'; renderFc();
 }
-
 function renderFc() {
     document.getElementById('fcFeedbackBox').style.display = 'none';
     if(fcIndex >= fcPool.length) { fireConfetti(); document.getElementById('fcCardArea').style.display = 'none'; document.getElementById('fcDoneMessage').style.display = 'block'; document.getElementById('fcCount').innerText = "Fertig"; return; }
@@ -485,21 +388,12 @@ function renderFc() {
     document.getElementById('fcImgFront').style.backgroundImage = `url('${imgUrl}')`; document.getElementById('fcImgBack').style.backgroundImage = `linear-gradient(to bottom, rgba(79, 70, 229, 0.7), rgba(79, 70, 229, 0.9)), url('${imgUrl}')`;
     setTimeout(() => { document.getElementById('fcFrontText').innerText = w[conf.l1] || "???"; document.getElementById('fcBackText').innerText = w[conf.l3] || "???"; document.getElementById('fcCount').innerText = `${fcIndex + 1} / ${fcPool.length}`; }, 150);
 }
-
 function flipFc() { document.getElementById('fcCard').classList.toggle('flipped'); }
 function speakFc(e) { e.stopPropagation(); speak(fcPool[fcIndex][conf.l3], conf.l3); }
 function recordFcSpeech(e) {
     e.stopPropagation(); const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return showToast("⚠️ Dein Browser unterstützt das Mikrofon leider nicht.", "error");
-    try {
-        const rec = new SpeechRecognition(); rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE';
-        const btn = document.getElementById('fcMicBtn'); btn.classList.add('mic-active');
-        const targetWord = fcPool[fcIndex][conf.l3]; document.getElementById('fcFeedbackBox').style.display = 'none';
-        rec.onresult = (e) => { const spokenText = e.results[0][0].transcript; btn.classList.remove('mic-active'); document.getElementById('fcUserSaid').innerText = spokenText; fastEvaluateSpeech(spokenText, targetWord, 'fcFeedbackBox', 'fcFeedbackText'); };
-        rec.onerror = (e) => { btn.classList.remove('mic-active'); if (e.error === 'not-allowed') showToast("⚠️ Mikrofon-Zugriff blockiert.", "error"); };
-        rec.onend = () => btn.classList.remove('mic-active'); rec.start();
-    } catch(err) { document.getElementById('fcMicBtn').classList.remove('mic-active'); }
+    try { const rec = new SpeechRecognition(); rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE'; const btn = document.getElementById('fcMicBtn'); btn.classList.add('mic-active'); const targetWord = fcPool[fcIndex][conf.l3]; document.getElementById('fcFeedbackBox').style.display = 'none'; rec.onresult = (e) => { const spokenText = e.results[0][0].transcript; btn.classList.remove('mic-active'); document.getElementById('fcUserSaid').innerText = spokenText; fastEvaluateSpeech(spokenText, targetWord, 'fcFeedbackBox', 'fcFeedbackText'); }; rec.onerror = (e) => { btn.classList.remove('mic-active'); if (e.error === 'not-allowed') showToast("⚠️ Mikrofon-Zugriff blockiert.", "error"); }; rec.onend = () => btn.classList.remove('mic-active'); rec.start(); } catch(err) { document.getElementById('fcMicBtn').classList.remove('mic-active'); }
 }
-
 function handleFc(action) {
     if(!currentUser || !db) return; const w = fcPool[fcIndex]; let lvl = w.level || 0; let oldLvl = lvl; let oldNextReview = w.nextReview;
     if(action === 'geuebt') { lvl = Math.min(5, lvl + 1); playSound('success'); addXP(2); w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl); db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}); fcSessionHistory.geuebt.unshift({ word: w, oldLvl: oldLvl, oldNextReview: oldNextReview }); fcIndex++; renderFc(); } 
@@ -507,11 +401,9 @@ function handleFc(action) {
     else if (action === 'spaeter') { fcSessionHistory.spaeter.unshift({ word: w }); fcPool.push(fcPool.splice(fcIndex, 1)[0]); renderFc(); }
     updateFcHistoryCounts(); if(document.getElementById('fcHistoryList').style.display === 'flex') showFcList(currentFcListType);
 }
-
 function updateFcHistoryCounts() { document.getElementById('cntSpaeter').innerText = fcSessionHistory.spaeter.length; document.getElementById('cntNochmals').innerText = fcSessionHistory.nochmals.length; document.getElementById('cntGeuebt').innerText = fcSessionHistory.geuebt.length; }
 function showFcList(type) { const listEl = document.getElementById('fcHistoryList'); if(currentFcListType === type && listEl.style.display === 'flex') { listEl.style.display = 'none'; return; } currentFcListType = type; listEl.style.display = 'flex'; if(fcSessionHistory[type].length === 0) { listEl.innerHTML = `<div style="text-align:center; color:var(--text-light); font-size:0.9rem;">Noch keine Karten hier abgelegt.</div>`; return; } const icons = { spaeter: '🔴', nochmals: '🟠', geuebt: '🟢' }; listEl.innerHTML = fcSessionHistory[type].map((item, idx) => `<div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:10px; border-radius:12px; border:1px solid var(--border-soft);"><div style="font-weight:bold; color:var(--text); font-size:0.95rem;">${icons[type]} ${escapeHTML(item.word[conf.l1])} <span style="color:var(--text-light); font-weight:normal; font-size:0.8rem;">(${escapeHTML(item.word[conf.l3])})</span></div><button class="icon-btn" style="padding:6px 12px; font-size:0.85rem; border-color:var(--primary); color:var(--primary);" onclick="undoFc('${type}', ${idx})">↩️ Holen</button></div>`).join(''); }
 function undoFc(type, historyIndex) { if(!currentUser || !db) return; const item = fcSessionHistory[type][historyIndex]; const w = item.word; if (type === 'geuebt' || type === 'nochmals') { w.level = item.oldLvl; w.nextReview = item.oldNextReview; db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: item.oldLvl, nextReview: item.oldNextReview}); } else if (type === 'spaeter') { const poolIdx = fcPool.findIndex(x => x.id === w.id); if(poolIdx > -1) fcPool.splice(poolIdx, 1); } fcSessionHistory[type].splice(historyIndex, 1); fcPool.splice(fcIndex, 0, w); updateFcHistoryCounts(); showFcList(type); renderFc(); }
-
 function openMiniGame(game) { document.getElementById('arcadeMenu').style.display = game === 'Menu' ? 'grid' : 'none'; ['gameRallye', 'gameHunt', 'gameDuel', 'gameAdventure'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; }); if(game !== 'Menu') { document.getElementById('game' + game).style.display = 'block'; if(game === 'Hunt') initHunt(); } }
 function playRallyeRound() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SpeechRecognition) return showToast("Dein Browser unterstützt das Mikrofon leider nicht.", "error"); const rec = new SpeechRecognition(); rec.lang = ALL_LANGS[conf.l3].tts; document.getElementById('btnRallyeMic').classList.add('mic-active'); rec.onresult = async (e) => { const word = e.results[0][0].transcript; document.getElementById('rallyeLoader').style.display = 'block'; const res = await callGemini(`Ist das Wort "${word}" in der Sprache ${ALL_LANGS[conf.l3].name} ein Tier? Antworte NUR mit JA oder NEIN.`); document.getElementById('rallyeLoader').style.display = 'none'; if(res && res.toUpperCase().includes("JA")) { playSound('success'); addXP(15); showToast(`Richtig! "${word}" ist ein Tier. +15 XP`, "success"); } else { playSound('error'); showToast(`Falsch. KI hat "${word}" nicht als Tier erkannt.`, "error"); } }; rec.onend = () => document.getElementById('btnRallyeMic').classList.remove('mic-active'); rec.onerror = (e) => logCustomError("Rallye Mikrofon", e.error); rec.start(); }
 function initHunt() { huntTarget = allWords.length ? allWords[Math.floor(Math.random()*allWords.length)][conf.l3] : "Apfel"; document.getElementById('huntTargetWord').innerText = huntTarget; document.getElementById('huntResult').innerText = ""; }
@@ -537,175 +429,11 @@ function debouncedFilterListWords() { clearTimeout(listDebounceTimer); listDebou
 function renderList() { const q = document.getElementById('listSearch') ? document.getElementById('listSearch').value.toLowerCase().trim() : ""; const filtered = q ? allWords.filter(w => (w[conf.l1] && w[conf.l1].toLowerCase().includes(q)) || (w[conf.l3] && w[conf.l3].toLowerCase().includes(q))) : allWords; document.getElementById('listCont').innerHTML = filtered.map(w => `<div class="card" style="padding:15px; margin-bottom:10px;"><div class="word-item-actions"><button class="icon-btn" onclick="editWord('${w.id}')" style="padding:8px; font-size:1rem;">✎</button><button class="icon-btn danger" onclick="delWord('${w.id}')" style="padding:8px; font-size:1rem;">X</button></div><div style="font-weight:800; color:var(--primary); font-size:1.1rem; padding-right:80px;"><span class="level-dot lvl-${w.level||0}"></span>${escapeHTML(w[conf.l1])}</div><div style="color:var(--text-light); font-size:0.9rem; margin-top:5px; padding-left: 20px;">${escapeHTML(w[conf.l3])} | ${escapeHTML(w[conf.l2])}</div></div>`).join(''); }
 async function delWord(id) { if(!db) return; if(confirm("Löschen?")) { await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(id).delete(); refreshData(); } }
 function getNextReviewTimestamp(level) { const daysToWait = [0, 1, 3, 7, 14, 30]; const nextDate = new Date(); nextDate.setDate(nextDate.getDate() + (daysToWait[level] || 0)); return nextDate.getTime(); }
-
-function manualSave() {
-    if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info");
-    const eid = document.getElementById('editId').value;
-    const d = { [conf.l1]: document.getElementById('inDe').value, [conf.l2]: document.getElementById('inEn').value, [conf.l3]: document.getElementById('inSv').value };
-    if(!d[conf.l1]) return showToast("Bitte Feld 1 ausfüllen!", "error");
-    
-    const ref = db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex);
-    if(!eid) { d.ts = firebase.firestore.FieldValue.serverTimestamp(); d.level = 0; d.nextReview = getNextReviewTimestamp(0); }
-    
-    const promise = eid ? ref.doc(eid).update(d) : ref.add(d);
-    promise.then(() => { 
-        if(!eid) { playSound('success'); addXP(10); statsToday.added++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); if(statsToday.added === 2) { addXP(15); fireConfetti(); } } 
-        resetAddForm(); refreshData(); 
-        if(!isFastInputMode) showTab('list'); else showToast("✅ Wort gespeichert!", "success");
-    }).catch(e => logCustomError("Wort speichern", e));
-}
-
+function manualSave() { if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info"); const eid = document.getElementById('editId').value; const d = { [conf.l1]: document.getElementById('inDe').value, [conf.l2]: document.getElementById('inEn').value, [conf.l3]: document.getElementById('inSv').value }; if(!d[conf.l1]) return showToast("Bitte Feld 1 ausfüllen!", "error"); const ref = db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex); if(!eid) { d.ts = firebase.firestore.FieldValue.serverTimestamp(); d.level = 0; d.nextReview = getNextReviewTimestamp(0); } const promise = eid ? ref.doc(eid).update(d) : ref.add(d); promise.then(() => { if(!eid) { playSound('success'); addXP(10); statsToday.added++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); if(statsToday.added === 2) { addXP(15); fireConfetti(); } } resetAddForm(); refreshData(); if(!isFastInputMode) showTab('list'); else showToast("✅ Wort gespeichert!", "success"); }).catch(e => logCustomError("Wort speichern", e)); }
 async function refreshData() { if(!currentUser || !db) return; const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).orderBy("ts", "desc").get(); if(s) { allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderList(); } }
 function generateStudyList() { if(!allWords.length) { document.getElementById('studyContainer').innerHTML = "<p style='text-align:center;'>Füge zuerst Wörter hinzu!</p>"; document.getElementById('studyActions').style.display = 'none'; return; } const now = Date.now(); let dueWords = allWords.filter(w => !w.nextReview || w.nextReview <= now); if(dueWords.length === 0) { document.getElementById('studyContainer').innerHTML = "<p style='text-align:center; font-size:1.2rem;'>🎉 Alle aktuellen Vokabeln gelernt!<br>Komm morgen wieder.</p>"; document.getElementById('studyWordCount').innerText="Fertig"; document.getElementById('studyActions').style.display = 'none'; return; } document.getElementById('studyActions').style.display = 'flex'; studyWords = dueWords.sort(() => 0.5 - Math.random()).slice(0, 15); studyIndex = 0; renderStudyWord(); }
 function renderStudyWord() { if(!studyWords.length) return; const w = studyWords[studyIndex]; document.getElementById('studyWordCount').innerText = `${studyIndex+1}/${studyWords.length}`; document.getElementById('studyContainer').innerHTML = `<div style="text-align:center; margin-bottom:10px;"><span class="level-dot lvl-${w.level||0}"></span><span style="font-size:0.8rem; color:var(--text-light); font-weight:bold;">Level ${w.level||0}</span></div><div style="font-size:2.2rem; font-weight:800; color:var(--primary); text-align:center; margin:10px 0;">${escapeHTML(w[conf.l1])}</div><div style="text-align:center; margin-bottom:15px;"><div style="font-size:1.5rem;">${ALL_LANGS[conf.l3].flag} ${escapeHTML(w[conf.l3])} <button class="icon-btn" style="display:inline-flex; border:none; background:transparent;" onclick="speak('${safeJS(w[conf.l3])}','${conf.l3}')">🔊</button></div></div><div style="text-align:center;"><div style="font-size:1.2rem; color:var(--text-light);">${ALL_LANGS[conf.l2].flag} ${escapeHTML(w[conf.l2])}</div></div>`; }
 async function markWord(correct) { if(!studyWords.length || !currentUser || !db) return; const w = studyWords[studyIndex]; let lvl = w.level || 0; if(correct) { lvl = Math.min(5, lvl + 1); playSound('success'); addXP(5); statsToday.learned++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); if(statsToday.learned === 5) { addXP(20); fireConfetti(); } } else { lvl = Math.max(0, lvl - 1); playSound('error'); } w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl); db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}); setTimeout(nextStudyWord, 300); }
 function nextStudyWord() { studyIndex++; if(studyIndex >= studyWords.length) { fireConfetti(); generateStudyList(); } else { renderStudyWord(); } }
-
-
-// --- AUDIO-TRAINER LOGIK (MIT GEDÄCHTNIS & STIMMEN) ---
-function speakAsync(text, langKey, rate = 1.0) {
-    return new Promise((resolve) => {
-        if (!('speechSynthesis' in window) || cancelAudio) return resolve();
-        
-        currentUtterance = new SpeechSynthesisUtterance(text);
-        currentUtterance.lang = (ALL_LANGS[langKey] && ALL_LANGS[langKey].tts) ? ALL_LANGS[langKey].tts : 'de-DE';
-        currentUtterance.rate = rate;
-        
-        if (langKey === conf.l3) {
-            const voiceSelect = document.getElementById('selAudioVoice');
-            if (voiceSelect && voiceSelect.value) {
-                const selectedVoice = availableVoices.find(v => v.name === voiceSelect.value);
-                if (selectedVoice) currentUtterance.voice = selectedVoice;
-            }
-        }
-        
-        currentUtterance.onend = () => { currentUtterance = null; resolve(); };
-        currentUtterance.onerror = () => { currentUtterance = null; resolve(); };
-        window.speechSynthesis.speak(currentUtterance);
-    });
-}
-
-const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-async function toggleAudioTrainer() {
-    const btn = document.getElementById('btnStartAudio');
-    if (isAudioRunning) {
-        isAudioRunning = false;
-        cancelAudio = true;
-        window.speechSynthesis.cancel(); 
-        btn.innerHTML = "▶️ Audio-Trainer starten";
-        btn.style.background = "linear-gradient(135deg, #a855f7, #ec4899)";
-        document.getElementById('audioDisplayL1').innerText = "Pausiert.";
-        document.getElementById('audioDisplayL3').innerText = "";
-        return;
-    }
-    
-    isAudioRunning = true;
-    cancelAudio = false;
-    btn.innerHTML = "⏹️ Audio-Trainer stoppen";
-    btn.style.background = "#EF4444";
-    audioTrainerLoop();
-}
-
-async function audioTrainerLoop() {
-    while (isAudioRunning && !cancelAudio) {
-        document.getElementById('audioLoader').style.display = 'block';
-        
-        const diff = document.getElementById('selAudioDiff').value;
-        const tgtLangName = ALL_LANGS[conf.l3].name;
-        
-        const now = Date.now();
-        audioHistory = audioHistory.filter(item => (now - item.ts) < 1800000); 
-        
-        const avoidList = audioHistory.map(i => i.text).join('", "');
-        const avoidPrompt = avoidList ? `Verwende AUF KEINEN FALL diese Sätze oder ähnliche: ["${avoidList}"]. ` : "";
-        
-        const topics = ["Einkaufen", "Reisen", "Arbeit", "Freizeit", "Essen und Trinken", "Wetter", "Familie", "Sport", "Gesundheit", "Verkehrsmittel", "Gefühle", "Technik", "Natur", "Wohnen"];
-        const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-        const randomSeed = Math.floor(Math.random() * 10000); 
-        
-        const prompt = `Du bist ein Sprachtrainer. Erstelle EINEN realistischen Satz auf Niveau ${diff} zum Thema "${randomTopic}" (ID: ${randomSeed}). ${avoidPrompt}Gib ihn auf Deutsch und auf ${tgtLangName} zurück. JSON-Format: {"l1": "Deutscher Satz", "l3": "Übersetzung in ${tgtLangName}"}`;
-        
-        const res = await callGemini(prompt);
-        document.getElementById('audioLoader').style.display = 'none';
-
-        if (!res || cancelAudio) {
-            if(!cancelAudio) await sleepAsync(3000);
-            continue;
-        }
-
-        let sentenceObj;
-        try {
-            let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim();
-            const sIdx = cleanStr.indexOf('{');
-            const eIdx = cleanStr.lastIndexOf('}');
-            if (sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1);
-            sentenceObj = JSON.parse(cleanStr);
-        } catch (e) {
-            await sleepAsync(2000);
-            continue;
-        }
-
-        const l1Text = sentenceObj.l1;
-        const l3Text = sentenceObj.l3;
-        
-        audioHistory.push({text: l1Text, ts: Date.now()});
-        currentAudioSentence = { l1: l1Text, l3: l3Text }; 
-        
-        document.getElementById('audioDisplayL1').innerText = l1Text;
-        document.getElementById('audioDisplayL3').innerText = "";
-
-        const slowRate = parseFloat(document.getElementById('selAudioSlow').value);
-        const pauseMs = parseInt(document.getElementById('selAudioPause').value) * 1000;
-        const reps = parseInt(document.getElementById('selAudioReps').value) || 1;
-
-        if (cancelAudio) break;
-        await speakAsync(l1Text, conf.l1, 1.0);
-        
-        if (cancelAudio) break;
-        await sleepAsync(600);
-        document.getElementById('audioDisplayL3').innerText = l3Text;
-
-        if (cancelAudio) break;
-        await speakAsync(l3Text, conf.l3, 1.0);
-        
-        if (cancelAudio) break;
-        await sleepAsync(pauseMs);
-
-        for (let i = 0; i < reps; i++) {
-            if (cancelAudio) break;
-            await speakAsync(l3Text, conf.l3, slowRate);
-            
-            if (cancelAudio) break;
-            await sleepAsync(pauseMs);
-        }
-
-        if (cancelAudio) break;
-        await speakAsync(l3Text, conf.l3, 1.0);
-        
-        if (cancelAudio) break;
-        await sleepAsync(2000);
-    }
-}
-
-function saveAudioSentence() {
-    if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info");
-    if(!currentAudioSentence.l1 || !currentAudioSentence.l3) return showToast("Kein Satz zum Speichern da!", "error");
-    
-    let d = { 
-        [conf.l1]: currentAudioSentence.l1, 
-        [conf.l2]: "", 
-        [conf.l3]: currentAudioSentence.l3,
-        ts: firebase.firestore.FieldValue.serverTimestamp(),
-        level: 0,
-        nextReview: getNextReviewTimestamp(0)
-    };
-    
-    db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).add(d).then(() => {
-        playSound('success');
-        showToast("✅ Satz in Karteikarten gespeichert!", "success");
-        refreshData(); 
-    }).catch(e => logCustomError("Speichern Audio-Satz", e));
-}
 
 window.onload = () => { try { init(); } catch(e) { console.error("Kritischer Fehler beim Starten:", e); } };
