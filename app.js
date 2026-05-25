@@ -1,4 +1,4 @@
-const APP_VERSION = "30.9";
+const APP_VERSION = "30.10";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -1498,8 +1498,6 @@ const DEFAULT_WORDS = [
 
 async function importDefaultWords() {
     if (!currentUser || !db) return;
-    const flagKey = 'defaultImported_' + currentUser.uid + '_' + currentCollIndex;
-    if (localStorage.getItem(flagKey)) return;
     try {
         const now = getNextReviewTimestamp(0);
         const ref = db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex);
@@ -1514,7 +1512,6 @@ async function importDefaultWords() {
             });
             await batch.commit();
         }
-        localStorage.setItem(flagKey, '1');
         showToast('✅ ' + DEFAULT_WORDS.length + ' Standardwörter importiert!', 'success');
         refreshData();
     } catch(e) { logCustomError('importDefaultWords', e); }
@@ -1522,10 +1519,16 @@ async function importDefaultWords() {
 
 async function forceImportDefaultWords() {
     if (!currentUser || !db) { showToast('⚠️ Warte auf Datenbank-Verbindung...', 'error'); return; }
-    const flagKey = 'defaultImported_' + currentUser.uid + '_' + currentCollIndex;
-    localStorage.removeItem(flagKey);
-    showToast('⏳ Importiere Standardwörter...', 'info');
-    await importDefaultWords();
+    showToast('⏳ Prüfe Wörterliste...', 'info');
+    try {
+        const snap = await db.collection('users').doc(currentUser.uid).collection('words_' + currentCollIndex).limit(1).get();
+        if (!snap.empty) {
+            showToast('ℹ️ Wörter bereits vorhanden – Import übersprungen um Duplikate zu vermeiden.', 'info');
+            return;
+        }
+        showToast('⏳ Importiere ' + DEFAULT_WORDS.length + ' Standardwörter...', 'info');
+        await importDefaultWords();
+    } catch(e) { logCustomError('forceImportDefaultWords', e); showToast('❌ Fehler beim Import.', 'error'); }
 }
 
 async function refreshData() { if(!currentUser || !db) return; const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).orderBy("ts", "desc").get(); if(s) { allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderList(); if (allWords.length === 0) importDefaultWords(); } }
