@@ -1,4 +1,4 @@
-const APP_VERSION = "30.14";
+const APP_VERSION = "30.15";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -89,7 +89,7 @@ try {
 } catch(err) { logCustomError("Firebase Init", err); if(document.getElementById('offlineBanner')) document.getElementById('offlineBanner').style.display = 'block'; }
 
 const ALL_LANGS = { 'de':{name:'Deutsch',tts:'de-DE',flag:'🇩🇪'}, 'en':{name:'Englisch',tts:'en-US',flag:'🇬🇧'}, 'sv':{name:'Schwedisch',tts:'sv-SE',flag:'🇸🇪'}, 'fr':{name:'Französisch',tts:'fr-FR',flag:'🇫🇷'}, 'no':{name:'Norwegisch',tts:'nb-NO',flag:'🇳🇴'}, 'es':{name:'Spanisch',tts:'es-ES',flag:'🇪🇸'}, 'it':{name:'Italienisch',tts:'it-IT',flag:'🇮🇹'} };
-let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; let currentCollIndex = 0; let conf = { l1: 'de', l2: 'en', l3: 'sv' }; let allWords = [];
+let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; let currentCollIndex = 0; let conf = { l1: 'de', l2: 'en', l3: 'sv' }; let allWords = []; let dataReady = false;
 let studyWords = []; let studyIndex = 0; let fcPool = []; let fcIndex = 0; let fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] }; let currentFcListType = '';
 let activeRpSentenceForFeedback = ""; let rpOptionsBuffer = null; let rpFetchPromise = null; let rpMicTimer = null; let rpCurrentTranscript = "";
 let geminiApiKey = localStorage.getItem('trainerGeminiKey') || ""; let currentApiKeyIndex = 0; let cachedGeminiModel = null;
@@ -565,6 +565,12 @@ function saveLiveTranslation() {
     db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).add(d).then(() => { playSound('success'); showToast("✅ Vokabel gespeichert!", "success"); refreshData(); statsToday.added++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); if(statsToday.added === 2) { addXP(15); fireConfetti(); } }).catch(e => logCustomError("Speichern Live-Translation", e));
 }
 async function initFlashcards(useFilter = false) {
+    if (!dataReady) {
+        document.getElementById('fcCardArea').style.display = 'none';
+        document.getElementById('fcDoneMessage').style.display = 'block';
+        document.getElementById('fcDoneMessage').innerHTML = "<p style='text-align:center;font-size:1.5rem;'>⏳</p><p style='text-align:center;'>Wörter werden geladen…</p>";
+        return;
+    }
     if(allWords.length === 0) { document.getElementById('fcCardArea').style.display = 'none'; document.getElementById('fcDoneMessage').style.display = 'block'; document.getElementById('fcDoneMessage').innerHTML = "<p>Füge erst Wörter hinzu!</p>"; return; }
     let filteredWords = [...allWords]; const topicInput = document.getElementById('fcTopicInput'); const topic = useFilter && topicInput ? topicInput.value.trim() : "";
     if (topic) {
@@ -1778,7 +1784,23 @@ async function forceImportDefaultWords() {
     } catch(e) { logCustomError('forceImportDefaultWords', e); showToast('❌ Fehler beim Import.', 'error'); }
 }
 
-async function refreshData() { if(!currentUser || !db) return; const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).orderBy("ts", "desc").get(); if(s) { allWords = s.docs.map(d => ({id: d.id, ...d.data()})); document.getElementById('wordCount').innerText = allWords.length; renderList(); if (allWords.length === 0) importDefaultWords(); } }
+async function refreshData() {
+    if(!currentUser || !db) return;
+    dataReady = false;
+    const s = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).orderBy("ts", "desc").get();
+    if(s) {
+        allWords = s.docs.map(d => ({id: d.id, ...d.data()}));
+        document.getElementById('wordCount').innerText = allWords.length;
+        renderList();
+        dataReady = true;
+        onDataReady();
+        if (allWords.length === 0) importDefaultWords();
+    }
+}
+function onDataReady() {
+    const fcTab = document.getElementById('tabFlashcards');
+    if (fcTab && fcTab.style.display !== 'none' && fcPool.length === 0) initFlashcards(false);
+}
 function generateStudyList() { if(!allWords.length) { document.getElementById('studyContainer').innerHTML = "<p style='text-align:center;'>Füge zuerst Wörter hinzu!</p>"; document.getElementById('studyActions').style.display = 'none'; return; } const now = Date.now(); let dueWords = allWords.filter(w => !w.nextReview || w.nextReview <= now); if(dueWords.length === 0) { document.getElementById('studyContainer').innerHTML = "<p style='text-align:center; font-size:1.2rem;'>🎉 Alle aktuellen Vokabeln gelernt!<br>Komm morgen wieder.</p>"; document.getElementById('studyWordCount').innerText="Fertig"; document.getElementById('studyActions').style.display = 'none'; return; } document.getElementById('studyActions').style.display = 'flex'; studyWords = dueWords.sort(() => 0.5 - Math.random()).slice(0, 15); studyIndex = 0; renderStudyWord(); }
 function renderStudyWord() { if(!studyWords.length) return; const w = studyWords[studyIndex]; document.getElementById('studyWordCount').innerText = `${studyIndex+1}/${studyWords.length}`; document.getElementById('studyContainer').innerHTML = `<div style="text-align:center; margin-bottom:10px;"><span class="level-dot lvl-${w.level||0}"></span><span style="font-size:0.8rem; color:var(--text-light); font-weight:bold;">Level ${w.level||0}</span></div><div style="font-size:2.2rem; font-weight:800; color:var(--primary); text-align:center; margin:10px 0;">${escapeHTML(w[conf.l1])}</div><div style="text-align:center; margin-bottom:15px;"><div style="font-size:1.5rem;">${ALL_LANGS[conf.l3].flag} ${escapeHTML(w[conf.l3])} <button class="icon-btn" style="display:inline-flex; border:none; background:transparent;" onclick="speak('${safeJS(w[conf.l3])}','${conf.l3}')">🔊</button></div></div><div style="text-align:center;"><div style="font-size:1.2rem; color:var(--text-light);">${ALL_LANGS[conf.l2].flag} ${escapeHTML(w[conf.l2])}</div></div>`; }
 async function markWord(correct) { if(!studyWords.length || !currentUser || !db) return; const w = studyWords[studyIndex]; let lvl = w.level || 0; if(correct) { lvl = Math.min(5, lvl + 1); playSound('success'); addXP(5); statsToday.learned++; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); updateQuests(); if(statsToday.learned === 5) { addXP(20); fireConfetti(); } } else { lvl = Math.max(0, lvl - 1); playSound('error'); } w.level = lvl; w.nextReview = getNextReviewTimestamp(lvl); db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: lvl, nextReview: w.nextReview}); setTimeout(nextStudyWord, 300); }
