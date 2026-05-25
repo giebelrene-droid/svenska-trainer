@@ -28,10 +28,54 @@ function closeErrorLog() { document.getElementById('errorLogOverlay').style.disp
 function clearErrorLog() { errorLog = []; localStorage.setItem('trainerErrorLog', JSON.stringify(errorLog)); renderErrorLog(); }
 function renderErrorLog() { const el = document.getElementById('errorLogList'); if(!el) return; if(errorLog.length === 0) el.innerHTML = "Alles läuft reibungslos!"; else el.innerHTML = errorLog.map(e => `<div>${escapeHTML(e)}</div>`).join('<hr style="border-color:#374151; margin:5px 0;">'); }
 
-// Leere Funktionen für alte Buttons, damit sie nicht crashen
-function migrateOldData() { showToast("Funktion aktuell nicht verfügbar.", "info"); }
-function importData(event) { showToast("Backup geladen.", "success"); }
-function nukeDatabase() { showToast("Funktion aktuell nicht verfügbar.", "info"); }
+function migrateOldData() {
+    if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info");
+    if(allWords.length === 0) return showToast("Keine Wörter zum Exportieren gefunden.", "info");
+    const exportObj = { version: "30.0", date: new Date().toISOString(), conf: conf, user: userNames[currentCollIndex], words: allWords.map(({ id, ...w }) => w) };
+    const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `sprachtutor_backup_${userNames[currentCollIndex].replace(/\s/g,'_')}_${new Date().toISOString().split('T')[0]}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    showToast(`✅ Backup mit ${allWords.length} Wörtern erstellt!`, "success");
+}
+
+function importData(event) {
+    const file = event.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info");
+            let words = [];
+            if(Array.isArray(data)) { words = data; }
+            else if(data.words && Array.isArray(data.words)) { words = data.words; }
+            else { return showToast("⚠️ Ungültiges Backup-Format.", "error"); }
+            if(words.length === 0) return showToast("Keine Wörter im Backup gefunden.", "info");
+            const ref = db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex);
+            const batchSize = 400; let imported = 0;
+            for(let i = 0; i < words.length; i += batchSize) {
+                const batch = db.batch();
+                words.slice(i, i + batchSize).forEach(w => { const { id, ...wordData } = w; wordData.ts = firebase.firestore.FieldValue.serverTimestamp(); if(!wordData.level) wordData.level = 0; if(!wordData.nextReview) wordData.nextReview = getNextReviewTimestamp(0); batch.set(ref.doc(), wordData); imported++; });
+                await batch.commit();
+            }
+            showToast(`✅ ${imported} Wörter importiert!`, "success"); refreshData();
+        } catch(err) { logCustomError("Import", err); showToast("⚠️ Fehler beim Importieren.", "error"); }
+    };
+    reader.readAsText(file); event.target.value = "";
+}
+
+async function nukeDatabase() {
+    if(!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info");
+    if(!confirm(`⚠️ ACHTUNG!\n\nAlle Vokabeln von "${userNames[currentCollIndex]}" werden unwiderruflich gelöscht!\n\nWirklich fortfahren?`)) return;
+    try {
+        const snap = await db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).get();
+        const batchSize = 400;
+        for(let i = 0; i < snap.docs.length; i += batchSize) { const batch = db.batch(); snap.docs.slice(i, i + batchSize).forEach(doc => batch.delete(doc.ref)); await batch.commit(); }
+        allWords = []; document.getElementById('wordCount').innerText = 0; renderList();
+        showToast("✅ Alle Vokabeln gelöscht.", "success");
+    } catch(e) { logCustomError("Nuke Database", e); showToast("⚠️ Fehler beim Löschen.", "error"); }
+}
 
 // ==========================================
 // 2. KERN-VARIABLEN & FIREBASE INITIALISIERUNG
@@ -48,6 +92,8 @@ let studyWords = []; let studyIndex = 0; let fcPool = []; let fcIndex = 0; let f
 let activeRpSentenceForFeedback = ""; let rpOptionsBuffer = null; let rpFetchPromise = null; let rpMicTimer = null; let rpCurrentTranscript = "";
 let geminiApiKey = localStorage.getItem('trainerGeminiKey') || ""; let currentApiKeyIndex = 0; let cachedGeminiModel = null;
 let isLiveRecording = false; let liveRecObj = null; let isChatSessionActive = false; let chatRec = null; let duelWordObj = null; let duelCanTap = false; let huntTarget = ""; let listDebounceTimer;
+const RALLYE_CATEGORIES = [ { prompt: "ein Tier", label: "Nenne ein Tier! 🐾" }, { prompt: "eine Farbe", label: "Nenne eine Farbe! 🎨" }, { prompt: "eine Sportart", label: "Nenne eine Sportart! ⚽" }, { prompt: "ein Lebensmittel", label: "Nenne ein Lebensmittel! 🍎" }, { prompt: "ein Land", label: "Nenne ein Land! 🌍" }, { prompt: "ein Fahrzeug", label: "Nenne ein Fahrzeug! 🚗" }, { prompt: "ein Körperteil", label: "Nenne einen Körperteil! 💪" }, { prompt: "ein Möbelstück", label: "Nenne ein Möbelstück! 🛋️" } ];
+let currentRallyeCategory = RALLYE_CATEGORIES[0];
 let isFastInputMode = localStorage.getItem('trainerFastInput') !== 'false';
 let userXP = parseInt(localStorage.getItem('trainerXP') || '0'); let userStreak = parseInt(localStorage.getItem('trainerStreak') || '0'); let lastActiveDate = localStorage.getItem('trainerLastDate') || '';
 let statsToday = {learned:0, added:0, date:""};
@@ -416,12 +462,78 @@ function handleFc(action) {
 function updateFcHistoryCounts() { document.getElementById('cntSpaeter').innerText = fcSessionHistory.spaeter.length; document.getElementById('cntNochmals').innerText = fcSessionHistory.nochmals.length; document.getElementById('cntGeuebt').innerText = fcSessionHistory.geuebt.length; }
 function showFcList(type) { const listEl = document.getElementById('fcHistoryList'); if(currentFcListType === type && listEl.style.display === 'flex') { listEl.style.display = 'none'; return; } currentFcListType = type; listEl.style.display = 'flex'; if(fcSessionHistory[type].length === 0) { listEl.innerHTML = `<div style="text-align:center; color:var(--text-light); font-size:0.9rem;">Noch keine Karten hier abgelegt.</div>`; return; } const icons = { spaeter: '🔴', nochmals: '🟠', geuebt: '🟢' }; listEl.innerHTML = fcSessionHistory[type].map((item, idx) => `<div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:10px; border-radius:12px; border:1px solid var(--border-soft);"><div style="font-weight:bold; color:var(--text); font-size:0.95rem;">${icons[type]} ${escapeHTML(item.word[conf.l1])} <span style="color:var(--text-light); font-weight:normal; font-size:0.8rem;">(${escapeHTML(item.word[conf.l3])})</span></div><button class="icon-btn" style="padding:6px 12px; font-size:0.85rem; border-color:var(--primary); color:var(--primary);" onclick="undoFc('${type}', ${idx})">↩️ Holen</button></div>`).join(''); }
 function undoFc(type, historyIndex) { if(!currentUser || !db) return; const item = fcSessionHistory[type][historyIndex]; const w = item.word; if (type === 'geuebt' || type === 'nochmals') { w.level = item.oldLvl; w.nextReview = item.oldNextReview; db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: item.oldLvl, nextReview: item.oldNextReview}); } else if (type === 'spaeter') { const poolIdx = fcPool.findIndex(x => x.id === w.id); if(poolIdx > -1) fcPool.splice(poolIdx, 1); } fcSessionHistory[type].splice(historyIndex, 1); fcPool.splice(fcIndex, 0, w); updateFcHistoryCounts(); showFcList(type); renderFc(); }
-function openMiniGame(game) { document.getElementById('arcadeMenu').style.display = game === 'Menu' ? 'grid' : 'none'; ['gameRallye', 'gameHunt', 'gameDuel', 'gameAdventure'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; }); if(game !== 'Menu') { document.getElementById('game' + game).style.display = 'block'; if(game === 'Hunt') initHunt(); } }
-function playRallyeRound() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SpeechRecognition) return showToast("Dein Browser unterstützt das Mikrofon leider nicht.", "error"); const rec = new SpeechRecognition(); rec.lang = ALL_LANGS[conf.l3].tts; document.getElementById('btnRallyeMic').classList.add('mic-active'); rec.onresult = async (e) => { const word = e.results[0][0].transcript; document.getElementById('rallyeLoader').style.display = 'block'; const res = await callGemini(`Ist das Wort "${word}" in der Sprache ${ALL_LANGS[conf.l3].name} ein Tier? Antworte NUR mit JA oder NEIN.`); document.getElementById('rallyeLoader').style.display = 'none'; if(res && res.toUpperCase().includes("JA")) { playSound('success'); addXP(15); showToast(`Richtig! "${word}" ist ein Tier. +15 XP`, "success"); } else { playSound('error'); showToast(`Falsch. KI hat "${word}" nicht als Tier erkannt.`, "error"); } }; rec.onend = () => document.getElementById('btnRallyeMic').classList.remove('mic-active'); rec.onerror = (e) => logCustomError("Rallye Mikrofon", e.error); rec.start(); }
+function openMiniGame(game) {
+    document.getElementById('arcadeMenu').style.display = game === 'Menu' ? 'grid' : 'none';
+    ['gameRallye', 'gameHunt', 'gameDuel', 'gameAdventure'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+    if(game !== 'Menu') {
+        document.getElementById('game' + game).style.display = 'block';
+        if(game === 'Hunt') initHunt();
+        if(game === 'Rallye') {
+            currentRallyeCategory = RALLYE_CATEGORIES[Math.floor(Math.random() * RALLYE_CATEGORIES.length)];
+            const catEl = document.getElementById('rallyeCategory'); if(catEl) catEl.innerText = currentRallyeCategory.label;
+        }
+        if(game === 'Duel') {
+            const duelArea = document.getElementById('duelArea'); if(duelArea) duelArea.style.display = 'none';
+            const btnStart = document.getElementById('btnStartDuel'); if(btnStart) btnStart.style.display = 'block';
+            const res = document.getElementById('duelResult'); if(res) res.innerText = '';
+        }
+        if(game === 'Adventure') {
+            const btnAdv = document.getElementById('btnStartAdv'); if(btnAdv) btnAdv.style.display = 'block';
+            const advArea = document.getElementById('advArea'); if(advArea) advArea.style.display = 'none';
+        }
+    }
+}
+function playRallyeRound() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SpeechRecognition) return showToast("Dein Browser unterstützt das Mikrofon leider nicht.", "error");
+    const rec = new SpeechRecognition(); rec.lang = ALL_LANGS[conf.l3].tts;
+    document.getElementById('btnRallyeMic').classList.add('mic-active');
+    rec.onresult = async (e) => {
+        const word = e.results[0][0].transcript;
+        document.getElementById('rallyeLoader').style.display = 'block';
+        const cat = currentRallyeCategory.prompt;
+        const res = await callGemini(`Ist das Wort "${word}" in der Sprache ${ALL_LANGS[conf.l3].name} ${cat}? Antworte NUR mit JA oder NEIN.`);
+        document.getElementById('rallyeLoader').style.display = 'none';
+        if(res && res.toUpperCase().includes("JA")) {
+            playSound('success'); addXP(15); showToast(`✅ Richtig! "${word}" ist ${cat}. +15 XP`, "success");
+            currentRallyeCategory = RALLYE_CATEGORIES[Math.floor(Math.random() * RALLYE_CATEGORIES.length)];
+            const catEl = document.getElementById('rallyeCategory'); if(catEl) catEl.innerText = currentRallyeCategory.label;
+        } else { playSound('error'); showToast(`❌ KI hat "${word}" nicht als ${cat} erkannt.`, "error"); }
+    };
+    rec.onend = () => document.getElementById('btnRallyeMic').classList.remove('mic-active');
+    rec.onerror = (e) => { document.getElementById('btnRallyeMic').classList.remove('mic-active'); logCustomError("Rallye Mikrofon", e.error); };
+    rec.start();
+}
 function initHunt() { huntTarget = allWords.length ? allWords[Math.floor(Math.random()*allWords.length)][conf.l3] : "Apfel"; document.getElementById('huntTargetWord').innerText = huntTarget; document.getElementById('huntResult').innerText = ""; }
 function checkHuntImage(input) { const file = input.files[0]; if(!file) return; document.getElementById('huntLoader').style.display = 'block'; const reader = new FileReader(); reader.onload = (e) => { const img = new Image(); img.onload = async () => { let finalImageBase64 = e.target.result; try { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 800; if(w > h && w > max) { h = Math.round(h * max / w); w = max; } else if(h > max) { w = Math.round(w * max / h); h = max; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); finalImageBase64 = canvas.toDataURL('image/jpeg', 0.7); } catch(canvasErr) {} const c = await callGemini(`Look at this image. Is this an image of a "${huntTarget}"? Answer STRICTLY with the word YES or NO and nothing else.`, finalImageBase64); document.getElementById('huntLoader').style.display = 'none'; if(c && c.toUpperCase().includes("YES")) { document.getElementById('huntResult').innerText = "✅ Richtig!"; playSound('success'); addXP(20); } else if (c) { document.getElementById('huntResult').innerText = "❌ Falsch. KI sagte: " + c; playSound('error'); } input.value = ""; }; img.src = e.target.result; }; reader.readAsDataURL(file); }
-function startDuelRound() { if(!allWords.length) return showToast("Bitte erst Wörter hinzufügen!", "error"); document.getElementById('duelWord').innerText = "Warten..."; duelCanTap = false; setTimeout(() => { duelWordObj = allWords[Math.floor(Math.random()*allWords.length)]; document.getElementById('duelWord').innerText = duelWordObj[conf.l1]; duelCanTap = true; }, 1500); }
-function duelTap(p) { if(!duelCanTap) return; duelCanTap = false; const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = ALL_LANGS[conf.l3].tts; rec.onresult = (e) => { const s = e.results[0][0].transcript.toLowerCase(); if(s.includes(duelWordObj[conf.l3].toLowerCase())) { document.getElementById('duelResult').innerText = `Punkt für ${p}!`; playSound('success'); } else { document.getElementById('duelResult').innerText = "Falsch"; playSound('error'); } }; rec.onerror = (e) => logCustomError("Duel Mikrofon", e.error); rec.start(); }
+function startDuelRound() {
+    if(!allWords.length) return showToast("Bitte erst Wörter hinzufügen!", "error");
+    const duelArea = document.getElementById('duelArea'); if(duelArea) duelArea.style.display = 'flex';
+    const btnStart = document.getElementById('btnStartDuel'); if(btnStart) btnStart.style.display = 'none';
+    const res = document.getElementById('duelResult'); if(res) res.innerText = '';
+    document.getElementById('duelWord').innerText = "Warten..."; duelCanTap = false;
+    setTimeout(() => { duelWordObj = allWords[Math.floor(Math.random()*allWords.length)]; document.getElementById('duelWord').innerText = duelWordObj[conf.l1]; duelCanTap = true; }, 1500);
+}
+function duelTap(p) {
+    if(!duelCanTap) return;
+    duelCanTap = false;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SpeechRecognition) return showToast("⚠️ Mikrofon nicht unterstützt.", "error");
+    const rec = new SpeechRecognition(); rec.lang = ALL_LANGS[conf.l3].tts;
+    rec.onresult = (e) => {
+        const s = e.results[0][0].transcript.toLowerCase();
+        const target = (duelWordObj[conf.l3] || "").toLowerCase();
+        const resultEl = document.getElementById('duelResult');
+        if(s.includes(target) || target.includes(s)) {
+            resultEl.innerText = `🎉 Punkt für ${p}! "${duelWordObj[conf.l3]}" war richtig.`; playSound('success'); addXP(10);
+        } else {
+            resultEl.innerText = `❌ Falsch. Richtig wäre: "${duelWordObj[conf.l3]}"`;  playSound('error');
+        }
+        setTimeout(() => { const btn = document.getElementById('btnStartDuel'); if(btn) { btn.style.display = 'block'; } const duelArea = document.getElementById('duelArea'); if(duelArea) duelArea.style.display = 'none'; }, 2000);
+    };
+    rec.onerror = (e) => { duelCanTap = true; logCustomError("Duel Mikrofon", e.error); };
+    rec.start();
+}
 function startAdventure() { document.getElementById('btnStartAdv').style.display = 'none'; document.getElementById('advArea').style.display = 'block'; document.getElementById('advHistory').innerHTML = `<div class="chat-bubble bubble-ai">Du stehst in einem dunklen Wald. Vor dir ist eine geheimnisvolle Höhle. Was tust du? (Antworte auf ${ALL_LANGS[conf.l3].name})</div>`; }
 function advTurn() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SpeechRecognition) return; const rec = new SpeechRecognition(); rec.lang = ALL_LANGS[conf.l3].tts; document.getElementById('btnAdvMic').classList.add('mic-active'); rec.onresult = async (e) => { const txt = e.results[0][0].transcript; document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-user">${txt}</div>`; document.getElementById('advLoader').style.display = 'block'; const res = await callGemini(`Wir spielen ein Text-Adventure. Die Sprache ist ${ALL_LANGS[conf.l3].name}. Ich habe gesagt: "${txt}". Antworte kurz in max 2 Sätzen was passiert und frage, was ich als nächstes tue.`); document.getElementById('advLoader').style.display = 'none'; if(res) { document.getElementById('advHistory').innerHTML += `<div class="chat-bubble bubble-ai">${res}</div>`; speak(res, conf.l3); document.getElementById('advHistory').scrollTop = document.getElementById('advHistory').scrollHeight; addXP(5); } }; rec.onend = () => document.getElementById('btnAdvMic').classList.remove('mic-active'); rec.onerror = (e) => logCustomError("Adventure Mikrofon", e.error); rec.start(); }
 function startTutorMic() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return showToast("⚠️ Browser unterstützt keine Spracherkennung.", "error"); chatRec = new SpeechRecognition(); chatRec.lang = ALL_LANGS[document.getElementById('chatSrcLang').value].tts; chatRec.continuous = false; chatRec.onresult = async (e) => { const t = e.results[0][0].transcript; document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-user">${t}</div>`; document.getElementById('loaderChat').style.display='block'; const tgtLang = document.getElementById('chatTgtLang').value; const prompt = `Du bist Sprachtutor für ${ALL_LANGS[tgtLang].name}. Antworte extrem kurz und natürlich. Max 2 Sätze auf ${ALL_LANGS[tgtLang].name}. Max 1 Satz kurzes Feedback auf Deutsch. Format: Antwort ||| Feedback`; const r = await callGemini(t, null, prompt); document.getElementById('loaderChat').style.display='none'; if(r) { const p = r.split('|||'); document.getElementById('chatHistory').innerHTML += `<div class="chat-bubble bubble-ai">${escapeHTML(p[0])}</div><div class="bubble-feedback">${escapeHTML(p[1]||'')}</div>`; document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight; speak(p[0], tgtLang); } }; chatRec.onerror = (e) => logCustomError("Chat Tutor Mikrofon", e.error); chatRec.onend = () => { if(isChatSessionActive) { setTimeout(() => { try { chatRec.start(); } catch(err){} }, 500); } }; chatRec.start(); }
