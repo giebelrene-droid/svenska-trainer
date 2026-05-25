@@ -1,4 +1,4 @@
-const APP_VERSION = "30.18";
+const APP_VERSION = "30.19";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -161,11 +161,19 @@ if (window.speechSynthesis) {
 
 function updateVoiceDropdown() {
     const voiceSelect = document.getElementById('selAudioVoice'); if (!voiceSelect) return;
-    const currentLangCode = ALL_LANGS[conf.l3].tts.split('-')[0];
-    const matchingVoices = availableVoices.filter(v => v.lang.startsWith(currentLangCode));
+    const ttsCode = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) || 'sv-SE';
+    const base = ttsCode.split('-')[0].toLowerCase();
+    const nameMap = { sv:'swedish', de:'german', en:'english', fr:'french', es:'spanish', it:'italian', no:'norwegian' };
+    const nameHint = nameMap[base] || base;
+    // Match by lang prefix first, then by name hint for devices with non-standard codes
+    const byLang = availableVoices.filter(v => v.lang.toLowerCase().startsWith(base));
+    const byName = availableVoices.filter(v => !v.lang.toLowerCase().startsWith(base) && v.name.toLowerCase().includes(nameHint));
+    const matchingVoices = [...byLang, ...byName];
+    const prevVal = voiceSelect.value;
     let html = '<option value="">🤖 Standard-Stimme</option>';
-    matchingVoices.forEach(v => { html += `<option value="${escapeHTML(v.name)}">${escapeHTML(v.name)}</option>`; });
+    matchingVoices.forEach(v => { html += `<option value="${escapeHTML(v.name)}">${escapeHTML(v.name)} (${escapeHTML(v.lang)})</option>`; });
     voiceSelect.innerHTML = html;
+    if (prevVal && matchingVoices.some(v => v.name === prevVal)) voiceSelect.value = prevVal;
 }
 
 // Chrome/Android: Synthesis bricht nach ~15s ab
@@ -837,37 +845,38 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
 // ==========================================
 // 6. AUDIO-TRAINER (DIE NEUE LERN-FUNKTION)
 // ==========================================
-function speakAsync(text, langKey, rate = 1.0) {
-    return new Promise((resolve) => {
-        const diagPrefix = `speakAsync("${(text||'').slice(0,25)}", ${langKey}, ${rate})`;
-        if (!('speechSynthesis' in window) || cancelAudio || !text || !text.trim()) {
-            return resolve();
-        }
+const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-        const ss = window.speechSynthesis;
+// Strict serialized TTS: each call awaits onend OR timeout before resolving.
+// Android Chrome needs cancel→resume→100ms gap before every speak().
+async function speakAsync(text, langKey, rate = 1.0) {
+    if (!('speechSynthesis' in window) || cancelAudio || !text || !text.trim()) return;
+    const ss = window.speechSynthesis;
 
+    // Cancel any previous utterance, resume in case Chrome paused synthesis
+    ss.cancel();
+    ss.resume();
+    // Android Chrome: brief gap after cancel() prevents the new utterance from being swallowed
+    if (isAndroidChrome) await sleepAsync(100);
+    if (cancelAudio) return;
+
+    await new Promise((resolve) => {
         currentUtterance = buildUtterance(text, langKey, rate);
 
         let resolved = false;
         const done = () => { if (!resolved) { resolved = true; currentUtterance = null; resolve(); } };
 
-        currentUtterance.onend = () => { done(); };
-        currentUtterance.onerror = (e) => {
-            logCustomError('speakAsync', (e.error || String(e)));
-            done();
-        };
+        currentUtterance.onend = done;
+        currentUtterance.onerror = (e) => { logCustomError('speakAsync', e.error || String(e)); done(); };
 
-        // Timeout-Fallback: iOS/Android feuern onend manchmal nie
-        const charCount = text.trim().length;
-        const estMs = Math.max(2000, (charCount / (parseFloat(rate) * 14)) * 1000) + 2000;
-        setTimeout(done, Math.min(estMs, 18000));
+        // Timeout fallback: ~85ms per character at rate 1.0, adjusted for rate, +1500ms buffer.
+        // onend is unreliable on Android Chrome — this guarantees progress.
+        const estMs = Math.min(28000, Math.ceil(text.trim().length * 85 / (parseFloat(rate) || 1.0)) + 1500);
+        setTimeout(done, estMs);
 
-        ss.cancel();
-        ss.resume();
         ss.speak(currentUtterance);
     });
 }
-const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function toggleAudioTrainer() {
     const btn = document.getElementById('btnStartAudio');
@@ -885,52 +894,88 @@ async function toggleAudioTrainer() {
     audioTrainerLoop();
 }
 
+function setAudioStep(text) {
+    const el = document.getElementById('audioStep');
+    if (el) el.textContent = text;
+}
+
 async function audioTrainerLoop() {
     while (isAudioRunning && !cancelAudio) {
+        setAudioStep('⏳ Generiere Satz...');
         document.getElementById('audioLoader').style.display = 'block';
-        const diff = document.getElementById('selAudioDiff').value; const tgtLangName = ALL_LANGS[conf.l3].name;
-        
-        const now = Date.now(); audioHistory = audioHistory.filter(item => (now - item.ts) < 1800000); 
-        const avoidList = audioHistory.map(i => i.text).join('", "'); const avoidPrompt = avoidList ? `Verwende AUF KEINEN FALL diese Sätze oder ähnliche: ["${avoidList}"]. ` : "";
+        const diff = document.getElementById('selAudioDiff').value;
+        const tgtLangName = ALL_LANGS[conf.l3].name;
+
+        const now = Date.now();
+        audioHistory = audioHistory.filter(item => (now - item.ts) < 1800000);
+        const avoidList = audioHistory.map(i => i.text).join('", "');
+        const avoidPrompt = avoidList ? `Verwende AUF KEINEN FALL diese Sätze oder ähnliche: ["${avoidList}"]. ` : "";
         const topics = ["Einkaufen", "Reisen", "Arbeit", "Freizeit", "Essen und Trinken", "Wetter", "Familie", "Sport", "Gesundheit", "Verkehrsmittel", "Gefühle", "Technik", "Natur", "Wohnen"];
-        const randomTopic = topics[Math.floor(Math.random() * topics.length)]; const randomSeed = Math.floor(Math.random() * 10000); 
-        
+        const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+        const randomSeed = Math.floor(Math.random() * 10000);
         const prompt = `Du bist ein Sprachtrainer. Erstelle EINEN realistischen Satz auf Niveau ${diff} zum Thema "${randomTopic}" (ID: ${randomSeed}). ${avoidPrompt}Gib ihn auf Deutsch und auf ${tgtLangName} zurück. JSON-Format: {"l1": "Deutscher Satz", "l3": "Übersetzung in ${tgtLangName}"}`;
-        
+
         const res = await callGemini(prompt);
         document.getElementById('audioLoader').style.display = 'none';
-        if (!res || cancelAudio) { if(!cancelAudio) await sleepAsync(3000); continue; }
+        if (!res || cancelAudio) { if (!cancelAudio) await sleepAsync(3000); continue; }
 
         let sentenceObj;
         try {
             let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim();
-            const sIdx = cleanStr.indexOf('{'); const eIdx = cleanStr.lastIndexOf('}'); if (sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1);
+            const sIdx = cleanStr.indexOf('{'); const eIdx = cleanStr.lastIndexOf('}');
+            if (sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1);
             sentenceObj = JSON.parse(cleanStr);
         } catch (e) { await sleepAsync(2000); continue; }
 
-        const l1Text = sentenceObj.l1; const l3Text = sentenceObj.l3;
-        audioHistory.push({text: l1Text, ts: Date.now()}); currentAudioSentence = { l1: l1Text, l3: l3Text }; 
-        document.getElementById('audioDisplayL1').innerText = l1Text; document.getElementById('audioDisplayL3').innerText = "";
+        const l1Text = sentenceObj.l1;
+        const l3Text = sentenceObj.l3;
+        audioHistory.push({ text: l1Text, ts: Date.now() });
+        currentAudioSentence = { l1: l1Text, l3: l3Text };
+        document.getElementById('audioDisplayL1').innerText = l1Text;
+        document.getElementById('audioDisplayL3').innerText = "";
 
         const slowRate = parseFloat(document.getElementById('selAudioSlow').value);
         const pauseMs = parseInt(document.getElementById('selAudioPause').value) * 1000;
         const reps = parseInt(document.getElementById('selAudioReps').value) || 1;
+        const l1Flag = ALL_LANGS[conf.l1] ? ALL_LANGS[conf.l1].flag : '🌍';
+        const l3Flag = ALL_LANGS[conf.l3] ? ALL_LANGS[conf.l3].flag : '🌍';
 
-        if (cancelAudio) break; await speakAsync(l1Text, conf.l1, 1.0);
-        if (cancelAudio) break; await sleepAsync(600);
+        // ── STEP 1: Deutsch ───────────────────────────────────────────
+        if (cancelAudio) break;
+        setAudioStep(`${l1Flag} Schritt 1 / ${2 + reps + 1}: Deutsch`);
+        await speakAsync(l1Text, conf.l1, 1.0);
+
+        if (cancelAudio) break;
+        await sleepAsync(pauseMs);
         document.getElementById('audioDisplayL3').innerText = l3Text;
 
-        if (cancelAudio) break; await speakAsync(l3Text, conf.l3, 1.0);
-        if (cancelAudio) break; await sleepAsync(pauseMs);
+        // ── STEP 2: Fremdsprache normal ───────────────────────────────
+        if (cancelAudio) break;
+        setAudioStep(`${l3Flag} Schritt 2 / ${2 + reps + 1}: Normal`);
+        await speakAsync(l3Text, conf.l3, 1.0);
 
+        if (cancelAudio) break;
+        await sleepAsync(pauseMs);
+
+        // ── STEPS 3…(2+reps): Fremdsprache langsam ───────────────────
         for (let i = 0; i < reps; i++) {
-            if (cancelAudio) break; await speakAsync(l3Text, conf.l3, slowRate);
-            if (cancelAudio) break; await sleepAsync(pauseMs);
+            if (cancelAudio) break;
+            setAudioStep(`${l3Flag} Schritt ${3 + i} / ${2 + reps + 1}: Langsam (${i + 1}/${reps})`);
+            await speakAsync(l3Text, conf.l3, slowRate);
+            if (cancelAudio) break;
+            await sleepAsync(pauseMs);
         }
 
-        if (cancelAudio) break; await speakAsync(l3Text, conf.l3, 1.0);
-        if (cancelAudio) break; await sleepAsync(2000);
+        // ── FINAL STEP: Fremdsprache normal zum Abschluss ─────────────
+        if (cancelAudio) break;
+        setAudioStep(`${l3Flag} Schritt ${2 + reps + 1} / ${2 + reps + 1}: Abschluss Normal`);
+        await speakAsync(l3Text, conf.l3, 1.0);
+
+        if (cancelAudio) break;
+        setAudioStep('✅ Nächster Satz...');
+        await sleepAsync(2000);
     }
+    setAudioStep('');
 }
 
 function saveAudioSentence() {
