@@ -1,4 +1,4 @@
-const APP_VERSION = "30.23";
+const APP_VERSION = "30.24";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -828,9 +828,7 @@ function switchUser() { currentCollIndex = parseInt(document.getElementById('sel
 // ==========================================
 // 5. GEMINI API ANBINDUNG
 // ==========================================
-// Preferred models in order. gemini-2.0-flash is primary; 1.5-flash is fallback.
-// "gemini-1.5-flash-latest" was decommissioned by Google — never use it.
-const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+const GEMINI_MODELS = ['gemini-2.0-flash'];
 
 async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     const keys = geminiApiKey.split(',').map(k => k.trim()).filter(k => k);
@@ -876,10 +874,7 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
                 });
                 const d = await resp.json();
                 if (d.error) {
-                    const msg = d.error.message || JSON.stringify(d.error);
-                    // Show exact API error so the user can see what went wrong
-                    showToast(`⚠️ API [${model}]: ${msg}`, 'error');
-                    throw new Error(msg);
+                    throw new Error(d.error.message || JSON.stringify(d.error));
                 }
                 const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (!text) throw new Error("Leere Antwort vom Modell");
@@ -895,10 +890,7 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     }
 
     if (activeLoader) activeLoader.innerText = originalLoaderText;
-    // Show final error if no toast was shown yet (network error, not an API error object)
-    if (!lastErrorMsg.includes(': ')) {
-        showToast(`⚠️ API-Fehler: ${lastErrorMsg}`, 'error');
-    }
+    logCustomError('callGemini failed', lastErrorMsg);
     return null;
 }
 
