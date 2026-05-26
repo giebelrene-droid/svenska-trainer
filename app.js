@@ -1,4 +1,4 @@
-const APP_VERSION = "30.47";
+const APP_VERSION = "30.48";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -1179,6 +1179,7 @@ function getDeeplUrl() {
 }
 
 // Translates a single text with DeepL. Returns the translated string or null.
+// Network/CORS errors fall back silently (console.warn only — no in-app log, no toast).
 async function translateWithDeepL(text, sourceLangKey, targetLangKey) {
     if (!deeplApiKey.trim() || !text || !text.trim()) return null;
     try {
@@ -1195,12 +1196,13 @@ async function translateWithDeepL(text, sourceLangKey, targetLangKey) {
         });
         const d = await resp.json();
         if (d.message || d.error_code) {
-            logCustomError('DeepL', `${d.error_code || ''} ${d.message || ''}`);
+            console.warn('DeepL API:', d.error_code || '', d.message || '');
             return null;
         }
         return d.translations?.[0]?.text || null;
     } catch(e) {
-        logCustomError('DeepL network', e.message);
+        // CORS and network errors are expected in browser — fall back silently to Gemini
+        console.warn('DeepL network (falling back to Gemini):', e.message);
         return null;
     }
 }
