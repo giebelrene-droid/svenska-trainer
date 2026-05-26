@@ -1,4 +1,4 @@
-const APP_VERSION = "30.43";
+const APP_VERSION = "30.44";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -165,11 +165,17 @@ if (window.speechSynthesis) {
 }
 
 function updateVoiceDropdown() {
-    if (elevenlabsApiKey && elevenlabsVoices.length > 0) {
-        updateElevenLabsVoiceDropdowns();
+    const voiceSelect = document.getElementById('selAudioVoice');
+    if (elevenlabsApiKey) {
+        if (voiceSelect) {
+            voiceSelect.innerHTML = '<option value="">🎙️ ElevenLabs — Stimmen in ⚙️</option>';
+            voiceSelect.disabled = true;
+        }
+        if (elevenlabsVoices.length > 0) updateElevenLabsLangDropdowns();
         return;
     }
-    const voiceSelect = document.getElementById('selAudioVoice'); if (!voiceSelect) return;
+    if (voiceSelect) voiceSelect.disabled = false;
+    if (!voiceSelect) return;
     const ttsCode = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) || 'sv-SE';
     const base = ttsCode.split('-')[0].toLowerCase();
     const nameMap = { sv:'swedish', de:'german', en:'english', fr:'french', es:'spanish', it:'italian', no:'norwegian' };
@@ -247,8 +253,7 @@ function buildUtterance(text, langKey, rate) {
 function speak(text, langKey, rate = 1.0) {
     if (!text || !text.trim()) return;
     if (elevenlabsApiKey) {
-        const sel = document.getElementById('selElevenLabsVoice');
-        const voiceId = (sel && sel.value) || elevenlabsVoiceId || getDefaultElevenLabsVoiceId();
+        const voiceId = getElevenLabsVoiceForLang(langKey);
         if (voiceId) { speakElevenLabs(text, voiceId); return; }
     }
     if (!window.speechSynthesis) return;
@@ -755,11 +760,9 @@ function saveElevenLabsKey() {
     }
 }
 
-function saveElevenLabsVoice() {
-    elevenlabsVoiceId = document.getElementById('selElevenLabsVoice').value;
-    localStorage.setItem('trainerElevenLabsVoice', elevenlabsVoiceId);
-    const audioSel = document.getElementById('selAudioVoice');
-    if (audioSel && !audioSel.value && elevenlabsVoiceId) audioSel.value = elevenlabsVoiceId;
+function saveElevenLabsVoiceLang(langKey) {
+    const val = document.getElementById(`selElevenLabsVoice_${langKey}`)?.value || '';
+    localStorage.setItem(`trainerElevenLabsVoice_${langKey}`, val);
 }
 
 function getDefaultElevenLabsVoiceId() {
@@ -768,6 +771,27 @@ function getDefaultElevenLabsVoiceId() {
     const rachel = elevenlabsVoices.find(v => v.name === 'Rachel');
     if (rachel) return rachel.voice_id;
     return elevenlabsVoices[0]?.voice_id || '';
+}
+
+function getElevenLabsVoiceForLang(langKey) {
+    const stored = localStorage.getItem(`trainerElevenLabsVoice_${langKey}`);
+    if (stored && elevenlabsVoices.some(v => v.voice_id === stored)) return stored;
+    return elevenlabsVoiceId || getDefaultElevenLabsVoiceId();
+}
+
+function autoAssignLangVoices() {
+    ['de', 'en', 'sv'].forEach(lang => {
+        if (localStorage.getItem(`trainerElevenLabsVoice_${lang}`)) return;
+        const langNames = { de: ['german', 'deutsch'], en: ['english', 'american', 'british'], sv: ['swedish', 'svenska'] };
+        const hints = langNames[lang] || [];
+        const match = elevenlabsVoices.find(v =>
+            hints.some(h => (v.labels?.language || '').toLowerCase().includes(h) ||
+                            (v.labels?.accent || '').toLowerCase().includes(h))
+        );
+        const fallback = lang === 'en' ? getDefaultElevenLabsVoiceId() : elevenlabsVoices[0]?.voice_id || '';
+        const chosen = match?.voice_id || fallback;
+        if (chosen) localStorage.setItem(`trainerElevenLabsVoice_${lang}`, chosen);
+    });
 }
 
 async function loadElevenLabsVoices() {
@@ -779,26 +803,24 @@ async function loadElevenLabsVoices() {
         if (!resp.ok) { logCustomError('loadElevenLabsVoices', resp.status); return; }
         const data = await resp.json();
         elevenlabsVoices = (data.voices || []).sort((a, b) => a.name.localeCompare(b.name));
-        updateElevenLabsVoiceDropdowns();
+        autoAssignLangVoices();
+        updateElevenLabsLangDropdowns();
         updateVoiceDropdown();
     } catch(e) {
         logCustomError('loadElevenLabsVoices', e.message);
     }
 }
 
-function updateElevenLabsVoiceDropdowns() {
-    const defaultId = elevenlabsVoiceId || getDefaultElevenLabsVoiceId();
-    ['selElevenLabsVoice', 'selAudioVoice'].forEach(id => {
-        const sel = document.getElementById(id);
+function updateElevenLabsLangDropdowns() {
+    const options = '<option value="">— Stimme wählen —</option>' +
+        elevenlabsVoices.map(v => `<option value="${escapeHTML(v.voice_id)}">${escapeHTML(v.name)}</option>`).join('');
+    ['de', 'en', 'sv'].forEach(lang => {
+        const sel = document.getElementById(`selElevenLabsVoice_${lang}`);
         if (!sel) return;
-        const prev = sel.value || defaultId;
-        sel.innerHTML = '<option value="">— Stimme wählen —</option>' +
-            elevenlabsVoices.map(v => `<option value="${escapeHTML(v.voice_id)}">${escapeHTML(v.name)}</option>`).join('');
-        if (prev && elevenlabsVoices.some(v => v.voice_id === prev)) sel.value = prev;
-        else if (defaultId) sel.value = defaultId;
+        sel.innerHTML = options;
+        const stored = localStorage.getItem(`trainerElevenLabsVoice_${lang}`) || '';
+        if (stored && elevenlabsVoices.some(v => v.voice_id === stored)) sel.value = stored;
     });
-    elevenlabsVoiceId = document.getElementById('selElevenLabsVoice')?.value || defaultId;
-    localStorage.setItem('trainerElevenLabsVoice', elevenlabsVoiceId);
 }
 
 async function loadElevenLabsSubscription() {
@@ -1159,6 +1181,21 @@ async function translateAllWithDeepL(text, sourceLangKey) {
 // ==========================================
 const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite-001'];
 
+const AUDIO_TOPICS = [
+    { value: 'general',    label: '🌍 Allgemein',           prompt: 'einem alltäglichen Thema (Einkaufen, Reisen, Arbeit, Freizeit, Essen, Wetter, Familie, Sport, Gesundheit, Verkehr)' },
+    { value: 'work',       label: '💼 Beruf & Arbeit',       prompt: 'Beruf und Arbeit (Büro, Meetings, Kollegen, Bewerbung, Berufsalltag, Telefonate)' },
+    { value: 'restaurant', label: '🍽️ Restaurant & Essen',   prompt: 'Restaurant und Essen (Bestellung, Speisekarte, Kellner, Bezahlen, Empfehlungen)' },
+    { value: 'health',     label: '🏥 Arzt & Gesundheit',    prompt: 'Arzt und Gesundheit (Symptome, Behandlung, Apotheke, Termine, Krankheit)' },
+    { value: 'shopping',   label: '🛒 Einkaufen',            prompt: 'Einkaufen (Supermarkt, Kleidung, Preise, Größen, Reklamation, Kasse)' },
+    { value: 'travel',     label: '✈️ Reisen & Hotel',       prompt: 'Reisen und Hotel (Buchung, Check-in, Wegbeschreibung, Flughafen, Sehenswürdigkeiten)' },
+    { value: 'family',     label: '👨‍👩‍👧 Familie & Zuhause',   prompt: 'Familie und Zuhause (Haushalt, Kinder, Verwandte, Tagesablauf, Wohnen)' },
+    { value: 'school',     label: '🏫 Schule & Bildung',     prompt: 'Schule und Bildung (Unterricht, Prüfungen, Lehrer, Hausaufgaben, Klassenzimmer)' },
+    { value: 'bank',       label: '🏦 Bank & Behörden',      prompt: 'Bank und Behörden (Konto, Überweisung, Antrag, Formulare, Ämter)' },
+    { value: 'transport',  label: '🚗 Verkehr & Transport',  prompt: 'Verkehr und Transport (Bus, Bahn, Auto, Richtungen, Tickets, Haltestellen)' },
+    { value: 'smalltalk',  label: '💬 Smalltalk & Begrüßung', prompt: 'Smalltalk und Begrüßung (Kennenlernen, Wetter, Wochenende, höfliche Phrasen)' },
+    { value: 'leisure',    label: '🎭 Freizeit & Hobby',     prompt: 'Freizeit und Hobby (Sport, Musik, Kino, Ausgehen, Veranstaltungen, Interessen)' },
+];
+
 function showApiError(html) {
     let box = document.getElementById('apiErrorBox');
     if (!box) {
@@ -1261,8 +1298,7 @@ const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 async function speakAndWait(text, langKey, rate) {
     if (cancelAudio || !text || !text.trim()) return;
     if (elevenlabsApiKey) {
-        const sel = document.getElementById('selAudioVoice');
-        const voiceId = (sel && sel.value) || elevenlabsVoiceId || getDefaultElevenLabsVoiceId();
+        const voiceId = getElevenLabsVoiceForLang(langKey);
         if (voiceId) { await speakElevenLabs(text, voiceId); return; }
     }
     if (!('speechSynthesis' in window)) return;
@@ -1330,16 +1366,16 @@ async function audioTrainerLoop() {
         setAudioStep('⏳ Generiere Satz...');
         document.getElementById('audioLoader').style.display = 'block';
 
-        const diff       = document.getElementById('selAudioDiff').value;
+        const diff        = document.getElementById('selAudioDiff').value;
         const tgtLangName = ALL_LANGS[conf.l3].name;
         const now = Date.now();
         audioHistory = audioHistory.filter(item => (now - item.ts) < 1800000);
         const avoidList   = audioHistory.map(i => i.text).join('", "');
         const avoidPrompt = avoidList ? `Verwende AUF KEINEN FALL diese Sätze oder ähnliche: ["${avoidList}"]. ` : "";
-        const topics = ["Einkaufen", "Reisen", "Arbeit", "Freizeit", "Essen und Trinken", "Wetter", "Familie", "Sport", "Gesundheit", "Verkehrsmittel", "Gefühle", "Technik", "Natur", "Wohnen"];
-        const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+        const topicVal    = document.getElementById('selAudioTopic')?.value || 'general';
+        const topicDef    = AUDIO_TOPICS.find(t => t.value === topicVal) || AUDIO_TOPICS[0];
         const randomSeed  = Math.floor(Math.random() * 10000);
-        const prompt = `Du bist ein Sprachtrainer. Erstelle EINEN realistischen Satz auf Niveau ${diff} zum Thema "${randomTopic}" (ID: ${randomSeed}). ${avoidPrompt}Gib ihn auf Deutsch und auf ${tgtLangName} zurück. JSON-Format: {"l1": "Deutscher Satz", "l3": "Übersetzung in ${tgtLangName}"}`;
+        const prompt = `Du bist ein Sprachtrainer. Erstelle EINEN realistischen, typischen Alltagssatz auf Niveau ${diff} zum Thema ${topicDef.prompt} (ID: ${randomSeed}). ${avoidPrompt}Gib ihn auf Deutsch und auf ${tgtLangName} zurück. JSON-Format: {"l1": "Deutscher Satz", "l3": "Übersetzung in ${tgtLangName}"}`;
 
         const res = await callGemini(prompt);
         document.getElementById('audioLoader').style.display = 'none';
