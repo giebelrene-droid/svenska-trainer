@@ -1,4 +1,4 @@
-const APP_VERSION = "30.40";
+const APP_VERSION = "30.41";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -746,12 +746,12 @@ async function testApiKeys() {
         contents: [{ role: 'user', parts: [{ text: 'Hi' }] }]
     };
 
-    let html = `<div style="color:#94a3b8;margin-bottom:6px;">Modell: <b style="color:#e2e8f0;">${GEMINI_MODEL}</b></div>`;
+    let html = `<div style="color:#94a3b8;margin-bottom:6px;">Modelle: <b style="color:#e2e8f0;">${GEMINI_MODELS.join(', ')}</b></div>`;
 
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
         const preview = '…' + key.slice(-6);
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[0]}:generateContent?key=${key}`;
         let status = '?', ok = false, detail = '';
         try {
             const resp = await fetch(url, {
@@ -1029,7 +1029,7 @@ async function translateAllWithDeepL(text, sourceLangKey) {
 // ==========================================
 // 5b. GEMINI API ANBINDUNG
 // ==========================================
-const GEMINI_MODEL = 'gemini-1.5-flash-latest';
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite-001'];
 
 function showApiError(html) {
     let box = document.getElementById('apiErrorBox');
@@ -1074,11 +1074,13 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
     }
     payload.contents.push({ role: "user", parts: userParts });
 
-    if (activeLoader) activeLoader.innerText = `KI (${GEMINI_MODEL})…`;
+    if (activeLoader) activeLoader.innerText = `KI (${GEMINI_MODELS[0]})…`;
 
-    for (let i = 0; i < keys.length; i++) {
-        const key = keys[currentApiKeyIndex % keys.length];
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+    const key = keys[currentApiKeyIndex % keys.length];
+    for (let i = 0; i < GEMINI_MODELS.length; i++) {
+        const model = GEMINI_MODELS[i];
+        if (activeLoader) activeLoader.innerText = `KI (${model})…`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
         try {
             const resp = await fetch(url, {
                 method: "POST",
@@ -1089,23 +1091,20 @@ async function callGemini(prompt, imageBase64 = null, systemPrompt = null) {
             if (d.error) {
                 const errJson = JSON.stringify(d.error, null, 2);
                 logCustomError(`callGemini`, errJson);
-                showApiError(`<b>Modell:</b> ${GEMINI_MODEL}<br><b>Key (Ende):</b> …${key.slice(-6)}<br><b>HTTP-Status:</b> ${resp.status}<br><pre style="margin:6px 0 0;white-space:pre-wrap;word-break:break-all;">${escapeHTML(errJson)}</pre>`);
-                currentApiKeyIndex++;
+                showApiError(`<b>Modell:</b> ${model}<br><b>Key (Ende):</b> …${key.slice(-6)}<br><b>HTTP-Status:</b> ${resp.status}<br><pre style="margin:6px 0 0;white-space:pre-wrap;word-break:break-all;">${escapeHTML(errJson)}</pre>`);
                 continue;
             }
             const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
             if (!text) {
                 const raw = JSON.stringify(d, null, 2);
-                showApiError(`<b>Modell:</b> ${GEMINI_MODEL}<br><b>Key (Ende):</b> …${key.slice(-6)}<br><b>HTTP-Status:</b> ${resp.status}<br><b>Problem:</b> Leere Antwort vom Modell<br><pre style="margin:6px 0 0;white-space:pre-wrap;word-break:break-all;">${escapeHTML(raw)}</pre>`);
-                currentApiKeyIndex++;
+                showApiError(`<b>Modell:</b> ${model}<br><b>Key (Ende):</b> …${key.slice(-6)}<br><b>HTTP-Status:</b> ${resp.status}<br><b>Problem:</b> Leere Antwort vom Modell<br><pre style="margin:6px 0 0;white-space:pre-wrap;word-break:break-all;">${escapeHTML(raw)}</pre>`);
                 continue;
             }
             if (activeLoader) activeLoader.innerText = originalLoaderText;
             return text.trim();
         } catch(e) {
             logCustomError(`callGemini network`, e.message);
-            showApiError(`<b>Modell:</b> ${GEMINI_MODEL}<br><b>Key (Ende):</b> …${key.slice(-6)}<br><b>Problem:</b> Netzwerkfehler<br><pre style="margin:6px 0 0;">${escapeHTML(e.message)}</pre>`);
-            currentApiKeyIndex++;
+            showApiError(`<b>Modell:</b> ${model}<br><b>Key (Ende):</b> …${key.slice(-6)}<br><b>Problem:</b> Netzwerkfehler<br><pre style="margin:6px 0 0;">${escapeHTML(e.message)}</pre>`);
         }
     }
 
