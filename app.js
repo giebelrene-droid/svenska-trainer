@@ -1,4 +1,4 @@
-const APP_VERSION = "30.44";
+const APP_VERSION = "30.45";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -77,6 +77,50 @@ async function nukeDatabase() {
         allWords = []; document.getElementById('wordCount').innerText = 0; renderList();
         showToast("✅ Alle Vokabeln gelöscht.", "success");
     } catch(e) { logCustomError("Nuke Database", e); showToast("⚠️ Fehler beim Löschen.", "error"); }
+}
+
+async function removeDuplicateWords() {
+    if (!currentUser || !db) return showToast("Warte auf Datenbank-Verbindung...", "info");
+    const btn = document.getElementById('btnRemoveDuplicates');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Suche Duplikate…'; }
+    try {
+        // Load fresh, newest first — first occurrence of each l1 key is the one to keep
+        const snap = await db.collection('users').doc(currentUser.uid)
+            .collection('words_' + currentCollIndex).orderBy("ts", "desc").get();
+
+        const seen = new Set();
+        const toDelete = [];
+        snap.docs.forEach(doc => {
+            const key = ((doc.data()[conf.l1] || '')).trim().toLowerCase();
+            if (!key) return;
+            if (seen.has(key)) {
+                toDelete.push(doc.ref);
+            } else {
+                seen.add(key);
+            }
+        });
+
+        if (toDelete.length === 0) {
+            showToast("✅ Keine Duplikate gefunden!", "success");
+            return;
+        }
+
+        const batchSize = 400;
+        for (let i = 0; i < toDelete.length; i += batchSize) {
+            const batch = db.batch();
+            toDelete.slice(i, i + batchSize).forEach(ref => batch.delete(ref));
+            await batch.commit();
+        }
+
+        const remaining = snap.docs.length - toDelete.length;
+        await refreshData();
+        showToast(`✅ ${toDelete.length} Duplikate gelöscht, ${remaining} Wörter verbleiben`, "success");
+    } catch(e) {
+        logCustomError("removeDuplicateWords", e);
+        showToast("⚠️ Fehler beim Entfernen der Duplikate.", "error");
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🧹 Duplikate entfernen'; }
+    }
 }
 
 // ==========================================

@@ -15,7 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-    <link rel="stylesheet" href="style.css?v=30.44">
+    <link rel="stylesheet" href="style.css?v=30.45">
 </head>
 <body>
 
@@ -104,6 +104,7 @@
         <button class="action-btn btn-magic" onclick="migrateOldData()">🛟 Alte Vokabeln importieren</button>
         <button class="action-btn btn-secondary" onclick="document.getElementById('importFile').click()">📂 Backup laden</button>
         <button class="action-btn btn-success" onclick="forceImportDefaultWords()">📚 Standardwörter importieren</button>
+        <button id="btnRemoveDuplicates" class="action-btn btn-secondary" onclick="removeDuplicateWords()">🧹 Duplikate entfernen</button>
         <button class="action-btn btn-secondary" style="color: #EF4444;" onclick="nukeDatabase()">⚠️ Profil-Vokabeln löschen</button>
         <div class="setting-row" style="margin-top:15px;">
             <span style="font-weight:700; font-size:0.95rem;">🌙 Dark Mode</span>
@@ -142,7 +143,7 @@
 <div class="top-bar">
     <div class="app-title-wrap">
         <div class="app-title">SprachTutor AI</div>
-        <span class="version-badge" id="versionBadge">v30.44</span>
+        <span class="version-badge" id="versionBadge">v30.45</span>
     </div>
     <div class="top-stats">
         <div class="stats-badge" style="color: var(--primary);">👑 <span id="uiLevel">1</span></div>
@@ -631,7 +632,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version <span id="footerVersion">30.44</span> (Ultimate Edition) &bull; 2026
+    SprachTutor AI &bull; Version <span id="footerVersion">30.45</span> (Ultimate Edition) &bull; 2026
 </div>
 
 <!-- BOTTOM NAV -->
@@ -655,6 +656,6 @@
 
 <div id="toastContainer" style="position: fixed; bottom: 95px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>
 
-<script src="app.js?v=30.44"></script>
+<script src="app.js?v=30.45"></script>
 </body>
 </html>
