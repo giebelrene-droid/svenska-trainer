@@ -1,4 +1,4 @@
-const APP_VERSION = "30.42";
+const APP_VERSION = "30.43";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
@@ -94,6 +94,10 @@ let studyWords = []; let studyIndex = 0; let fcPool = []; let fcIndex = 0; let f
 let activeRpSentenceForFeedback = ""; let rpOptionsBuffer = null; let rpFetchPromise = null; let rpMicTimer = null; let rpCurrentTranscript = "";
 let geminiApiKey = localStorage.getItem('trainerGeminiKey') || ""; let currentApiKeyIndex = 0; let cachedGeminiModel = null;
 let deeplApiKey = localStorage.getItem('trainerDeeplKey') || "";
+let elevenlabsApiKey = localStorage.getItem('trainerElevenLabsKey') || "";
+let elevenlabsVoices = [];
+let elevenlabsVoiceId = localStorage.getItem('trainerElevenLabsVoice') || "";
+let currentElevenLabsAudio = null;
 let isLiveRecording = false; let liveRecObj = null; let isChatSessionActive = false; let chatRec = null; let duelWordObj = null; let duelCanTap = false; let huntTarget = ""; let listDebounceTimer;
 const RALLYE_CATEGORIES = [ { prompt: "ein Tier", label: "Nenne ein Tier! 🐾" }, { prompt: "eine Farbe", label: "Nenne eine Farbe! 🎨" }, { prompt: "eine Sportart", label: "Nenne eine Sportart! ⚽" }, { prompt: "ein Lebensmittel", label: "Nenne ein Lebensmittel! 🍎" }, { prompt: "ein Land", label: "Nenne ein Land! 🌍" }, { prompt: "ein Fahrzeug", label: "Nenne ein Fahrzeug! 🚗" }, { prompt: "ein Körperteil", label: "Nenne einen Körperteil! 💪" }, { prompt: "ein Möbelstück", label: "Nenne ein Möbelstück! 🛋️" } ];
 let currentRallyeCategory = RALLYE_CATEGORIES[0];
@@ -161,12 +165,15 @@ if (window.speechSynthesis) {
 }
 
 function updateVoiceDropdown() {
+    if (elevenlabsApiKey && elevenlabsVoices.length > 0) {
+        updateElevenLabsVoiceDropdowns();
+        return;
+    }
     const voiceSelect = document.getElementById('selAudioVoice'); if (!voiceSelect) return;
     const ttsCode = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) || 'sv-SE';
     const base = ttsCode.split('-')[0].toLowerCase();
     const nameMap = { sv:'swedish', de:'german', en:'english', fr:'french', es:'spanish', it:'italian', no:'norwegian' };
     const nameHint = nameMap[base] || base;
-    // Match by lang prefix first, then by name hint for devices with non-standard codes
     const byLang = availableVoices.filter(v => v.lang.toLowerCase().startsWith(base));
     const byName = availableVoices.filter(v => !v.lang.toLowerCase().startsWith(base) && v.name.toLowerCase().includes(nameHint));
     const matchingVoices = [...byLang, ...byName];
@@ -236,10 +243,15 @@ function buildUtterance(text, langKey, rate) {
 }
 
 // speak() is the global TTS function used by ALL speaker buttons in the app.
-// It NEVER checks selAudioVoice — always uses findBestVoice() directly.
-// This keeps it independent of Audio-Trainer state.
+// Uses ElevenLabs when key is set, falls back to speechSynthesis.
 function speak(text, langKey, rate = 1.0) {
-    if (!window.speechSynthesis || !text || !text.trim()) return;
+    if (!text || !text.trim()) return;
+    if (elevenlabsApiKey) {
+        const sel = document.getElementById('selElevenLabsVoice');
+        const voiceId = (sel && sel.value) || elevenlabsVoiceId || getDefaultElevenLabsVoiceId();
+        if (voiceId) { speakElevenLabs(text, voiceId); return; }
+    }
+    if (!window.speechSynthesis) return;
     const ss = window.speechSynthesis;
     ss.cancel();
     ss.resume();
@@ -250,7 +262,6 @@ function speak(text, langKey, rate = 1.0) {
     msg.pitch  = 1.0;
     const voice = findBestVoice(langKey);
     if (voice) msg.voice = voice;
-    // suppress 'interrupted' errors that come from cancel() calls
     msg.onerror = (e) => { if (e.error !== 'interrupted') logCustomError('speak', e.error || String(e)); };
     ss.speak(msg);
 }
@@ -309,6 +320,8 @@ function init() {
     applyDarkMode();
     if(document.getElementById('inpGeminiKey')) document.getElementById('inpGeminiKey').value = geminiApiKey;
     if(document.getElementById('inpDeeplKey')) document.getElementById('inpDeeplKey').value = deeplApiKey;
+    if(document.getElementById('inpElevenLabsKey')) document.getElementById('inpElevenLabsKey').value = elevenlabsApiKey;
+    if (elevenlabsApiKey) { loadElevenLabsVoices(); loadElevenLabsSubscription(); }
     try { const storedNames = localStorage.getItem('trainerUserNames'); if(storedNames) userNames = JSON.parse(storedNames); const savedIdx = localStorage.getItem('trainerUserIdx'); if(savedIdx) currentCollIndex = parseInt(savedIdx); } catch(e){}
     const todayStr = new Date().toDateString(); if(statsToday.date !== todayStr) { statsToday = {learned:0, added:0, date:todayStr}; localStorage.setItem('trainerStatsToday', JSON.stringify(statsToday)); }
     loadUserLangs(); renderRenameInputs(); updateUserDropdown(); populateLangSelects(); checkStreak(); updateQuests(); updateSaveModeUI();
@@ -730,6 +743,121 @@ function activateTTS() {
 function saveApiKey() { geminiApiKey = document.getElementById('inpGeminiKey').value.trim(); localStorage.setItem('trainerGeminiKey', geminiApiKey); cachedGeminiModel = null; }
 function saveDeeplKey() { deeplApiKey = document.getElementById('inpDeeplKey').value.trim(); localStorage.setItem('trainerDeeplKey', deeplApiKey); }
 
+function saveElevenLabsKey() {
+    elevenlabsApiKey = document.getElementById('inpElevenLabsKey').value.trim();
+    localStorage.setItem('trainerElevenLabsKey', elevenlabsApiKey);
+    if (elevenlabsApiKey) {
+        loadElevenLabsVoices();
+        loadElevenLabsSubscription();
+    } else {
+        elevenlabsVoices = [];
+        updateVoiceDropdown();
+    }
+}
+
+function saveElevenLabsVoice() {
+    elevenlabsVoiceId = document.getElementById('selElevenLabsVoice').value;
+    localStorage.setItem('trainerElevenLabsVoice', elevenlabsVoiceId);
+    const audioSel = document.getElementById('selAudioVoice');
+    if (audioSel && !audioSel.value && elevenlabsVoiceId) audioSel.value = elevenlabsVoiceId;
+}
+
+function getDefaultElevenLabsVoiceId() {
+    const adam = elevenlabsVoices.find(v => v.name === 'Adam');
+    if (adam) return adam.voice_id;
+    const rachel = elevenlabsVoices.find(v => v.name === 'Rachel');
+    if (rachel) return rachel.voice_id;
+    return elevenlabsVoices[0]?.voice_id || '';
+}
+
+async function loadElevenLabsVoices() {
+    if (!elevenlabsApiKey) return;
+    try {
+        const resp = await fetch('https://api.elevenlabs.io/v1/voices', {
+            headers: { 'xi-api-key': elevenlabsApiKey }
+        });
+        if (!resp.ok) { logCustomError('loadElevenLabsVoices', resp.status); return; }
+        const data = await resp.json();
+        elevenlabsVoices = (data.voices || []).sort((a, b) => a.name.localeCompare(b.name));
+        updateElevenLabsVoiceDropdowns();
+        updateVoiceDropdown();
+    } catch(e) {
+        logCustomError('loadElevenLabsVoices', e.message);
+    }
+}
+
+function updateElevenLabsVoiceDropdowns() {
+    const defaultId = elevenlabsVoiceId || getDefaultElevenLabsVoiceId();
+    ['selElevenLabsVoice', 'selAudioVoice'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const prev = sel.value || defaultId;
+        sel.innerHTML = '<option value="">— Stimme wählen —</option>' +
+            elevenlabsVoices.map(v => `<option value="${escapeHTML(v.voice_id)}">${escapeHTML(v.name)}</option>`).join('');
+        if (prev && elevenlabsVoices.some(v => v.voice_id === prev)) sel.value = prev;
+        else if (defaultId) sel.value = defaultId;
+    });
+    elevenlabsVoiceId = document.getElementById('selElevenLabsVoice')?.value || defaultId;
+    localStorage.setItem('trainerElevenLabsVoice', elevenlabsVoiceId);
+}
+
+async function loadElevenLabsSubscription() {
+    if (!elevenlabsApiKey) return;
+    const info = document.getElementById('elevenlabsSubInfo');
+    if (!info) return;
+    info.textContent = 'Lade Nutzungsdaten…';
+    try {
+        const resp = await fetch('https://api.elevenlabs.io/v1/user/subscription', {
+            headers: { 'xi-api-key': elevenlabsApiKey }
+        });
+        if (!resp.ok) { info.textContent = ''; return; }
+        const d = await resp.json();
+        const used = d.character_count || 0;
+        const limit = d.character_limit || 0;
+        const remaining = (limit - used).toLocaleString('de-DE');
+        const total = limit.toLocaleString('de-DE');
+        info.textContent = `Zeichen verfügbar: ${remaining} / ${total}`;
+    } catch(e) {
+        info.textContent = '';
+        logCustomError('loadElevenLabsSubscription', e.message);
+    }
+}
+
+async function speakElevenLabs(text, voiceId) {
+    if (!elevenlabsApiKey || !voiceId || !text || !text.trim()) return;
+    if (currentElevenLabsAudio) {
+        currentElevenLabsAudio.pause();
+        currentElevenLabsAudio = null;
+    }
+    try {
+        const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+            method: 'POST',
+            headers: { 'xi-api-key': elevenlabsApiKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                text: text.trim(),
+                model_id: 'eleven_multilingual_v2',
+                voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+            })
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            logCustomError('speakElevenLabs', JSON.stringify(err));
+            return;
+        }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        await new Promise((resolve) => {
+            const audio = new Audio(url);
+            currentElevenLabsAudio = audio;
+            audio.onended = () => { currentElevenLabsAudio = null; URL.revokeObjectURL(url); resolve(); };
+            audio.onerror = () => { currentElevenLabsAudio = null; URL.revokeObjectURL(url); resolve(); };
+            audio.play().catch(() => { currentElevenLabsAudio = null; URL.revokeObjectURL(url); resolve(); });
+        });
+    } catch(e) {
+        logCustomError('speakElevenLabs', e.message);
+    }
+}
+
 async function testApiKeys() {
     const box = document.getElementById('apiKeyTestResults');
     if (!box) return;
@@ -1131,7 +1259,13 @@ const sleepAsync = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // utterances when synthesis is in an undefined state after cancel().
 
 async function speakAndWait(text, langKey, rate) {
-    if (!('speechSynthesis' in window) || cancelAudio || !text || !text.trim()) return;
+    if (cancelAudio || !text || !text.trim()) return;
+    if (elevenlabsApiKey) {
+        const sel = document.getElementById('selAudioVoice');
+        const voiceId = (sel && sel.value) || elevenlabsVoiceId || getDefaultElevenLabsVoiceId();
+        if (voiceId) { await speakElevenLabs(text, voiceId); return; }
+    }
+    if (!('speechSynthesis' in window)) return;
     const ss = window.speechSynthesis;
     const r = parseFloat(rate) || 1.0;
 
@@ -1175,7 +1309,8 @@ async function toggleAudioTrainer() {
     const btn = document.getElementById('btnStartAudio');
     if (isAudioRunning) {
         isAudioRunning = false; cancelAudio = true;
-        window.speechSynthesis.cancel();
+        if (currentElevenLabsAudio) { currentElevenLabsAudio.pause(); currentElevenLabsAudio = null; }
+        if (!elevenlabsApiKey && window.speechSynthesis) window.speechSynthesis.cancel();
         stopSynthKeepAlive();
         btn.innerHTML = "▶️ Audio-Trainer starten"; btn.style.background = "linear-gradient(135deg, #a855f7, #ec4899)";
         document.getElementById('audioDisplayL1').innerText = "Pausiert.";
@@ -1184,7 +1319,7 @@ async function toggleAudioTrainer() {
         return;
     }
     isAudioRunning = true; cancelAudio = false;
-    startSynthKeepAlive();
+    if (!elevenlabsApiKey) startSynthKeepAlive();
     btn.innerHTML = "⏹️ Audio-Trainer stoppen"; btn.style.background = "#EF4444";
     audioTrainerLoop();
 }

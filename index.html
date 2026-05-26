@@ -15,7 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-    <link rel="stylesheet" href="style.css?v=30.42">
+    <link rel="stylesheet" href="style.css?v=30.43">
 </head>
 <body>
 
@@ -62,7 +62,14 @@
         <h2>⚙️ Einstellungen</h2>
         <label>🔑 Gemini API-Schlüssel (Mehrere mit Komma trennen)</label>
         <div class="input-row"><input type="text" id="inpGeminiKey" placeholder="AIzaSy..., AIzaSy..." oninput="saveApiKey()"></div>
-        <label style="margin-top: 16px;">🔵 DeepL API-Schlüssel <span style="font-size:0.75rem;font-weight:600;color:var(--text-light);">(für Übersetzungen)</span></label>
+        <label style="margin-top: 16px;">🎙️ ElevenLabs API-Key <span style="font-size:0.75rem;font-weight:600;color:var(--text-light);">(bessere Sprachausgabe)</span></label>
+        <div class="input-row"><input type="text" id="inpElevenLabsKey" placeholder="sk_..." oninput="saveElevenLabsKey()"></div>
+        <div id="elevenlabsSubInfo" style="margin-top:4px;margin-bottom:6px;font-size:0.75rem;color:var(--text-light);min-height:1em;"></div>
+        <label style="margin-top: 4px;">🗣️ ElevenLabs Stimme <span style="font-size:0.75rem;font-weight:600;color:var(--text-light);">(Standard: Adam ♂ / Rachel ♀)</span></label>
+        <select id="selElevenLabsVoice" onchange="saveElevenLabsVoice()" style="margin-bottom:14px;">
+            <option value="">— Stimme wählen —</option>
+        </select>
+        <label style="margin-top: 0px;">🔵 DeepL API-Schlüssel <span style="font-size:0.75rem;font-weight:600;color:var(--text-light);">(für Übersetzungen)</span></label>
         <div class="input-row"><input type="text" id="inpDeeplKey" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx" oninput="saveDeeplKey()"></div>
         <div style="margin-top:4px;margin-bottom:4px;font-size:0.75rem;color:var(--text-light);">Kostenlosen Key erstellen → <a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener" style="color:var(--primary);font-weight:700;">deepl.com/pro-api</a> &nbsp;|&nbsp; Free Keys enden auf <code>:fx</code></div>
         <label style="margin-top: 20px;">👤 Aktiver Benutzer</label>
@@ -118,7 +125,7 @@
 <div class="top-bar">
     <div class="app-title-wrap">
         <div class="app-title">SprachTutor AI</div>
-        <span class="version-badge" id="versionBadge">v30.42</span>
+        <span class="version-badge" id="versionBadge">v30.43</span>
     </div>
     <div class="top-stats">
         <div class="stats-badge" style="color: var(--primary);">👑 <span id="uiLevel">1</span></div>
@@ -589,7 +596,7 @@
 </div>
 
 <div class="footer">
-    SprachTutor AI &bull; Version <span id="footerVersion">30.42</span> (Ultimate Edition) &bull; 2026
+    SprachTutor AI &bull; Version <span id="footerVersion">30.43</span> (Ultimate Edition) &bull; 2026
 </div>
 
 <!-- BOTTOM NAV -->
@@ -613,6 +620,6 @@
 
 <div id="toastContainer" style="position: fixed; bottom: 95px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>
 
-<script src="app.js?v=30.42"></script>
+<script src="app.js?v=30.43"></script>
 </body>
 </html>
