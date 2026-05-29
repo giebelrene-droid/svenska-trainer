@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e1b4b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="globeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22d3ee;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22d3ee;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:0.6" />
+    </linearGradient>
+    <radialGradient id="globeShine" cx="35%" cy="30%" r="60%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.25" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0" />
+    </radialGradient>
+    <clipPath id="globeClip">
+      <circle cx="256" cy="248" r="138"/>
+    </clipPath>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="100" ry="100" fill="url(#bgGrad)"/>
+
+  <!-- Subtle background glow -->
+  <ellipse cx="256" cy="256" rx="200" ry="200" fill="#22d3ee" opacity="0.04"/>
+
+  <!-- Outer decorative ring -->
+  <circle cx="256" cy="248" r="155" fill="none" stroke="url(#ringGrad)" stroke-width="2" opacity="0.5"/>
+
+  <!-- Globe body -->
+  <circle cx="256" cy="248" r="138" fill="url(#globeGrad)" filter="url(#glow)"/>
+
+  <!-- Globe shine overlay -->
+  <circle cx="256" cy="248" r="138" fill="url(#globeShine)"/>
+
+  <!-- Globe lines: latitude & longitude -->
+  <g clip-path="url(#globeClip)" fill="none" stroke="#0f172a" stroke-width="2.5" opacity="0.4">
+    <!-- Equator -->
+    <line x1="118" y1="248" x2="394" y2="248"/>
+    <!-- Tropics -->
+    <line x1="127" y1="210" x2="385" y2="210"/>
+    <line x1="127" y1="286" x2="385" y2="286"/>
+    <!-- Arctic lines -->
+    <line x1="153" y1="172" x2="359" y2="172"/>
+    <line x1="153" y1="324" x2="359" y2="324"/>
+    <!-- Prime meridian -->
+    <line x1="256" y1="110" x2="256" y2="386"/>
+    <!-- Other meridians (ellipses projected) -->
+    <ellipse cx="256" cy="248" rx="60" ry="138"/>
+    <ellipse cx="256" cy="248" rx="110" ry="138"/>
+  </g>
+
+  <!-- Continents stylized -->
+  <g clip-path="url(#globeClip)" fill="#0f172a" opacity="0.35">
+    <!-- Europe/Africa blob -->
+    <ellipse cx="262" cy="210" rx="28" ry="22"/>
+    <ellipse cx="258" cy="258" rx="20" ry="30"/>
+    <!-- Americas blob -->
+    <ellipse cx="190" cy="220" rx="22" ry="18"/>
+    <ellipse cx="196" cy="268" rx="16" ry="22"/>
+    <!-- Asia blob -->
+    <ellipse cx="316" cy="205" rx="30" ry="20"/>
+  </g>
+
+  <!-- "ST" letters at bottom -->
+  <text x="256" y="432"
+        font-family="'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+        font-size="58"
+        font-weight="800"
+        text-anchor="middle"
+        letter-spacing="6"
+        fill="url(#globeGrad)"
+        opacity="0.95">ST</text>
+
+  <!-- Small "AI" tag -->
+  <rect x="206" y="444" width="50" height="22" rx="6" fill="url(#globeGrad)" opacity="0.2"/>
+  <text x="231" y="460"
+        font-family="'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+        font-size="13"
+        font-weight="700"
+        text-anchor="middle"
+        letter-spacing="2"
+        fill="url(#globeGrad)"
+        opacity="0.85">AI</text>
+</svg>
