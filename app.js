@@ -1,4 +1,4 @@
-const APP_VERSION = "30.49";
+const APP_VERSION = "30.50";
 
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
