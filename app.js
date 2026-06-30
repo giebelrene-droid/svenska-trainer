@@ -1,5 +1,3 @@
-const APP_VERSION = "30.50";
-
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
 // ==========================================
@@ -136,6 +134,7 @@ const ALL_LANGS = { 'de':{name:'Deutsch',tts:'de-DE',flag:'🇩🇪'}, 'en':{nam
 let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; let currentCollIndex = 0; let conf = { l1: 'de', l2: 'en', l3: 'sv' }; let allWords = []; let dataReady = false;
 let studyWords = []; let studyIndex = 0; let fcPool = []; let fcIndex = 0; let fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] }; let currentFcListType = '';
 let activeRpSentenceForFeedback = ""; let rpOptionsBuffer = null; let rpFetchPromise = null; let rpMicTimer = null; let rpCurrentTranscript = "";
+let rpWbwState = { active: false, words: [], index: 0, speed: 0.6, handler: null };
 let geminiApiKey = localStorage.getItem('trainerGeminiKey') || ""; let currentApiKeyIndex = 0; let cachedGeminiModel = null;
 let deeplApiKey = localStorage.getItem('trainerDeeplKey') || "";
 let elevenlabsApiKey = localStorage.getItem('trainerElevenLabsKey') || "";
@@ -1510,6 +1509,7 @@ async function fetchRpSentencesFromGemini() {
 function prefetchRpSentences() { if (!rpFetchPromise) { rpFetchPromise = fetchRpSentencesFromGemini().then(options => { if (options) rpOptionsBuffer = options; rpFetchPromise = null; }); } }
 async function startRoleplay() { document.getElementById('rpArea').style.display = 'block'; document.getElementById('rpFeedbackBox').style.display = 'none'; let topic = document.getElementById('selRpTopic').value; if(topic === 'custom') topic = document.getElementById('inpCustomTopic').value.trim() || "Allgemeines Gespräch"; document.getElementById('rpTopicDisplay').innerText = topic.toUpperCase(); await generateRpSentence(); }
 async function generateRpSentence() {
+    stopRpWordByWord();
     document.getElementById('rpFeedbackBox').style.display = 'none'; document.getElementById('rpOptionsContainer').innerHTML = ""; document.getElementById('btnRpRefresh').style.display = 'none'; document.getElementById('rpLoader').style.display = 'block';
     let options = null;
     if (rpOptionsBuffer) { options = rpOptionsBuffer; rpOptionsBuffer = null; } else if (rpFetchPromise) { await rpFetchPromise; options = rpOptionsBuffer; rpOptionsBuffer = null; } else { options = await fetchRpSentencesFromGemini(); }
@@ -1517,10 +1517,73 @@ async function generateRpSentence() {
     if(options) { renderRpOptions(options); prefetchRpSentences(); } else { document.getElementById('rpOptionsContainer').innerHTML = `<div style="text-align:center; color:#EF4444; font-weight:bold;">⚠️ Konnte Sätze nicht laden. Bitte versuche es erneut.</div>`; }
 }
 function renderRpOptions(options) {
-    let html = ''; options.forEach((opt, idx) => { const jsSafeL3 = safeJS(opt.l3); html += `<div class="rp-option"><div class="rp-option-text">${escapeHTML(opt.l3)}</div><div class="rp-option-trans">${escapeHTML(opt.l1)}</div><div class="rp-option-actions"><button class="icon-btn" onclick="speakRpSentence('${jsSafeL3}')" style="font-size: 1rem;">🔊 Hören</button><button class="icon-btn" id="rpMicBtn_${idx}" onclick="recordRpSpeech('${jsSafeL3}', 'rpMicBtn_${idx}')" style="border-color:var(--primary); color:var(--primary); font-weight:800; font-size:1rem;">🎤 Üben</button></div></div>`; });
+    let html = ''; options.forEach((opt, idx) => { const jsSafeL3 = safeJS(opt.l3); html += `<div class="rp-option"><div class="rp-option-text" id="rpOptText_${idx}">${escapeHTML(opt.l3)}</div><div class="rp-option-trans">${escapeHTML(opt.l1)}</div><div class="rp-option-actions"><button class="icon-btn" onclick="speakRpSentence('${jsSafeL3}')" style="font-size: 1rem;">🔊 Hören</button><button class="icon-btn" id="rpWbwBtn_${idx}" onclick="startRpWordByWord('${jsSafeL3}', ${idx})" style="font-size:1rem; border-color:#8B5CF6; color:#8B5CF6; font-weight:800;" title="Wort für Wort – tippe um weiterzugehen">👆 Wort f. Wort</button><button class="icon-btn" id="rpMicBtn_${idx}" onclick="recordRpSpeech('${jsSafeL3}', 'rpMicBtn_${idx}')" style="border-color:var(--primary); color:var(--primary); font-weight:800; font-size:1rem;">🎤 Üben</button></div></div>`; });
     document.getElementById('rpOptionsContainer').innerHTML = html;
 }
 function speakRpSentence(text) { const speed = parseFloat(document.getElementById('selRpSpeed').value); speak(text, conf.l3, speed); }
+
+function startRpWordByWord(text, optIdx) {
+    // Stop any running wbw session first
+    stopRpWordByWord();
+    const speed = parseFloat(document.getElementById('selRpSpeed').value);
+    // Strip punctuation for individual word speaking but keep original for display
+    const words = text.split(/\s+/).filter(w => w.length > 0);
+    if (words.length === 0) return;
+    rpWbwState = { active: true, words, index: 0, speed, optIdx };
+    // Highlight first word, add overlay instruction
+    renderRpWbwHighlight(optIdx, 0);
+    // Speak first word immediately
+    speakRpWbwWord();
+    // Add tap-anywhere handler
+    rpWbwState.handler = (e) => {
+        // Ignore taps on the wbw button itself to avoid double-trigger
+        if (e.target && e.target.id && e.target.id.startsWith('rpWbwBtn_')) return;
+        if (!rpWbwState.active) return;
+        rpWbwState.index++;
+        if (rpWbwState.index >= rpWbwState.words.length) {
+            stopRpWordByWord();
+            return;
+        }
+        renderRpWbwHighlight(rpWbwState.optIdx, rpWbwState.index);
+        speakRpWbwWord();
+    };
+    document.addEventListener('click', rpWbwState.handler, { capture: true });
+    document.addEventListener('touchstart', rpWbwState.handler, { capture: true, passive: true });
+    showToast("👆 Tippe irgendwo um das nächste Wort zu hören", "info");
+}
+
+function speakRpWbwWord() {
+    if (!rpWbwState.active) return;
+    const word = rpWbwState.words[rpWbwState.index].replace(/[.,!?;:]/g, '');
+    speak(word, conf.l3, rpWbwState.speed);
+}
+
+function renderRpWbwHighlight(optIdx, currentWordIdx) {
+    const container = document.getElementById(`rpOptText_${optIdx}`);
+    if (!container) return;
+    const words = rpWbwState.words;
+    const html = words.map((w, i) => {
+        if (i === currentWordIdx) return `<span style="background:#DDD6FE; color:#5B21B6; border-radius:4px; padding:0 3px; font-weight:900;">${escapeHTML(w)}</span>`;
+        if (i < currentWordIdx) return `<span style="opacity:0.45;">${escapeHTML(w)}</span>`;
+        return escapeHTML(w);
+    }).join(' ');
+    container.innerHTML = html;
+}
+
+function stopRpWordByWord() {
+    if (rpWbwState.handler) {
+        document.removeEventListener('click', rpWbwState.handler, { capture: true });
+        document.removeEventListener('touchstart', rpWbwState.handler, { capture: true });
+    }
+    // Restore original text in the option box
+    if (rpWbwState.active && rpWbwState.optIdx !== undefined) {
+        const container = document.getElementById(`rpOptText_${rpWbwState.optIdx}`);
+        if (container) container.innerHTML = rpWbwState.words.map(w => escapeHTML(w)).join(' ');
+    }
+    rpWbwState = { active: false, words: [], index: 0, speed: 0.6, handler: null };
+    window.speechSynthesis && window.speechSynthesis.cancel();
+}
+
 function recordRpSpeech(targetSentence, btnId) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return showToast("⚠️ Dein Browser unterstützt das Mikrofon leider nicht.", "error");
     try { const rec = new SpeechRecognition(); rec.lang = (ALL_LANGS[conf.l3] && ALL_LANGS[conf.l3].tts) ? ALL_LANGS[conf.l3].tts : 'sv-SE'; rec.continuous = true; rec.interimResults = true; const btn = document.getElementById(btnId); if(btn) btn.classList.add('mic-active'); activeRpSentenceForFeedback = targetSentence; rpCurrentTranscript = ""; document.getElementById('rpUserSaid').innerText = "..."; const waitTimeMs = parseInt(document.getElementById('selRpMicPatience').value) * 1000; const resetTimer = () => { clearTimeout(rpMicTimer); rpMicTimer = setTimeout(() => { rec.stop(); }, waitTimeMs); }; rec.onstart = () => { resetTimer(); }; rec.onresult = (e) => { let text = ""; for(let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript; rpCurrentTranscript = text; document.getElementById('rpUserSaid').innerText = rpCurrentTranscript; resetTimer(); }; rec.onerror = (e) => { clearTimeout(rpMicTimer); if(btn) btn.classList.remove('mic-active'); if (e.error === 'not-allowed') showToast("⚠️ Mikrofon-Zugriff blockiert.", "error"); logCustomError("Szenarien Mikrofon", e.error); }; rec.onend = async () => { clearTimeout(rpMicTimer); if(btn) btn.classList.remove('mic-active'); if (rpCurrentTranscript.trim().length > 0) { const textToEval = rpCurrentTranscript; rpCurrentTranscript = ""; fastEvaluateSpeech(textToEval, activeRpSentenceForFeedback, 'rpFeedbackBox', 'rpFeedbackText'); } else { document.getElementById('rpUserSaid').innerText = "Nichts gehört."; } }; rec.start(); } catch(err) { const btn = document.getElementById(btnId); if(btn) btn.classList.remove('mic-active'); logCustomError("Start recordRpSpeech", err); }
