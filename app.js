@@ -1,3 +1,5 @@
+const APP_VERSION = "30.51";
+
 // ==========================================
 // 1. TOAST BENACHRICHTIGUNGEN & FEHLER-LOG
 // ==========================================
@@ -761,8 +763,21 @@ function updateSaveModeUI() {
     else { btn.innerHTML = "🔀 Modus: Normal (Zur Liste springen)"; btn.style.borderColor = "var(--border-soft)"; btn.style.color = "var(--text-light)"; }
 }
 function toggleSaveMode() { isFastInputMode = !isFastInputMode; localStorage.setItem('trainerFastInput', isFastInputMode); updateSaveModeUI(); }
-function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
-function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
+function openSettings() {
+    geminiApiKey = localStorage.getItem('trainerGeminiKey') || "";
+    deeplApiKey = localStorage.getItem('trainerDeeplKey') || "";
+    elevenlabsApiKey = localStorage.getItem('trainerElevenLabsKey') || "";
+    const gEl = document.getElementById('inpGeminiKey'); if(gEl) gEl.value = geminiApiKey;
+    const dEl = document.getElementById('inpDeeplKey'); if(dEl) dEl.value = deeplApiKey;
+    const eEl = document.getElementById('inpElevenLabsKey'); if(eEl) eEl.value = elevenlabsApiKey;
+    document.getElementById('settingsOverlay').style.display = 'flex';
+}
+function closeSettings() {
+    saveApiKey();
+    saveDeeplKey();
+    saveElevenLabsKey();
+    document.getElementById('settingsOverlay').style.display = 'none';
+}
 
 function activateTTS() {
     const banner = document.getElementById('ttsUnlockBanner');
