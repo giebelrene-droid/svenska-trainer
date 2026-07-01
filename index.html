@@ -16,7 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-    <link rel="stylesheet" href="style.css?v=30.50">
+    <link rel="stylesheet" href="style.css?v=30.51">
 </head>
 <body>
 
@@ -144,7 +144,7 @@
 <div class="top-bar">
     <div class="app-title-wrap">
         <div class="app-title">SprachTutor AI</div>
-        <span class="version-badge" id="versionBadge">v30.50</span>
+        <span class="version-badge" id="versionBadge">v30.51</span>
     </div>
     <div class="top-stats">
         <div class="stats-badge" style="color: var(--primary);">👑 <span id="uiLevel">1</span></div>
@@ -500,6 +500,7 @@
         <div class="arcade-card" onclick="openMiniGame('Hunt')"><div class="arcade-icon">📷</div><div class="arcade-title">Schatzsuche</div></div>
         <div class="arcade-card" onclick="openMiniGame('Duel')"><div class="arcade-icon">⚔️</div><div class="arcade-title">Familien-Duell</div></div>
         <div class="arcade-card" onclick="openMiniGame('Adventure')"><div class="arcade-icon">🗺️</div><div class="arcade-title">Abenteuer</div></div>
+        <div class="arcade-card" onclick="openMiniGame('Picture')"><div class="arcade-icon">🖼️</div><div class="arcade-title">Bilderrätsel</div></div>
     </div>
     <div id="gameRallye" style="display:none; text-align:center;">
         <h3 style="color: #EF4444;">💣 Hot-Potato Rallye</h3>
@@ -524,6 +525,17 @@
         <button class="action-btn" onclick="startAdventure()" id="btnStartAdv">Starten</button>
         <div id="advArea" style="display:none; margin-top:15px;"><div class="chat-box" id="advHistory"></div><div id="advLoader" class="loader">KI denkt nach...</div><button class="action-btn" id="btnAdvMic" onclick="advTurn()">🎤 Was tust du?</button></div>
         <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Menü</button>
+    </div>
+    <div id="gamePicture" style="display:none;">
+        <h3 style="text-align:center;">🖼️ Bilderrätsel</h3>
+        <p style="text-align:center; font-size:0.85rem; color:var(--text-light); margin-top:-10px;">Welches Bild passt zum Wort?</p>
+        <div style="text-align:center; background:var(--primary-gradient); color:white; border-radius:16px; padding:16px; margin-bottom:16px;">
+            <div style="font-size:0.75rem; font-weight:800; opacity:0.8; margin-bottom:4px;">WELCHES BILD BEDEUTET:</div>
+            <div id="picQuizWord" style="font-size:1.8rem; font-weight:900;">---</div>
+        </div>
+        <div id="picQuizGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;"></div>
+        <div id="picQuizFeedback" style="text-align:center; min-height:28px; margin-bottom:10px;"></div>
+        <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:4px;">Menü</button>
     </div>
 </div>
 
@@ -658,6 +670,6 @@
 
 <div id="toastContainer" style="position: fixed; bottom: 95px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none;"></div>
 
-<script src="app.js?v=30.50"></script>
+<script src="app.js?v=30.51"></script>
 </body>
 </html>
