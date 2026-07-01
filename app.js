@@ -135,6 +135,7 @@ let userNames = ['Papa', 'Mama', 'Kind 1', 'Kind 2']; let currentCollIndex = 0; 
 let studyWords = []; let studyIndex = 0; let fcPool = []; let fcIndex = 0; let fcSessionHistory = { spaeter: [], nochmals: [], geuebt: [] }; let currentFcListType = '';
 let activeRpSentenceForFeedback = ""; let rpOptionsBuffer = null; let rpFetchPromise = null; let rpMicTimer = null; let rpCurrentTranscript = "";
 let rpWbwState = { active: false, words: [], index: 0, speed: 0.6, handler: null };
+let picQuizState = { correct: null, options: [], answered: false };
 let geminiApiKey = localStorage.getItem('trainerGeminiKey') || ""; let currentApiKeyIndex = 0; let cachedGeminiModel = null;
 let deeplApiKey = localStorage.getItem('trainerDeeplKey') || "";
 let elevenlabsApiKey = localStorage.getItem('trainerElevenLabsKey') || "";
@@ -1502,7 +1503,8 @@ function invalidateRpBuffer() { rpOptionsBuffer = null; }
 function checkCustomTopic() { const sel = document.getElementById('selRpTopic').value; document.getElementById('customTopicRow').style.display = sel === 'custom' ? 'flex' : 'none'; invalidateRpBuffer(); }
 async function fetchRpSentencesFromGemini() {
     const selTopic = document.getElementById('selRpTopic').value; let topic = selTopic === 'custom' ? document.getElementById('inpCustomTopic').value.trim() || "Allgemeines Gespräch" : selTopic; const tgtLangName = ALL_LANGS[conf.l3].name; const diffSelect = document.getElementById('selRpDifficulty'); const diffText = diffSelect.options[diffSelect.selectedIndex].text; const intentions = ["eine höfliche Formulierung", "eine zielgerichtete Frage", "eine typische Antwort", "eine Bitte", "eine kurze Feststellung", "eine alltägliche Interaktion"]; const intention = intentions[Math.floor(Math.random()*intentions.length)]; const randomSeed = Math.floor(Math.random() * 10000);
-    const prompt = `Du bist ein professioneller Sprachtrainer. Erstelle für das Szenario/Thema "${topic}" exakt DREI völlig unterschiedliche, aber absolut realistische Antwortmöglichkeiten in ${tgtLangName}. Niveau: ${diffText}. Satz 1: Höflich. Satz 2: Kurz/informell. Satz 3: Frage. Aspekt: ${intention} (ID: ${randomSeed}). Antworte AUSSCHLIESSLICH im folgenden JSON-Format: [{"l3": "...", "l1": "..."}, {"l3": "...", "l1": "..."}, {"l3": "...", "l1": "..."}]`;
+    const shortSentenceRule = diffText.includes('A1') ? ' WICHTIG bei A1: Maximal 4-6 Wörter pro Satz, sehr einfache Grammatik, nur Grundvokabular.' : '';
+    const prompt = `Du bist ein professioneller Sprachtrainer. Erstelle für das Szenario/Thema "${topic}" exakt DREI völlig unterschiedliche, aber absolut realistische Antwortmöglichkeiten in ${tgtLangName}. Niveau: ${diffText}.${shortSentenceRule} Satz 1: Höflich. Satz 2: Kurz/informell. Satz 3: Frage. Aspekt: ${intention} (ID: ${randomSeed}). Antworte AUSSCHLIESSLICH im folgenden JSON-Format: [{"l3": "...", "l1": "..."}, {"l3": "...", "l1": "..."}, {"l3": "...", "l1": "..."}]`;
     const res = await callGemini(prompt);
     if(res) { try { let cleanStr = res.replace(/`{3}json/gi, '').replace(/`{3}/g, '').trim(); const sIdx = cleanStr.indexOf('['); const eIdx = cleanStr.lastIndexOf(']'); if(sIdx !== -1 && eIdx !== -1) cleanStr = cleanStr.substring(sIdx, eIdx + 1); return JSON.parse(cleanStr); } catch(e) { logCustomError("JSON Parsing Szenarien", e); return null; } } return null;
 }
@@ -1535,10 +1537,16 @@ function startRpWordByWord(text, optIdx) {
     // Speak first word immediately
     speakRpWbwWord();
     // Add tap-anywhere handler
+    let rpWbwTouchPending = false;
     rpWbwState.handler = (e) => {
-        // Ignore taps on the wbw button itself to avoid double-trigger
         if (e.target && e.target.id && e.target.id.startsWith('rpWbwBtn_')) return;
         if (!rpWbwState.active) return;
+        if (e.type === 'touchstart') {
+            rpWbwTouchPending = true;
+            e.preventDefault();
+        } else if (e.type === 'click') {
+            if (rpWbwTouchPending) { rpWbwTouchPending = false; return; }
+        }
         rpWbwState.index++;
         if (rpWbwState.index >= rpWbwState.words.length) {
             stopRpWordByWord();
@@ -1548,7 +1556,7 @@ function startRpWordByWord(text, optIdx) {
         speakRpWbwWord();
     };
     document.addEventListener('click', rpWbwState.handler, { capture: true });
-    document.addEventListener('touchstart', rpWbwState.handler, { capture: true, passive: true });
+    document.addEventListener('touchstart', rpWbwState.handler, { capture: true, passive: false });
     showToast("👆 Tippe irgendwo um das nächste Wort zu hören", "info");
 }
 
@@ -1582,6 +1590,51 @@ function stopRpWordByWord() {
     }
     rpWbwState = { active: false, words: [], index: 0, speed: 0.6, handler: null };
     window.speechSynthesis && window.speechSynthesis.cancel();
+}
+
+function initPictureQuiz() {
+    if (allWords.length < 4) { document.getElementById('picQuizGrid').innerHTML = '<p style="text-align:center;color:#EF4444;font-weight:700;">Bitte mindestens 4 Wörter hinzufügen!</p>'; return; }
+    picQuizState.answered = false;
+    const pool = [...allWords].sort(() => Math.random() - 0.5).slice(0, 4);
+    const correctIdx = Math.floor(Math.random() * pool.length);
+    picQuizState.correct = pool[correctIdx];
+    picQuizState.options = pool;
+    const wordEl = document.getElementById('picQuizWord');
+    if (wordEl) { wordEl.innerText = picQuizState.correct[conf.l1]; speak(picQuizState.correct[conf.l3], conf.l3, 0.8); }
+    const feedbackEl = document.getElementById('picQuizFeedback');
+    if (feedbackEl) feedbackEl.innerHTML = '';
+    const grid = document.getElementById('picQuizGrid');
+    if (!grid) return;
+    grid.innerHTML = pool.map((w, i) => {
+        const keyword = encodeURIComponent(w[conf.l2] || w[conf.l1]);
+        const seed = Math.floor(Math.random() * 9000) + 1000;
+        return `<div onclick="checkPictureQuiz(${i})" id="picCard_${i}" style="cursor:pointer;border-radius:16px;overflow:hidden;border:3px solid var(--border-soft);background:rgba(255,255,255,0.8);transition:border-color 0.2s;">
+            <img src="https://loremflickr.com/320/200/${keyword}?lock=${seed}" style="width:100%;height:110px;object-fit:cover;display:block;" onerror="this.style.background='#E5E7EB';this.style.height='110px';">
+            <div style="padding:6px 8px;text-align:center;font-weight:800;font-size:0.9rem;color:var(--primary);">${escapeHTML(w[conf.l3])}</div>
+        </div>`;
+    }).join('');
+}
+
+function checkPictureQuiz(idx) {
+    if (picQuizState.answered) return;
+    picQuizState.answered = true;
+    const chosen = picQuizState.options[idx];
+    const isCorrect = chosen === picQuizState.correct;
+    picQuizState.options.forEach((w, i) => {
+        const card = document.getElementById(`picCard_${i}`);
+        if (!card) return;
+        card.onclick = null;
+        if (w === picQuizState.correct) card.style.borderColor = '#10B981';
+        else if (i === idx) card.style.borderColor = '#EF4444';
+    });
+    const feedbackEl = document.getElementById('picQuizFeedback');
+    if (isCorrect) {
+        addXP(10);
+        if (feedbackEl) feedbackEl.innerHTML = '<span style="color:#10B981;font-weight:900;font-size:1.1rem;">✅ Richtig! +10 XP</span>';
+    } else {
+        if (feedbackEl) feedbackEl.innerHTML = `<span style="color:#EF4444;font-weight:900;font-size:1.1rem;">❌ Falsch — Richtig wäre: <em>${escapeHTML(picQuizState.correct[conf.l3])}</em></span>`;
+    }
+    setTimeout(() => initPictureQuiz(), 2200);
 }
 
 function recordRpSpeech(targetSentence, btnId) {
@@ -1651,7 +1704,7 @@ function showFcList(type) { const listEl = document.getElementById('fcHistoryLis
 function undoFc(type, historyIndex) { if(!currentUser || !db) return; const item = fcSessionHistory[type][historyIndex]; const w = item.word; if (type === 'geuebt' || type === 'nochmals') { w.level = item.oldLvl; w.nextReview = item.oldNextReview; db.collection('users').doc(currentUser.uid).collection('words_'+currentCollIndex).doc(w.id).update({level: item.oldLvl, nextReview: item.oldNextReview}); } else if (type === 'spaeter') { const poolIdx = fcPool.findIndex(x => x.id === w.id); if(poolIdx > -1) fcPool.splice(poolIdx, 1); } fcSessionHistory[type].splice(historyIndex, 1); fcPool.splice(fcIndex, 0, w); updateFcHistoryCounts(); showFcList(type); renderFc(); }
 function openMiniGame(game) {
     document.getElementById('arcadeMenu').style.display = game === 'Menu' ? 'grid' : 'none';
-    ['gameRallye', 'gameHunt', 'gameDuel', 'gameAdventure'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+    ['gameRallye', 'gameHunt', 'gameDuel', 'gameAdventure', 'gamePicture'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
     if(game !== 'Menu') {
         document.getElementById('game' + game).style.display = 'block';
         if(game === 'Hunt') initHunt();
@@ -1668,6 +1721,7 @@ function openMiniGame(game) {
             const btnAdv = document.getElementById('btnStartAdv'); if(btnAdv) btnAdv.style.display = 'block';
             const advArea = document.getElementById('advArea'); if(advArea) advArea.style.display = 'none';
         }
+        if(game === 'Picture') initPictureQuiz();
     }
 }
 function playRallyeRound() {
