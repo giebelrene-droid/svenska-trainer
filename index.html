@@ -527,14 +527,13 @@
         <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:20px;">Menü</button>
     </div>
     <div id="gamePicture" style="display:none;">
-        <h3 style="text-align:center;">🖼️ Bilderrätsel</h3>
-        <p style="text-align:center; font-size:0.85rem; color:var(--text-light); margin-top:-10px;">Welches Bild passt zum Wort?</p>
-        <div style="text-align:center; background:var(--primary-gradient); color:white; border-radius:16px; padding:16px; margin-bottom:16px;">
-            <div style="font-size:0.75rem; font-weight:800; opacity:0.8; margin-bottom:4px;">WELCHES BILD BEDEUTET:</div>
-            <div id="picQuizWord" style="font-size:1.8rem; font-weight:900;">---</div>
+        <h3 style="text-align:center; margin-bottom:4px;">🖼️ Bilderrätsel</h3>
+        <div style="text-align:center; background:var(--primary-gradient); color:white; border-radius:16px; padding:14px 16px; margin-bottom:12px; min-height:80px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;">
+            <div id="picQuizWord" style="font-weight:900; line-height:1.3;">Lade...</div>
+            <button id="picQuizSpeakBtn" class="icon-btn" style="display:none; background:rgba(255,255,255,0.25); border:none; color:white; font-size:1.1rem; padding:8px 16px; border-radius:12px;">🔊 Nochmal hören</button>
         </div>
-        <div id="picQuizGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;"></div>
-        <div id="picQuizFeedback" style="text-align:center; min-height:28px; margin-bottom:10px;"></div>
+        <div id="picQuizGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;"></div>
+        <div id="picQuizFeedback" style="text-align:center; min-height:28px; margin-bottom:10px; font-size:1rem;"></div>
         <button class="action-btn btn-secondary" onclick="openMiniGame('Menu')" style="margin-top:4px;">Menü</button>
     </div>
 </div>
